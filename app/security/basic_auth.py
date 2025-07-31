@@ -8,7 +8,7 @@ from app.models.user.user import UserLogin
 security = HTTPBasic()
 
 
-def get_basic_auth_credentials(credentials: HTTPBasicCredentials = Depends(security)):
+def get_basic_auth_credentials(credentials: HTTPBasicCredentials = Depends(security))-> UserLogin:
     try:
         email = credentials.username
         if not email:
