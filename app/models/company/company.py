@@ -1,5 +1,5 @@
 import re
-from typing import Optional, Literal
+from typing import Optional
 from app.models.company.address import CompanyAddress
 from pydantic import BaseModel, EmailStr, field_validator, Field
 from app.models.phone_number import validate_phone_number_format
@@ -10,7 +10,7 @@ class CompanyRead(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     industry: Optional[str] = None
-    phone_number: Optional[str] = Field(None, example="1236547899")
+    phone_number: Optional[str] = Field(None, json_schema_extra={"example": "1236547899"})
     email: EmailStr
     address: Optional[CompanyAddress] = None
 
@@ -19,7 +19,7 @@ class CompanyUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     industry: Optional[str] = None
-    phone_number: Optional[str] = Field(None, example="1236547899")
+    phone_number: Optional[str] = Field(None, json_schema_extra={"example": "1236547899"})
     address: Optional[CompanyAddress] = None
 
     @field_validator("phone_number")
@@ -31,7 +31,7 @@ class CompanyCreate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     industry: Optional[str] = None
-    phone_number: Optional[str] = Field(None, example="1236547899")
+    phone_number: Optional[str] = Field(None, json_schema_extra={"example": "1236547899"})
     email: EmailStr
     address: Optional[CompanyAddress] = None
 

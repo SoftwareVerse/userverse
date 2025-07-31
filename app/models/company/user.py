@@ -8,5 +8,11 @@ class CompanyUserRead(UserRead):
 
 
 class CompanyUserAdd(BaseModel):
-    email: EmailStr = Field(None, example="user.one@email.com")
-    role: str = Field(CompanyDefaultRoles.VIEWER.name_value, example="Viewer")
+    email: EmailStr = Field(
+        default=None,
+        json_schema_extra={"example": "user.one@email.com"},
+    )
+    role: str = Field(
+        default=CompanyDefaultRoles.VIEWER.name_value,
+        json_schema_extra={"example": "Viewer"},
+    )
