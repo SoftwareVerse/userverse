@@ -10,7 +10,7 @@ from app.logic.company.user import CompanyUserService
 from app.logic.company.repository.company import CompanyRepository
 
 # database
-from app.database import DatabaseSessionManager
+from app.database.session_manager import DatabaseSessionManager
 from app.database.association_user_company import AssociationUserCompany
 
 # models

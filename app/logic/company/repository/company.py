@@ -4,7 +4,7 @@ from fastapi import status
 from app.utils.app_error import AppError
 
 # database
-from app.database import DatabaseSessionManager
+from app.database.session_manager import DatabaseSessionManager
 from app.database.company import Company
 from app.database.role import Role
 from app.database.association_user_company import AssociationUserCompany

@@ -11,7 +11,7 @@ from app.utils.app_error import AppError
 from app.logic.company.repository.user import CompanyUserRepository
 
 # database
-from app.database import DatabaseSessionManager
+from app.database.session_manager import DatabaseSessionManager
 from app.database.association_user_company import AssociationUserCompany
 
 
