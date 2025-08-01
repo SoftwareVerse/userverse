@@ -10,6 +10,7 @@ from app.database.user import User
 # models
 from app.models.user.user import UserRead
 from app.models.user.response_messages import UserResponseMessages
+from app.utils.hash_password import verify_password
 
 
 class UserRepository:
@@ -40,8 +41,9 @@ class UserRepository:
                     status_code=status.HTTP_404_NOT_FOUND,
                     message=UserResponseMessages.USER_NOT_FOUND.value,
                 )
-
-            if password and user.password != password:
+                
+            print(f"\nRetrieved user password: {user.password} with input pass: {password}")
+            if password and verify_password(password, user.password):  # noqa: F821
                 raise AppError(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     message=UserResponseMessages.INVALID_CREDENTIALS.value,

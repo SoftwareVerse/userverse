@@ -33,22 +33,22 @@ name = "Userverse"
 version = "0.1.0"
 description = "Userverse backend API"
 
-[tool.userverse.config.database]
-HOST = "localhost"
-PORT = 5432
-USERNAME = "sandile"
-PASSWORD = "Password123"
-NAME = "userverse"
-TYPE = "postgresql"
+# [tool.userverse.config.database]
+# HOST = "localhost"
+# PORT = 5432
+# USERNAME = "sandile"
+# PASSWORD = "Password123"
+# NAME = "userverse"
+# TYPE = "postgresql"
 
 [tool.userverse.config.cor_origins]
 allowed = ["*"]
 
-[tool.userverse.config.email]
-USERNAME = "your_email@example.com"
-PASSWORD = "your_email_password"
-HOST = "smtp.example.com"
-PORT = 587
+# [tool.userverse.config.email]
+# USERNAME = "your_email@example.com"
+# PASSWORD = "your_email_password"
+# HOST = "smtp.example.com"
+# PORT = 587
 
 [tool.userverse.config.jwt]
 SECRET = "your_jwt_secret"

@@ -1,17 +1,12 @@
 import re
 from typing import Optional, Literal
 from pydantic import BaseModel, EmailStr, field_validator, Field
-from app.utils.hash_password import hash_password
 from app.models.phone_number import validate_phone_number_format
 
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
-
-    @field_validator("password")
-    def hash_password(cls, v: str) -> str:
-        return hash_password(v)
 
 
 class UserUpdate(BaseModel):
@@ -21,10 +16,6 @@ class UserUpdate(BaseModel):
         None, json_schema_extra={"example": "1236547899"}
     )
     password: Optional[str] = None
-
-    @field_validator("password")
-    def hash_password(cls, v: str) -> str:
-        return hash_password(v)
 
     @field_validator("phone_number")
     def validate_phone_number(cls, v: Optional[str]) -> Optional[str]:

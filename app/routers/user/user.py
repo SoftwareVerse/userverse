@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
 # Tags & Models
+from app.dependencies.common import CommonBasicAuthRouteDependencies, CommonJWTRouteDependencies
 from app.models.tags import UserverseApiTag
 from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import (
@@ -21,8 +22,6 @@ from app.models.generic_pagination import PaginatedResponse
 from app.models.app_error import AppErrorResponseModel
 
 # Security & Utils
-from app.security.basic_auth import get_basic_auth_credentials
-from app.security.jwt import get_current_user_from_jwt_token
 from app.utils.app_error import AppError
 
 # Logic
@@ -34,7 +33,7 @@ tag = UserverseApiTag.USER_MANAGEMENT.name
 
 @router.patch(
     "/user/login",
-    tags=[tag],
+    tags=[UserverseApiTag.USER_MANAGEMENT_BASIC_AUTH.name],
     status_code=status.HTTP_202_ACCEPTED,
     responses={
         202: {"model": TokenResponseModel},
@@ -43,7 +42,7 @@ tag = UserverseApiTag.USER_MANAGEMENT.name
     },
 )
 def user_login_api(
-    credentials: UserLogin = Depends(get_basic_auth_credentials),
+    common_dependecies: CommonBasicAuthRouteDependencies = Depends(),
 ):
     """
     Authenticate user using basic auth credentials.
@@ -51,7 +50,7 @@ def user_login_api(
     - **Returns**: Access token for future authenticated requests
     """
     try:
-        response = UserService().user_login(user_credentials=credentials)
+        response = UserService().user_login(user_credentials=common_dependecies.user)
         return JSONResponse(
             status_code=status.HTTP_202_ACCEPTED,
             content={
@@ -65,7 +64,7 @@ def user_login_api(
 
 @router.post(
     "/user",
-    tags=[tag],
+    tags=[UserverseApiTag.USER_MANAGEMENT_BASIC_AUTH.name],
     status_code=status.HTTP_201_CREATED,
     responses={
         201: {"model": GenericResponseModel[UserRead]},
@@ -75,7 +74,7 @@ def user_login_api(
 )
 def create_user_api(
     user: UserCreate,
-    credentials: UserLogin = Depends(get_basic_auth_credentials),
+    common_dependecies: CommonBasicAuthRouteDependencies = Depends(),
 ):
     """
     Create a new user account.
@@ -84,8 +83,9 @@ def create_user_api(
     - **Returns**: Created user details
     """
     try:
+
         response = UserService().create_user(
-            user_credentials=credentials,
+            user_credentials=common_dependecies.user,
             user_data=user,
         )
         return JSONResponse(
@@ -110,13 +110,13 @@ def create_user_api(
     },
 )
 def get_user_api(
-    user: UserRead = Depends(get_current_user_from_jwt_token),
+    common_dependecies: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Retrieve current authenticated user's details.
     """
     try:
-        response = UserService().get_user(user_email=user.email)
+        response = UserService().get_user(user_email=common_dependecies.user.email)
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={
@@ -140,13 +140,13 @@ def get_user_api(
 )
 def update_user_api(
     user_updates: UserUpdate,
-    user: UserRead = Depends(get_current_user_from_jwt_token),
+    common_dependecies: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Update current authenticated user's profile.
     """
     try:
-        user_db = UserService().get_user(user_email=user.email)
+        user_db = UserService().get_user(user_email=common_dependecies.user.email)
         response = UserService().update_user(
             user_id=user_db.id,
             user_data=user_updates,
@@ -175,8 +175,7 @@ def update_user_api(
 )
 def get_user_companies_api(
     params: CompanyQueryParams = Depends(),
-    user: UserRead = Depends(get_current_user_from_jwt_token),
-):
+    common_dependecies: CommonJWTRouteDependencies = Depends(),):
     """
     Get all companies the authenticated user is associated with.
 
@@ -184,7 +183,7 @@ def get_user_companies_api(
     - **Returns**: Paginated list of companies
     """
     try:
-        response = UserService().get_user_companies(params=params, user=user)
+        response = UserService().get_user_companies(params=params, user=common_dependecies.user)
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content=GenericResponseModel(

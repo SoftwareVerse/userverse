@@ -19,6 +19,7 @@ from app.models.user.user import (
     TokenResponseModel,
 )
 from app.models.user.response_messages import UserResponseMessages
+from app.utils.hash_password import hash_password
 
 
 class UserService:
@@ -29,7 +30,7 @@ class UserService:
     def user_login(user_credentials: UserLogin) -> TokenResponseModel:
         user_repository = UserRepository()
         user = user_repository.get_user_by_email(
-            user_credentials.email, user_credentials.password
+            user_credentials.email, hash_password(user_credentials.password)
         )
         if not user:
             raise AppError(
@@ -37,6 +38,35 @@ class UserService:
                 message=UserResponseMessages.INVALID_CREDENTIALS.value,
             )
         return JWTManager().sign_jwt(user)
+    
+    @classmethod
+    def create_user(
+        cls, user_credentials: UserLogin, user_data: UserCreate
+    ) -> UserRead:
+        user_repository = UserRepository()
+        data = {
+            "first_name": user_data.first_name,
+            "last_name": user_data.last_name,
+            "email": user_credentials.email,
+            "phone_number": user_data.phone_number,
+            "password": hash_password(user_credentials.password),
+        }
+        user = user_repository.create_user(data)
+        # TODO: User verification functionality
+        verification_link = "https://github.com/SoftwareVerse"
+        # send email
+        MailService.send_template_email(
+            to=user.email,
+            subject=cls.ACCOUNT_REGISTRATION_SUBJECT,
+            template_name=cls.ACCOUNT_REGISTRATION_TEMPLATE,
+            context={
+                "template_name": cls.ACCOUNT_REGISTRATION_SUBJECT,
+                "user_name": (user.first_name or "") + " " + (user.last_name or ""),
+                "verification_link": verification_link,
+            },
+        )
+
+        return user
 
     @staticmethod
     def get_user_companies(
@@ -60,35 +90,6 @@ class UserService:
             )
 
     @classmethod
-    def create_user(
-        cls, user_credentials: UserLogin, user_data: UserCreate
-    ) -> UserRead:
-        user_repository = UserRepository()
-        data = {
-            "first_name": user_data.first_name,
-            "last_name": user_data.last_name,
-            "email": user_credentials.email,
-            "phone_number": user_data.phone_number,
-            "password": user_credentials.password,
-        }
-        user = user_repository.create_user(data)
-        # TODO: User verification functionality
-        verification_link = "https://github.com/SoftwareVerse"
-        # send email
-        MailService.send_template_email(
-            to=user.email,
-            subject=cls.ACCOUNT_REGISTRATION_SUBJECT,
-            template_name=cls.ACCOUNT_REGISTRATION_TEMPLATE,
-            context={
-                "template_name": cls.ACCOUNT_REGISTRATION_SUBJECT,
-                "user_name": user.first_name + " " + user.last_name,
-                "verification_link": verification_link,
-            },
-        )
-
-        return user
-
-    @classmethod
     def update_user(cls, user_id, user_data: UserUpdate):
         data = {}
         if user_data.first_name:
@@ -98,7 +99,7 @@ class UserService:
         if user_data.phone_number:
             data["phone_number"] = user_data.phone_number
         if user_data.password:
-            data["password"] = user_data.password
+            data["password"] = hash_password(user_data.password)
 
         if not data:
             raise AppError(

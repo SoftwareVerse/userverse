@@ -29,7 +29,7 @@ from app.logic.company.role import RoleService
 from app.utils.app_error import AppError
 
 router = APIRouter()
-tag = UserverseApiTag.COMPANY_MANAGEMENT.name
+tag = UserverseApiTag.COMPANY_ROLE_MANAGEMENT.name
 
 
 @router.post(
