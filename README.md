@@ -76,8 +76,14 @@ Use `uvicorn` in **factory mode** to support reload and dynamic config loading v
 
 ```bash
 # Set environment variables and run the app
-ENV=development JSON_CONFIG_PATH=config/dev.json \
-uvicorn app.main:create_app --factory --reload --host 0.0.0.0 --port 8501
+export ENV=development 
+export JSON_CONFIG_PATH=config-dev.json 
+# run with python
+-  python -m app.main --reload --port 8501
+
+# run with uvicorn
+- uvicorn app.main:create_app --factory --reload --host 0.0.0.0 --port 8501
+
 ```
 
 ✅ This supports live code reload and is ideal for development workflows.
