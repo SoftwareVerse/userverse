@@ -2,6 +2,10 @@ from enum import Enum
 
 
 class UserverseApiTag(Enum):
+    USER_MANAGEMENT_BASIC_AUTH = (
+        "User Management with Basic Auth",
+        "Endpoints for managing users with basic authentication",
+    )
     USER_MANAGEMENT = ("User Management", "Endpoints for managing users")
     USER_PASSWORD_MANAGEMENT = (
         "User Password Management",
