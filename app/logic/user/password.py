@@ -5,8 +5,8 @@ from app.logic.mailer import MailService
 from app.models.generic_response import GenericResponseModel
 
 # repository
-from app.logic.user.repository.user import UserRepository
-from app.logic.user.repository.password import UserPasswordRepository
+from app.repository.user import UserRepository
+from app.repository.user_password import UserPasswordRepository
 
 # UTILS
 from app.models.user.response_messages import (
@@ -49,7 +49,7 @@ class UserPasswordService:
             subject=cls.OTP_EMAIL_SUBJECT,
             template_name=cls.SEND_OTP_EMAIL_TEMPLATE,
             context={
-                "user_name": user.first_name + " " + user.last_name,
+                "user_name": (user.first_name or "") + " " + (user.last_name or ""),
                 "otp": token,
             },
         )

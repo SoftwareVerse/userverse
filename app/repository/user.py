@@ -42,7 +42,6 @@ class UserRepository:
                     message=UserResponseMessages.USER_NOT_FOUND.value,
                 )
                 
-            print(f"\nRetrieved user password: {user.password} with input pass: {password}")
             if password and verify_password(password, user.password):  # noqa: F821
                 raise AppError(
                     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -65,6 +64,15 @@ class UserRepository:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     message=UserResponseMessages.USER_CREATION_FAILED.value,
                 )
+                
+            # Update primary_meta_data["status"] to "awaiting_verification"
+            User.update_json_field(
+                session=session,
+                record_id=user["id"],
+                column_name="primary_meta_data",
+                key="status",
+                value="awaiting_verification",
+            )
             return UserReadModel(
                 id=user.get("id"),
                 first_name=user.get("first_name"),

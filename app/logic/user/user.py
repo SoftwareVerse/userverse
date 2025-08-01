@@ -8,7 +8,7 @@ from app.security.jwt import JWTManager
 from app.utils.app_error import AppError
 
 # repository
-from app.logic.user.repository.user import UserRepository
+from app.repository.user import UserRepository
 
 # models
 from app.models.user.user import (
