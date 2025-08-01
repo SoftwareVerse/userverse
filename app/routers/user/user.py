@@ -7,7 +7,6 @@ from app.models.tags import UserverseApiTag
 from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import (
     TokenResponseModel,
-    UserLoginModel,
     UserCreateModel,
     UserReadModel,
     UserUpdateModel,
@@ -15,7 +14,6 @@ from app.models.user.user import (
 from app.models.company.company import CompanyQueryParams, CompanyRead
 from app.models.company.response_messages import (
     CompanyUserResponseMessages,
-    CompanyResponseMessages,
 )
 from app.models.generic_response import GenericResponseModel
 from app.models.generic_pagination import PaginatedResponse
@@ -27,19 +25,22 @@ from app.utils.app_error import AppError
 # Logic
 from app.logic.user.user import UserService
 
-router = APIRouter()
-tag = UserverseApiTag.USER_MANAGEMENT.name
+router = APIRouter(
+    prefix="/user",
+    tags=[UserverseApiTag.USER_MANAGEMENT.name],
+    responses={
+        400: {"model": AppErrorResponseModel},
+        404: {"model": AppErrorResponseModel},
+        500: {"model": AppErrorResponseModel},
+    },
+)
 
 
 @router.patch(
-    "/user/login",
-    tags=[UserverseApiTag.USER_MANAGEMENT_BASIC_AUTH.name],
+    "/login",
+    description=UserverseApiTag.USER_MANAGEMENT_BASIC_AUTH.description,
     status_code=status.HTTP_202_ACCEPTED,
-    responses={
-        202: {"model": TokenResponseModel},
-        400: {"model": AppErrorResponseModel},
-        500: {"model": AppErrorResponseModel},
-    },
+    response_model=GenericResponseModel[TokenResponseModel],
 )
 def user_login_api(
     common_dependecies: CommonBasicAuthRouteDependencies = Depends(),
@@ -49,28 +50,22 @@ def user_login_api(
 
     - **Returns**: Access token for future authenticated requests
     """
-    try:
-        response = UserService().user_login(user_credentials=common_dependecies.user)
-        return JSONResponse(
-            status_code=status.HTTP_202_ACCEPTED,
-            content={
-                "message": UserResponseMessages.USER_LOGGED_IN.value,
-                "data": response.model_dump(),
-            },
-        )
-    except (AppError, Exception) as e:
-        raise e
+
+    response = UserService().user_login(user_credentials=common_dependecies.user)
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={
+            "message": UserResponseMessages.USER_LOGGED_IN.value,
+            "data": response.model_dump(),
+        },
+    )
 
 
 @router.post(
-    "/user",
-    tags=[UserverseApiTag.USER_MANAGEMENT_BASIC_AUTH.name],
+    "/create",
+    description=UserverseApiTag.USER_MANAGEMENT_BASIC_AUTH.description,
     status_code=status.HTTP_201_CREATED,
-    responses={
-        201: {"model": GenericResponseModel[UserReadModel]},
-        400: {"model": AppErrorResponseModel},
-        500: {"model": AppErrorResponseModel},
-    },
+    response_model=GenericResponseModel[UserReadModel],
 )
 def create_user_api(
     user: UserCreateModel,
@@ -82,32 +77,23 @@ def create_user_api(
     - **Requires**: Valid basic auth credentials
     - **Returns**: Created user details
     """
-    try:
-
-        response = UserService().create_user(
-            user_credentials=common_dependecies.user,
-            user_data=user,
-        )
-        return JSONResponse(
-            status_code=status.HTTP_201_CREATED,
-            content={
-                "message": UserResponseMessages.USER_CREATED.value,
-                "data": response.model_dump(),
-            },
-        )
-    except (AppError, Exception) as e:
-        raise e
+    response = UserService().create_user(
+        user_credentials=common_dependecies.user,
+        user_data=user,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content={
+            "message": UserResponseMessages.USER_CREATED.value,
+            "data": response.model_dump(),
+        },
+    )
 
 
 @router.get(
     "/user",
-    tags=[tag],
     status_code=status.HTTP_200_OK,
-    responses={
-        200: {"model": GenericResponseModel[UserReadModel]},
-        400: {"model": AppErrorResponseModel},
-        500: {"model": AppErrorResponseModel},
-    },
+    response_model=GenericResponseModel[UserReadModel],
 )
 def get_user_api(
     common_dependecies: CommonJWTRouteDependencies = Depends(),
@@ -115,28 +101,21 @@ def get_user_api(
     """
     Retrieve current authenticated user's details.
     """
-    try:
-        response = UserService().get_user(user_email=common_dependecies.user.email)
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={
-                "message": UserResponseMessages.USER_FOUND.value,
-                "data": response.model_dump(),
-            },
-        )
-    except (AppError, Exception) as e:
-        raise e
+
+    response = UserService().get_user(user_email=common_dependecies.user.email)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "message": UserResponseMessages.USER_FOUND.value,
+            "data": response.model_dump(),
+        },
+    )
 
 
 @router.patch(
     "/user",
-    tags=[tag],
     status_code=status.HTTP_200_OK,
-    responses={
-        201: {"model": GenericResponseModel[UserReadModel]},
-        400: {"model": AppErrorResponseModel},
-        500: {"model": AppErrorResponseModel},
-    },
+    response_model=GenericResponseModel[UserReadModel],
 )
 def update_user_api(
     user_updates: UserUpdateModel,
@@ -145,33 +124,25 @@ def update_user_api(
     """
     Update current authenticated user's profile.
     """
-    try:
-        user_db = UserService().get_user(user_email=common_dependecies.user.email)
-        response = UserService().update_user(
-            user_id=user_db.id,
-            user_data=user_updates,
-        )
-        return JSONResponse(
-            status_code=status.HTTP_201_CREATED,
-            content={
-                "message": UserResponseMessages.USER_UPDATED.value,
-                "data": response.model_dump(),
-            },
-        )
-    except (AppError, Exception) as e:
-        raise e
+
+    user_db = UserService().get_user(user_email=common_dependecies.user.email)
+    response = UserService().update_user(
+        user_id=user_db.id,
+        user_data=user_updates,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content={
+            "message": UserResponseMessages.USER_UPDATED.value,
+            "data": response.model_dump(),
+        },
+    )
 
 
 @router.get(
     "/user/companies",
-    tags=[tag],
     status_code=status.HTTP_200_OK,
-    responses={
-        200: {"model": GenericResponseModel[PaginatedResponse[CompanyRead]]},
-        400: {"model": AppErrorResponseModel},
-        404: {"model": AppErrorResponseModel},
-        500: {"model": AppErrorResponseModel},
-    },
+    response_model=GenericResponseModel[PaginatedResponse[CompanyRead]],
 )
 def get_user_companies_api(
     params: CompanyQueryParams = Depends(),
@@ -182,14 +153,12 @@ def get_user_companies_api(
     - **Supports**: Filtering by role, name, industry, etc.
     - **Returns**: Paginated list of companies
     """
-    try:
-        response = UserService().get_user_companies(params=params, user=common_dependecies.user)
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content=GenericResponseModel(
-                message=CompanyUserResponseMessages.GET_COMPANY_USERS.value,
-                data=response.model_dump(),
-            ).model_dump(),
-        )
-    except (AppError, Exception) as e:
-        raise e
+
+    response = UserService().get_user_companies(params=params, user=common_dependecies.user)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=GenericResponseModel(
+            message=CompanyUserResponseMessages.GET_COMPANY_USERS.value,
+            data=response.model_dump(),
+        ).model_dump(),
+    )
