@@ -42,6 +42,10 @@ class UserReadModel(BaseModel):
     phone_number: Optional[str] = Field(
         None, json_schema_extra={"example": "1236547899"}
     )
+    status: Optional[str] = None  # <-- Add this
+    is_superuser: bool = Field(
+        False, description="Indicates if the user has superuser privileges"
+    )
 
 
 class TokenResponseModel(BaseModel):
