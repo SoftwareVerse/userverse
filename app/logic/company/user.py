@@ -59,7 +59,7 @@ class CompanyUserService:
     def remove_user_from_company(
         company_id: int,
         user_id: int,
-        removed_by: UserRead,
+        added_by: UserReadModel,
     ) -> CompanyUserRead:
         CompanyUserService.check_if_user_is_in_company(
             user_id=removed_by.id,

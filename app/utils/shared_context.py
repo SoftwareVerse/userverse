@@ -2,7 +2,7 @@
 from typing import Any, Dict
 from decimal import Decimal
 from datetime import datetime, date
-from app.models.user.user import UserRead
+from app.models.user.user import UserReadModel
 from app.utils.logging import logger
 
 

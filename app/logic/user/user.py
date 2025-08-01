@@ -12,10 +12,10 @@ from app.logic.user.repository.user import UserRepository
 
 # models
 from app.models.user.user import (
-    UserCreate,
-    UserUpdate,
-    UserRead,
-    UserLogin,
+    UserCreateModel,
+    UserUpdateModel,
+    UserReadModel,
+    UserLoginModel,
     TokenResponseModel,
 )
 from app.models.user.response_messages import UserResponseMessages
@@ -27,7 +27,7 @@ class UserService:
     ACCOUNT_REGISTRATION_SUBJECT = "User Account Registration"
 
     @staticmethod
-    def user_login(user_credentials: UserLogin) -> TokenResponseModel:
+    def user_login(user_credentials: UserLoginModel) -> TokenResponseModel:
         user_repository = UserRepository()
         user = user_repository.get_user_by_email(
             user_credentials.email, hash_password(user_credentials.password)
@@ -41,8 +41,8 @@ class UserService:
     
     @classmethod
     def create_user(
-        cls, user_credentials: UserLogin, user_data: UserCreate
-    ) -> UserRead:
+        cls, user_credentials: UserLoginModel, user_data: UserCreateModel
+    ) -> UserReadModel:
         user_repository = UserRepository()
         data = {
             "first_name": user_data.first_name,
@@ -71,13 +71,13 @@ class UserService:
     @staticmethod
     def get_user_companies(
         params: CompanyQueryParams,
-        user: UserRead,
+        user: UserReadModel,
     ):
         company_repository = CompanyRepository()
         return company_repository.get_user_companies(user_id=user.id, params=params)
 
     @staticmethod
-    def get_user(user_id: int = None, user_email: str = None) -> UserRead:
+    def get_user(user_id: int = None, user_email: str = None) -> UserReadModel:
         user_repository = UserRepository()
         if user_id:
             return user_repository.get_user_by_id(user_id)
@@ -90,7 +90,7 @@ class UserService:
             )
 
     @classmethod
-    def update_user(cls, user_id, user_data: UserUpdate):
+    def update_user(cls, user_id, user_data: UserUpdateModel):
         data = {}
         if user_data.first_name:
             data["first_name"] = user_data.first_name

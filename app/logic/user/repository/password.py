@@ -9,7 +9,7 @@ from app.database.session_manager import DatabaseSessionManager
 from app.database.user import User
 
 # models
-from app.models.user.user import UserRead
+from app.models.user.user import UserReadModel
 from app.models.user.response_messages import UserResponseMessages
 
 

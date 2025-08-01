@@ -20,7 +20,7 @@ from app.models.company.response_messages import (
 # Auth
 from app.models.tags import UserverseApiTag
 from app.security.jwt import get_current_user_from_jwt_token
-from app.models.user.user import UserRead
+from app.models.user.user import UserReadModel
 
 # Business Logic
 from app.logic.company.role import RoleService

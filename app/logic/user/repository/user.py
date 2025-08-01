@@ -8,7 +8,7 @@ from app.database.session_manager import DatabaseSessionManager
 from app.database.user import User
 
 # models
-from app.models.user.user import UserRead
+from app.models.user.user import UserReadModel
 from app.models.user.response_messages import UserResponseMessages
 from app.utils.hash_password import verify_password
 
@@ -17,7 +17,7 @@ class UserRepository:
     def __init__(self):
         self.db_manager = DatabaseSessionManager()
 
-    def get_user_by_id(self, user_id) -> UserRead:
+    def get_user_by_id(self, user_id) -> UserReadModel:
         with self.db_manager.session_object() as session:
             user = User.get_by_id(session, user_id)
             if not user:
@@ -25,7 +25,7 @@ class UserRepository:
                     status_code=status.HTTP_404_NOT_FOUND,
                     message=UserResponseMessages.USER_NOT_FOUND.value,
                 )
-            return UserRead(
+            return UserReadModel(
                 id=user.get("id"),
                 first_name=user.get("first_name"),
                 last_name=user.get("last_name"),
@@ -33,7 +33,7 @@ class UserRepository:
                 phone_number=user.get("phone_number"),
             )
 
-    def get_user_by_email(self, user_email, password: str = None) -> UserRead:
+    def get_user_by_email(self, user_email, password: str = None) -> UserReadModel:
         with self.db_manager.session_object() as session:
             user = session.query(User).filter(User.email == user_email).first()
             if not user:
@@ -49,7 +49,7 @@ class UserRepository:
                     message=UserResponseMessages.INVALID_CREDENTIALS.value,
                 )
 
-            return UserRead(
+            return UserReadModel(
                 id=user.id,
                 first_name=user.first_name,
                 last_name=user.last_name,
@@ -57,7 +57,7 @@ class UserRepository:
                 phone_number=user.phone_number,
             )
 
-    def create_user(self, data: dict) -> UserRead:
+    def create_user(self, data: dict) -> UserReadModel:
         with self.db_manager.session_object() as session:
             user = User.create(session, **data)
             if not user:
@@ -65,7 +65,7 @@ class UserRepository:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     message=UserResponseMessages.USER_CREATION_FAILED.value,
                 )
-            return UserRead(
+            return UserReadModel(
                 id=user.get("id"),
                 first_name=user.get("first_name"),
                 last_name=user.get("last_name"),
@@ -81,7 +81,7 @@ class UserRepository:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     message=UserResponseMessages.USER_UPDATE_FAILED.value,
                 )
-            return UserRead(
+            return UserReadModel(
                 id=user.get("id"),
                 first_name=user.get("first_name"),
                 last_name=user.get("last_name"),

@@ -3,12 +3,12 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import ValidationError
 from app.models.security_messages import SecurityResponseMessages
 from app.utils.app_error import AppError
-from app.models.user.user import UserLogin
+from app.models.user.user import UserLoginModel
 
 security = HTTPBasic()
 
 
-def get_basic_auth_credentials(credentials: HTTPBasicCredentials = Depends(security))-> UserLogin:
+def get_basic_auth_credentials(credentials: HTTPBasicCredentials = Depends(security))-> UserLoginModel:
     try:
         email = credentials.username
         if not email:
@@ -23,7 +23,7 @@ def get_basic_auth_credentials(credentials: HTTPBasicCredentials = Depends(secur
                 status_code=status.HTTP_401_UNAUTHORIZED,
             )
 
-        inputs = UserLogin(email=credentials.username, password=password)
+        inputs = UserLoginModel(email=credentials.username, password=password)
         return inputs
     except ValidationError as e:
         raise AppError(

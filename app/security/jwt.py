@@ -7,7 +7,7 @@ from fastapi.security import APIKeyHeader
 # app imports
 from app.utils.config.loader import ConfigLoader
 from app.models.security_messages import SecurityResponseMessages
-from app.models.user.user import TokenResponseModel, UserRead
+from app.models.user.user import TokenResponseModel, UserReadModel
 from app.utils.app_error import AppError
 
 
@@ -22,7 +22,7 @@ class JWTManager:
         self.SESSION_TIMEOUT = int(jwt_config.get("IMEOUT", 15))
         self.REFRESH_TIMEOUT = int(jwt_config.get("REFRESH_TIMEOUT", 60))
 
-    def sign_jwt(self, user: UserRead) -> TokenResponseModel:
+    def sign_jwt(self, user: UserReadModel) -> TokenResponseModel:
         now = datetime.now(timezone.utc)
         access_expire = now + timedelta(minutes=self.SESSION_TIMEOUT)
         refresh_expire = now + timedelta(minutes=self.REFRESH_TIMEOUT)
@@ -57,7 +57,7 @@ class JWTManager:
             refresh_token_expiration=refresh_expire.strftime("%Y-%m-%d %H:%M:%S"),
         )
 
-    def decode_token(self, token: str) -> UserRead:
+    def decode_token(self, token: str) -> UserReadModel:
         try:
             decoded = jwt.decode(
                 token, self.JWT_SECRET, algorithms=[self.JWT_ALGORITHM]
@@ -74,7 +74,7 @@ class JWTManager:
                     message=SecurityResponseMessages.INVALID_TOKEN.value
                     + " for access token",
                 )
-            return UserRead(**user)
+            return UserReadModel(**user)
 
         except jwt.ExpiredSignatureError:
             raise AppError(
@@ -124,7 +124,7 @@ class JWTManager:
 
 async def get_current_user_from_jwt_token(
     authorization: str = Security(APIKeyHeader(name="Authorization")),
-) -> UserRead:
+) -> UserReadModel:
 
     if authorization is None:
         raise AppError(

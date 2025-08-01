@@ -7,10 +7,10 @@ from app.models.tags import UserverseApiTag
 from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import (
     TokenResponseModel,
-    UserLogin,
-    UserCreate,
-    UserRead,
-    UserUpdate,
+    UserLoginModel,
+    UserCreateModel,
+    UserReadModel,
+    UserUpdateModel,
 )
 from app.models.company.company import CompanyQueryParams, CompanyRead
 from app.models.company.response_messages import (
@@ -67,13 +67,13 @@ def user_login_api(
     tags=[UserverseApiTag.USER_MANAGEMENT_BASIC_AUTH.name],
     status_code=status.HTTP_201_CREATED,
     responses={
-        201: {"model": GenericResponseModel[UserRead]},
+        201: {"model": GenericResponseModel[UserReadModel]},
         400: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
     },
 )
 def create_user_api(
-    user: UserCreate,
+    user: UserCreateModel,
     common_dependecies: CommonBasicAuthRouteDependencies = Depends(),
 ):
     """
@@ -104,7 +104,7 @@ def create_user_api(
     tags=[tag],
     status_code=status.HTTP_200_OK,
     responses={
-        200: {"model": GenericResponseModel[UserRead]},
+        200: {"model": GenericResponseModel[UserReadModel]},
         400: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
     },
@@ -133,13 +133,13 @@ def get_user_api(
     tags=[tag],
     status_code=status.HTTP_200_OK,
     responses={
-        201: {"model": GenericResponseModel[UserRead]},
+        201: {"model": GenericResponseModel[UserReadModel]},
         400: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
     },
 )
 def update_user_api(
-    user_updates: UserUpdate,
+    user_updates: UserUpdateModel,
     common_dependecies: CommonJWTRouteDependencies = Depends(),
 ):
     """

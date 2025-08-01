@@ -4,12 +4,12 @@ from pydantic import BaseModel, EmailStr, field_validator, Field
 from app.models.phone_number import validate_phone_number_format
 
 
-class UserLogin(BaseModel):
+class UserLoginModel(BaseModel):
     email: EmailStr
     password: str
 
 
-class UserUpdate(BaseModel):
+class UserUpdateModel(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     phone_number: Optional[str] = Field(
@@ -22,7 +22,7 @@ class UserUpdate(BaseModel):
         return validate_phone_number_format(v)
 
 
-class UserCreate(BaseModel):
+class UserCreateModel(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     phone_number: Optional[str] = Field(
@@ -34,7 +34,7 @@ class UserCreate(BaseModel):
         return validate_phone_number_format(v)
 
 
-class UserRead(BaseModel):
+class UserReadModel(BaseModel):
     id: int
     first_name: Optional[str] = None
     last_name: Optional[str] = None
