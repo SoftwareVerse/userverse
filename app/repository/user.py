@@ -74,7 +74,7 @@ class UserRepository:
                 user_id=user.get("id"),
                 account_status=UserAccountStatus.AWAITING_VERIFICATION.name_value,
             )
-            
+
             return UserReadModel(
                 id=user.get("id"),
                 first_name=user.get("first_name"),

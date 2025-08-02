@@ -2,20 +2,32 @@
 from typing import Any, Dict
 from decimal import Decimal
 from datetime import datetime, date
+from app.models.user.account_status import UserAccountStatus
 from app.models.user.user import UserReadModel
 from app.utils.logging import logger
+from sqlalchemy.orm import  Session
 
 
 class SharedContext:
     def __init__(
         self,
         configs: dict,
-        user: UserRead,
-        db_session,
+        user: UserReadModel,
+        db_session: Session,
+        enforce_status_check: bool = False,  # <-- optional control
     ):
         self.configs: dict = configs
-        self.user: UserRead = user
+        self.user: UserReadModel = user
         self.db_session = db_session
+
+        if enforce_status_check:
+            self._check_user_status()
+
+    def _check_user_status(self):
+        if self.user.status != UserAccountStatus.ACTIVE.name_value:
+            raise ValueError(
+                "Account is not active. Please verify your email or contact support.",
+            )
 
     def get_user_email(self) -> str:
         """
@@ -23,7 +35,7 @@ class SharedContext:
         """
         return self.user.email
 
-    def get_user(self) -> UserRead:
+    def get_user(self) -> UserReadModel:
         """
         -  Returns the user object associated with this context.
         """

@@ -1,5 +1,6 @@
 from fastapi import status
 from datetime import timedelta
+
 # utils
 from app.logic.company.repository.company import CompanyRepository
 from app.logic.mailer import MailService
@@ -36,7 +37,7 @@ class UserService:
             expires_delta=timedelta(minutes=cls.VERIFICATION_TOKEN_EXPIRY_MINUTES),
         )
         return f"https://yourdomain.com/api/v1/user/verify?token={token}"
-    
+
     @classmethod
     def verify_user_account(cls, token: str):
         payload = JWTManager().decode_token(token)
@@ -60,7 +61,6 @@ class UserService:
         user_repository.mark_user_as_verified(user.id)
 
         return {"message": "Account successfully verified"}
-
 
     @staticmethod
     def user_login(user_credentials: UserLoginModel) -> TokenResponseModel:

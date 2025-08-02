@@ -56,7 +56,7 @@ class JWTManager:
             refresh_token=refresh_token,
             refresh_token_expiration=refresh_expire.strftime("%Y-%m-%d %H:%M:%S"),
         )
-        
+
     def sign_payload(self, payload: dict, expires_delta: timedelta) -> str:
         payload = payload.copy()
         payload["exp"] = datetime.now(timezone.utc) + expires_delta
