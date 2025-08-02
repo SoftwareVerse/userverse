@@ -5,7 +5,7 @@ from datetime import datetime, date
 from app.models.user.account_status import UserAccountStatus
 from app.models.user.user import UserReadModel
 from app.utils.logging import logger
-from sqlalchemy.orm import  Session
+from sqlalchemy.orm import Session
 
 
 class SharedContext:

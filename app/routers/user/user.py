@@ -91,6 +91,46 @@ def create_user_api(
 
 
 @router.get(
+    "/verify",
+    status_code=status.HTTP_201_CREATED,
+    response_model=GenericResponseModel[None],
+)
+def verify_user_account(token: str):
+    """
+    Verify a user account via token sent to their email.
+    """
+    response = UserService.verify_user_account(token=token)
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content=GenericResponseModel(
+            message=response,
+        ),
+    )
+
+
+@router.post(
+    "/resend-verification",
+    status_code=status.HTTP_200_OK,
+    response_model=GenericResponseModel[None],
+)
+def resend_verification_email(
+    common_dependecies: CommonJWTRouteDependencies = Depends(),
+):
+    """
+    Resend email verification link to the current authenticated user.
+    """
+    user = UserService.get_user(user_email=common_dependecies.user.email)
+    UserService.send_verification_email(user, mode="verify")
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=GenericResponseModel(
+            message=UserResponseMessages.VERIFICATION_EMAIL_RESENT.value,
+        ),
+    )
+
+
+@router.get(
     "/get",
     status_code=status.HTTP_200_OK,
     response_model=GenericResponseModel[UserReadModel],

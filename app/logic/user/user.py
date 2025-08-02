@@ -1,10 +1,12 @@
 from fastapi import status
 from datetime import timedelta
+from typing import Optional
 
 # utils
 from app.logic.company.repository.company import CompanyRepository
 from app.logic.mailer import MailService
 from app.models.company.company import CompanyQueryParams
+from app.models.user.account_status import UserAccountStatus
 from app.security.jwt import JWTManager
 from app.utils.app_error import AppError
 
@@ -24,11 +26,11 @@ from app.utils.hash_password import hash_password
 
 
 class UserService:
-    ACCOUNT_REGISTRATION_TEMPLATE = "user_registration.html"
     ACCOUNT_REGISTRATION_SUBJECT = "User Account Registration"
+    ACCOUNT_NOTIFICATION_TEMPLATE = "user_notification.html"
 
     VERIFICATION_TOKEN_EXPIRY_MINUTES = 60 * 24  # 1 day
-    ACCOUNT_VERIFICATION_TEMPLATE = "user_verification_success.html"
+    ACCOUNT_VERIFICATION_SUBJECT = "User Account Verification"
 
     @classmethod
     def generate_verification_link(cls, user: UserReadModel) -> str:
@@ -39,16 +41,38 @@ class UserService:
         return f"https://yourdomain.com/api/v1/user/verify?token={token}"
 
     @classmethod
-    def verify_user_account(cls, token: str):
+    def send_verification_email(cls, user: UserReadModel, mode: str = "create"):
+        verification_link = cls.generate_verification_link(user)
+        MailService.send_template_email(
+            to=user.email,
+            subject=cls.ACCOUNT_REGISTRATION_SUBJECT,
+            template_name=cls.ACCOUNT_NOTIFICATION_TEMPLATE,
+            context={
+                "template_name": cls.ACCOUNT_REGISTRATION_SUBJECT,
+                "user_name": f"{user.first_name or ''} {user.last_name or ''}",
+                "verification_link": verification_link,
+                "mode": mode,
+            },
+        )
+
+    @classmethod
+    def verify_user_account(cls, token: str) -> str:
+        """
+        Verify user account using the provided JWT token.
+        The token should contain the user's email as the subject.
+        """
         payload = JWTManager().decode_token(token)
 
-        if not payload or payload.get("type") != "verification":
+        if (
+            not payload
+            or payload.status != UserAccountStatus.AWAITING_VERIFICATION.name_value
+        ):
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 message="Invalid or expired verification token",
             )
 
-        email = payload.get("sub")
+        email = payload.email
         if not email:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -58,9 +82,12 @@ class UserService:
         # Update the user's account status
         user_repository = UserRepository()
         user = user_repository.get_user_by_email(email)
-        user_repository.mark_user_as_verified(user.id)
+        user_repository.update_user_status(
+            user_id=user.id,
+            account_status=UserAccountStatus.ACTIVE.name_value,
+        )
 
-        return {"message": "Account successfully verified"}
+        return UserResponseMessages.USER_ACCOUNT_VERIFIED.value
 
     @staticmethod
     def user_login(user_credentials: UserLoginModel) -> TokenResponseModel:
@@ -88,19 +115,9 @@ class UserService:
             "password": hash_password(user_credentials.password),
         }
         user = user_repository.create_user(data)
-        # TODO: User verification functionality
-        verification_link = cls.generate_verification_link(user)
-        # send email
-        MailService.send_template_email(
-            to=user.email,
-            subject=cls.ACCOUNT_REGISTRATION_SUBJECT,
-            template_name=cls.ACCOUNT_REGISTRATION_TEMPLATE,
-            context={
-                "template_name": cls.ACCOUNT_REGISTRATION_SUBJECT,
-                "user_name": (user.first_name or "") + " " + (user.last_name or ""),
-                "verification_link": verification_link,
-            },
-        )
+
+        # Send verification email
+        cls.send_verification_email(user, mode="create")
 
         return user
 
@@ -113,7 +130,9 @@ class UserService:
         return company_repository.get_user_companies(user_id=user.id, params=params)
 
     @staticmethod
-    def get_user(user_id: int = None, user_email: str = None) -> UserReadModel:
+    def get_user(
+        user_id: Optional[int] = None, user_email: Optional[str] = None
+    ) -> UserReadModel:
         user_repository = UserRepository()
         if user_id:
             return user_repository.get_user_by_id(user_id)

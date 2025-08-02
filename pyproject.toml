@@ -33,6 +33,7 @@ dependencies = [
 name = "Userverse"
 version = "0.1.0"
 description = "Userverse backend API"
+server_url = "http://localhost:8000"
 
 # [tool.userverse.config.database]
 # HOST = "localhost"
