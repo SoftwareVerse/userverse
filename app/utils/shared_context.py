@@ -19,19 +19,19 @@ class SharedContext:
 
     def get_user_email(self) -> str:
         """
-            -  Returns the email of the user associated with this context.
+        -  Returns the email of the user associated with this context.
         """
         return self.user.email
 
     def get_user(self) -> UserRead:
         """
-            -  Returns the user object associated with this context.
+        -  Returns the user object associated with this context.
         """
         return self.user
 
     def log_context(self) -> Dict[str, Any]:
         """
-            -  Returns a dictionary containing the user email for logging purposes.
+        -  Returns a dictionary containing the user email for logging purposes.
         """
         return {
             "user_email": self.get_user_email(),
@@ -39,13 +39,13 @@ class SharedContext:
 
     def log_info(self, message: str):
         """
-            -  Logs an informational message with the user email.
+        -  Logs an informational message with the user email.
         """
         logger.info("user_email=%s, message=%s", self.get_user_email(), message)
 
     def log_error(self, message: str):
         """
-            -  Logs an error message with the user email.
+        -  Logs an error message with the user email.
         """
         logger.error(
             "user_email=%s, message=%s",

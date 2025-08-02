@@ -10,7 +10,9 @@ class CompanyRead(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     industry: Optional[str] = None
-    phone_number: Optional[str] = Field(None, json_schema_extra={"example": "1236547899"})
+    phone_number: Optional[str] = Field(
+        None, json_schema_extra={"example": "1236547899"}
+    )
     email: EmailStr
     address: Optional[CompanyAddress] = None
 
@@ -19,7 +21,9 @@ class CompanyUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     industry: Optional[str] = None
-    phone_number: Optional[str] = Field(None, json_schema_extra={"example": "1236547899"})
+    phone_number: Optional[str] = Field(
+        None, json_schema_extra={"example": "1236547899"}
+    )
     address: Optional[CompanyAddress] = None
 
     @field_validator("phone_number")
@@ -31,7 +35,9 @@ class CompanyCreate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     industry: Optional[str] = None
-    phone_number: Optional[str] = Field(None, json_schema_extra={"example": "1236547899"})
+    phone_number: Optional[str] = Field(
+        None, json_schema_extra={"example": "1236547899"}
+    )
     email: EmailStr
     address: Optional[CompanyAddress] = None
 

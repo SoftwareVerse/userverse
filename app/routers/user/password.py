@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 from pydantic import EmailStr
+
 # Tags & Models
 from app.models.app_error import AppErrorResponseModel
 from app.models.generic_response import GenericResponseModel
@@ -28,9 +29,7 @@ router = APIRouter(
     status_code=status.HTTP_202_ACCEPTED,
     response_model=GenericResponseModel[None],
 )
-def password_reset_request_api(
-    email: EmailStr
-):
+def password_reset_request_api(email: EmailStr):
     """
     Trigger a password reset request.
 
@@ -42,7 +41,6 @@ def password_reset_request_api(
         status_code=status.HTTP_202_ACCEPTED,
         content=response.model_dump(),
     )
-
 
 
 @router.patch(

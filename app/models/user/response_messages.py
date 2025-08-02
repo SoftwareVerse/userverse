@@ -12,6 +12,8 @@ class UserResponseMessages(str, Enum):
     # user update
     USER_UPDATED = "User updated successfully"
     USER_UPDATE_FAILED = "User update failed"
+    USER_ACCOUNT_STATUS_UPDATED = "User status updated successfully"
+    USER_ACCOUNT_STATUS_UPDATE_FAILED = "User status update failed"
     # user delete
     USER_DELETED = "User deleted successfully"
     USER_DELETION_FAILED = "User deletion failed"

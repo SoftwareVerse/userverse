@@ -7,6 +7,7 @@ from app.database.session_manager import get_session
 from app.models.user.user import UserLoginModel
 from app.models.user.user import UserReadModel
 
+
 class CommonJWTRouteDependencies:
     def __init__(
         self,
@@ -15,8 +16,8 @@ class CommonJWTRouteDependencies:
     ):
         self.session = session
         self.user = user
-        
-        
+
+
 class CommonBasicAuthRouteDependencies:
     def __init__(
         self,

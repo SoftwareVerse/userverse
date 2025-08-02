@@ -14,6 +14,7 @@ from uvicorn.config import Config
 from uvicorn.server import Server
 
 # user routers
+from app.middleware.logging import LogMiddleware
 from app.models.tags import UserverseApiTag
 from app.routers.user import user
 from app.routers.user import password
@@ -53,6 +54,7 @@ def create_app() -> FastAPI:
     )
 
     # setup_otel(app)
+    app.add_middleware(LogMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
@@ -146,7 +148,7 @@ def main(
         logger.warning("Reload mode only supports a single worker.")
         workers = 1
 
-    logger.info(f"🚀 Starting Userverse API at http://{host}:{port} [env={env}]")
+    logger.info("🚀 Starting Userverse API at http://%s:%d [env=%s]", host, port, env)
 
     logging_config = get_uvicorn_log_config(reload=reload, verbose=verbose)
     logging.config.dictConfig(logging_config)

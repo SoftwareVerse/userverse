@@ -2,7 +2,10 @@ from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
 # Tags & Models
-from app.dependencies.common import CommonBasicAuthRouteDependencies, CommonJWTRouteDependencies
+from app.dependencies.common import (
+    CommonBasicAuthRouteDependencies,
+    CommonJWTRouteDependencies,
+)
 from app.models.tags import UserverseApiTag
 from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import (
@@ -18,9 +21,6 @@ from app.models.company.response_messages import (
 from app.models.generic_response import GenericResponseModel
 from app.models.generic_pagination import PaginatedResponse
 from app.models.app_error import AppErrorResponseModel
-
-# Security & Utils
-from app.utils.app_error import AppError
 
 # Logic
 from app.logic.user.user import UserService
@@ -91,7 +91,7 @@ def create_user_api(
 
 
 @router.get(
-    "/user",
+    "/get",
     status_code=status.HTTP_200_OK,
     response_model=GenericResponseModel[UserReadModel],
 )
@@ -113,7 +113,7 @@ def get_user_api(
 
 
 @router.patch(
-    "/user",
+    "/update",
     status_code=status.HTTP_200_OK,
     response_model=GenericResponseModel[UserReadModel],
 )
@@ -140,13 +140,14 @@ def update_user_api(
 
 
 @router.get(
-    "/user/companies",
+    "/companies",
     status_code=status.HTTP_200_OK,
     response_model=GenericResponseModel[PaginatedResponse[CompanyRead]],
 )
 def get_user_companies_api(
     params: CompanyQueryParams = Depends(),
-    common_dependecies: CommonJWTRouteDependencies = Depends(),):
+    common_dependecies: CommonJWTRouteDependencies = Depends(),
+):
     """
     Get all companies the authenticated user is associated with.
 
@@ -154,7 +155,9 @@ def get_user_companies_api(
     - **Returns**: Paginated list of companies
     """
 
-    response = UserService().get_user_companies(params=params, user=common_dependecies.user)
+    response = UserService().get_user_companies(
+        params=params, user=common_dependecies.user
+    )
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content=GenericResponseModel(
