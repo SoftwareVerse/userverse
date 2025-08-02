@@ -14,11 +14,19 @@ from uvicorn.config import Config
 from uvicorn.server import Server
 
 from app.database.session_manager import DatabaseSessionManager
+
 # user routers
 from app.middleware.logging import LogMiddleware
 from app.models.response_messages import ErrorResponseMessagesModel
+
 # from app.models.tags import UserverseApiTag
-from app.routers.user import basic_auth, password, user, verification
+from app.routers.user import (
+    user_basic_auth_routes,
+    user_password_routes,
+    user_profile_routes,
+    user_verification_routes,
+)
+
 # utils
 from app.utils.config.loader import ConfigLoader
 from app.utils.logging import get_uvicorn_log_config, logger
@@ -62,10 +70,10 @@ def create_app() -> FastAPI:
     )
 
     # Include routers
-    app.include_router(basic_auth.router)
-    app.include_router(verification.router)
-    app.include_router(user.router)
-    app.include_router(password.router)
+    app.include_router(user_basic_auth_routes.router)
+    app.include_router(user_verification_routes.router)
+    app.include_router(user_profile_routes.router)
+    app.include_router(user_password_routes.router)
 
     # Root route
     @app.get("/", tags=["Root"])

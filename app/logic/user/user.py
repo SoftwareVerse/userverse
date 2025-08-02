@@ -27,6 +27,9 @@ from app.models.user.response_messages import UserResponseMessages
 
 
 class UserService:
+    """ Service class for user-related operations.
+    Handles user account creation, verification, login, and profile management.
+    """
     ACCOUNT_REGISTRATION_SUBJECT = "User Account Registration"
     ACCOUNT_NOTIFICATION_TEMPLATE = "user_notification.html"
     VERIFICATION_TOKEN_EXPIRY_MINUTES = 60 * 24  # 1 day
@@ -37,6 +40,7 @@ class UserService:
         self.company_repository = CompanyRepository()
 
     def generate_verification_link(self) -> str:
+        """ Generate a verification link for the user. """
         token = JWTManager().sign_payload(
             {"sub": self.context.get_user_email(), "type": "verification"},
             expires_delta=timedelta(minutes=self.VERIFICATION_TOKEN_EXPIRY_MINUTES),
@@ -46,6 +50,7 @@ class UserService:
         return f"{server_url}/user/verify?token={token}"
 
     def send_verification_email(self, mode: str = "create"):
+        """ Send verification email to the user after account creation or update."""
         user = self.context.get_user()
         verification_link = self.generate_verification_link()
         MailService.send_template_email(
@@ -63,28 +68,38 @@ class UserService:
     @staticmethod
     def verify_user_account(token: str) -> str:
         """
-        Static method because it happens before context exists (unverified).
+        Verifies a user account using a JWT email verification token.
+        This does not require an authenticated context.
         """
-        payload = JWTManager().decode_token(token)
+        payload = JWTManager().decode_verification_token(token)
 
-        if (
-            not payload
-            or payload.status != UserAccountStatus.AWAITING_VERIFICATION.name_value
-        ):
-            raise AppError(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                message="Invalid or expired verification token",
-            )
+        email = payload.get("sub")
+        token_type = payload.get("type")
 
-        email = payload.email
         if not email:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                message="Token missing subject (email)",
+                message=UserResponseMessages.EMAIL_VERIFICATION_FAILED.value,
+            )
+
+        if token_type != "verification":
+            raise AppError(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                message=UserResponseMessages.INVALID_VERIFICATION_TOKEN.value,
             )
 
         user_repository = UserRepository()
         user = user_repository.get_user_by_email(email)
+
+        if user.status == UserAccountStatus.ACTIVE.name_value:
+            return UserResponseMessages.INVALID_REQUEST_MESSAGE.value
+
+        if user.status != UserAccountStatus.AWAITING_VERIFICATION.name_value:
+            raise AppError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                message="User account is not awaiting verification",
+            )
+
         user_repository.update_user_status(
             user_id=user.id,
             account_status=UserAccountStatus.ACTIVE.name_value,
@@ -93,6 +108,10 @@ class UserService:
         return UserResponseMessages.USER_ACCOUNT_VERIFIED.value
 
     def user_login(self, user_credentials: UserLoginModel) -> TokenResponseModel:
+        """
+        Authenticate user and return JWT token.
+        Raises AppError if authentication fails.
+        """
         user = self.user_repository.get_user_by_email(
             user_credentials.email, hash_password(user_credentials.password)
         )
@@ -106,6 +125,10 @@ class UserService:
     def create_user(
         self, user_credentials: UserLoginModel, user_data: UserCreateModel
     ) -> UserReadModel:
+        """
+        Create a new user with the provided credentials and data.
+        Raises AppError if user already exists or creation fails.
+        """
         data = {
             "first_name": user_data.first_name,
             "last_name": user_data.last_name,
@@ -119,6 +142,7 @@ class UserService:
         return user
 
     def get_user_companies(self, params: CompanyQueryParams):
+        """ Retrieve companies associated with the user. """
         return self.company_repository.get_user_companies(
             user_id=self.context.user.id, params=params
         )
@@ -128,6 +152,10 @@ class UserService:
         user_id: Optional[int] = None,
         user_email: Optional[str] = None,
     ) -> UserReadModel:
+        """
+        Retrieve user details by ID or email.
+        Raises AppError if user not found.
+        """
         if user_id:
             return self.user_repository.get_user_by_id(user_id)
         elif user_email:
@@ -139,6 +167,10 @@ class UserService:
             )
 
     def update_user(self, user_id: int, user_data: UserUpdateModel) -> UserReadModel:
+        """
+        Update user details with the provided data.
+        Raises AppError if update fails or no data provided.
+        """
         data = {}
         if user_data.first_name:
             data["first_name"] = user_data.first_name

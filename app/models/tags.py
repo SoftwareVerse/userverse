@@ -3,13 +3,20 @@ from enum import Enum
 
 class UserverseApiTag(Enum):
     USER_MANAGEMENT_BASIC_AUTH = (
-        "User Management with Basic Auth",
-        "Endpoints for managing users with basic authentication",
+        "User Basic Auth Routes",
+        "Endpoints for user login and account creation via Basic Auth",
     )
-    USER_MANAGEMENT = ("User Management", "Endpoints for managing users")
+    USER_MANAGEMENT_PROFILE = (
+        "User Profile Management",
+        "Endpoints to retrieve and update user profiles, and fetch associated companies",
+    )
     USER_PASSWORD_MANAGEMENT = (
-        "User Password Management",
-        "Operations related to changing or resetting passwords",
+        "User Password Reset",
+        "Endpoints to reset password using OTP verification and Basic Auth",
+    )
+    USER_VERIFICATION = (
+        "User Verification",
+        "Endpoints to verify email and resend verification links",
     )
     COMPANY_MANAGEMENT = ("Company Management", "Create and manage companies")
     COMPANY_USER_MANAGEMENT = (
@@ -21,16 +28,16 @@ class UserverseApiTag(Enum):
         "Manage roles and permissions for company users",
     )
 
-    def __init__(self, name: str, description: str):
-        self._name = name
+    def __init__(self, tag: str, description: str):
+        self._tag = tag
         self._description = description
 
     @property
-    def name(self):
-        return self._name
+    def name(self) -> str:
+        return self._tag
 
     @property
-    def description(self):
+    def description(self) -> str:
         return self._description
 
     @classmethod

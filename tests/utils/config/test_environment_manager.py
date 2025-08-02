@@ -5,7 +5,6 @@ from app.utils.config.environment import (
 )  # Replace with your actual module name
 
 
-
 class TestEnvironmentManager(unittest.TestCase):
 
     @patch("os.getenv")

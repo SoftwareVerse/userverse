@@ -7,14 +7,15 @@ from sqlalchemy.orm import Session
 
 from app.models.user.account_status import UserAccountStatus
 from app.models.user.user import UserReadModel
+from app.utils.config.loader import ConfigLoader
 from app.utils.logging import logger
 
 
 class SharedContext:
     def __init__(
         self,
-        configs: dict,
         db_session: Session,
+        configs: Dict[str, Any] = ConfigLoader().get_config(),
         user: Optional[UserReadModel] = None,
         enforce_status_check: bool = False,  # <-- optional control
     ):

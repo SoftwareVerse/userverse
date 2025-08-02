@@ -62,7 +62,35 @@ class JWTManager:
         payload["exp"] = datetime.now(timezone.utc) + expires_delta
         return jwt.encode(payload, self.JWT_SECRET, algorithm=self.JWT_ALGORITHM)
 
+
+    def decode_verification_token(self, token: str) -> dict:
+        try:
+            decoded = jwt.decode(
+                token, self.JWT_SECRET, algorithms=[self.JWT_ALGORITHM]
+            )
+            if decoded.get("type") != "verification":
+                raise AppError(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    message=SecurityResponseMessages.INVALID_TOKEN.value + " for verification",
+                )
+            return decoded
+        except jwt.ExpiredSignatureError as exc:
+            raise AppError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                message=SecurityResponseMessages.EXPIRED_TOKEN.value,
+            ) from exc
+        except Exception as exc:
+            raise AppError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                message=SecurityResponseMessages.INVALID_TOKEN.value,
+            ) from exc
+
+
     def decode_token(self, token: str) -> UserReadModel:
+        """
+        Decode a JWT token and return the user data. 
+        Raises AppError if the token is invalid or expired.
+        """
         try:
             decoded = jwt.decode(
                 token, self.JWT_SECRET, algorithms=[self.JWT_ALGORITHM]

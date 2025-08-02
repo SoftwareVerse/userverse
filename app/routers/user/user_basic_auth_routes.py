@@ -16,7 +16,7 @@ from app.utils.shared_context import SharedContext
 
 router = APIRouter(
     prefix="/user",
-    tags=[UserverseApiTag.USER_MANAGEMENT.name],
+    tags=[UserverseApiTag.USER_MANAGEMENT_BASIC_AUTH.name],
     responses={
         400: {"model": AppErrorResponseModel},
         404: {"model": AppErrorResponseModel},
@@ -40,7 +40,7 @@ def user_login_api(
     - **Returns**: JWT token on successful login
     """
     service = UserService(
-        SharedContext(configs={}, user=None, db_session=common.session)
+        SharedContext(db_session=common.session)
     )
     response = service.user_login(user_credentials=common.user)
     return JSONResponse(
@@ -67,7 +67,7 @@ def create_user_api(
     - **Requires**: Basic Auth (email as username, password as password)
     - **Returns**: Created user data on successful creation
     """
-    service = UserService(SharedContext(configs={}, db_session=common.session))
+    service = UserService(SharedContext(db_session=common.session))
     response = service.create_user(
         user_credentials=common.user,
         user_data=user,

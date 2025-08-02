@@ -22,7 +22,7 @@ from app.utils.shared_context import SharedContext
 
 router = APIRouter(
     prefix="/user",
-    tags=[UserverseApiTag.USER_MANAGEMENT.name],
+    tags=[UserverseApiTag.USER_MANAGEMENT_PROFILE.name],
     responses={
         400: {"model": AppErrorResponseModel},
         404: {"model": AppErrorResponseModel},
@@ -45,7 +45,7 @@ def get_user_api(
     - **Returns**: User details on successful retrieval
     """
     service = UserService(
-        SharedContext(configs={}, user=common.user, db_session=common.session)
+        SharedContext(user=common.user, db_session=common.session)
     )
     response = service.get_user(user_email=common.user.email)
     return JSONResponse(
@@ -72,7 +72,7 @@ def update_user_api(
     - **Returns**: Updated user details on successful update
     """
     service = UserService(
-        SharedContext(configs={}, user=common.user, db_session=common.session)
+        SharedContext(user=common.user, db_session=common.session)
     )
     user_db = service.get_user(user_email=common.user.email)
     response = service.update_user(
@@ -105,7 +105,6 @@ def get_user_companies_api(
 
     service = UserService(
         SharedContext(
-            configs={},
             user=common.user,
             db_session=common.session,
             enforce_status_check=True,

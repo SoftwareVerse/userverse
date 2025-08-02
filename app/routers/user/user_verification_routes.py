@@ -14,7 +14,7 @@ from app.dependencies.common import CommonJWTRouteDependencies
 
 router = APIRouter(
     prefix="/user",
-    tags=[UserverseApiTag.USER_MANAGEMENT.name],
+    tags=[UserverseApiTag.USER_VERIFICATION.name],
     responses={
         400: {"model": AppErrorResponseModel},
         404: {"model": AppErrorResponseModel},
@@ -29,10 +29,15 @@ router = APIRouter(
     response_model=GenericResponseModel[None],
 )
 def verify_user_account(token: str):
+    """
+    Verify user account using the provided token.
+    - **Requires**: Token from email verification link
+    - **Returns**: Success message on verification
+    """
     response = UserService.verify_user_account(token=token)
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
-        content=GenericResponseModel(message=response, data=None),
+        content=GenericResponseModel(message=response, data=None).model_dump_json(),
     )
 
 
@@ -44,6 +49,11 @@ def verify_user_account(token: str):
 def resend_verification_email(
     common: CommonJWTRouteDependencies = Depends(),
 ):
+    """
+    Resend verification email to the user.
+    - **Requires**: JWT token for authentication
+    - **Returns**: Success message on email resend
+    """
     service = UserService(
         SharedContext(configs={}, user=common.user, db_session=common.session)
     )

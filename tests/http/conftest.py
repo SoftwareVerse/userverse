@@ -11,6 +11,7 @@ from app.database.session_manager import DatabaseSessionManager
 from app.database.user import User
 from tests.utils.basic_auth import get_basic_auth_header
 
+
 @pytest.fixture(scope="session")
 def client():
     os.environ["ENV"] = "testing"
@@ -25,17 +26,20 @@ def client():
         with TestClient(app) as test_client:
             yield test_client
 
+
 @pytest.fixture(scope="session")
 def test_user_data():
     """Fixture to load test user data."""
     with open("tests/data/http/user.json") as f:
         return json.load(f)
 
+
 @pytest.fixture(scope="session")
 def test_company_data():
     """Fixture to load test company data."""
     with open("tests/data/database/company.json") as f:
         return json.load(f)
+
 
 @pytest.fixture
 def get_user_two_otp(test_user_data):
@@ -45,8 +49,11 @@ def get_user_two_otp(test_user_data):
     session = db.session_object()
     user_row = session.query(User).filter_by(email=user["email"].lower()).first()
     if user_row:
-        return user_row.primary_meta_data.get("password_reset", {}).get("password_reset_token")
+        return user_row.primary_meta_data.get("password_reset", {}).get(
+            "password_reset_token"
+        )
     return None
+
 
 @pytest.fixture
 def login_token(client, test_user_data):
@@ -58,6 +65,7 @@ def login_token(client, test_user_data):
     )
     assert response.status_code in [200, 201, 202]
     return response.json()["data"]["access_token"]
+
 
 @pytest.fixture
 def login_token_user_two(client, test_user_data):

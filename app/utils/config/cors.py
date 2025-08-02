@@ -1,5 +1,3 @@
-
-
 class CorsConfig:
     """
     Database configuration class.

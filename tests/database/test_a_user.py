@@ -3,7 +3,6 @@ from app.database.user import User
 from app.database.base_model import RecordNotFoundError
 
 
-
 def test_create_user(test_session, test_user_data):
     user_data = test_user_data["create_user"]
     user = User.create(test_session, **user_data)
