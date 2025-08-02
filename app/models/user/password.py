@@ -1,7 +1,5 @@
-from typing import Optional
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr
 
-from app.utils.hash_password import hash_password
 
 
 class PasswordResetRequest(BaseModel):

@@ -1,5 +1,4 @@
 from app.models.user.response_messages import PasswordResetResponseMessages
-from tests.http.conftest import client, get_user_two_otp, test_user_data
 from tests.utils.basic_auth import get_basic_auth_header
 
 

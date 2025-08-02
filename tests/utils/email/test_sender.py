@@ -1,4 +1,5 @@
-import socket, smtplib
+import socket
+import smtplib
 import pytest
 from unittest.mock import patch, MagicMock
 from app.utils.email.sender import send_email

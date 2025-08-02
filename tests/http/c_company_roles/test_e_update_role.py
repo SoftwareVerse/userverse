@@ -1,10 +1,7 @@
-import logging
-import pytest
 from app.models.company.response_messages import (
     CompanyResponseMessages,
     CompanyRoleResponseMessages,
 )
-from tests.http.conftest import client, test_company_data, login_token
 
 
 def test_a_update_role_description_success(client, login_token, test_company_data):

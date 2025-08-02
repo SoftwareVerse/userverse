@@ -3,18 +3,9 @@
 # Attempt to create a role with an existing name
 # Attempt to create a role with an invalid user
 
-import logging
-import pytest
 from app.models.company.response_messages import (
     CompanyResponseMessages,
     CompanyRoleResponseMessages,
-)
-from app.database.base_model import RecordNotFoundError
-from tests.http.conftest import (
-    client,
-    test_company_data,
-    login_token,
-    login_token_user_two,
 )
 
 

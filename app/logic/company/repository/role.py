@@ -5,9 +5,7 @@ from app.utils.app_error import AppError
 
 # database
 from app.database.session_manager import DatabaseSessionManager
-from app.database.company import Company
 from app.database.role import Role
-from app.database.association_user_company import AssociationUserCompany
 
 # models
 from app.models.company.roles import (
@@ -17,9 +15,7 @@ from app.models.company.roles import (
     RoleUpdate,
     RoleDelete,
 )
-from app.models.user.user import UserReadModel
 from app.models.company.response_messages import (
-    CompanyResponseMessages,
     CompanyRoleResponseMessages,
 )
 

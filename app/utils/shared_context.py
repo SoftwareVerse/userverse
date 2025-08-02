@@ -1,23 +1,26 @@
-# app/services/base.py
-from typing import Any, Dict
+# app/utils/shared_context.py
+from datetime import date, datetime
 from decimal import Decimal
-from datetime import datetime, date
+from typing import Any, Dict, Optional
+
+from sqlalchemy.orm import Session
+
 from app.models.user.account_status import UserAccountStatus
 from app.models.user.user import UserReadModel
 from app.utils.logging import logger
-from sqlalchemy.orm import Session
 
 
 class SharedContext:
     def __init__(
         self,
         configs: dict,
-        user: UserReadModel,
         db_session: Session,
+        user: Optional[UserReadModel] = None,
         enforce_status_check: bool = False,  # <-- optional control
     ):
         self.configs: dict = configs
-        self.user: UserReadModel = user
+        if user:
+            self.user: UserReadModel = user
         self.db_session = db_session
 
         if enforce_status_check:

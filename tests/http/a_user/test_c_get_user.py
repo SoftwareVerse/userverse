@@ -1,4 +1,3 @@
-from tests.http.conftest import client, test_user_data, login_token
 from app.models.user.response_messages import UserResponseMessages
 
 

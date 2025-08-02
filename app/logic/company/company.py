@@ -1,8 +1,6 @@
 from fastapi import status
 
 # utils
-from app.models.company.user import CompanyUserAdd, CompanyUserRead
-from app.models.generic_pagination import PaginatedResponse
 from app.utils.app_error import AppError
 
 # service and repository
@@ -10,8 +8,6 @@ from app.logic.company.user import CompanyUserService
 from app.logic.company.repository.company import CompanyRepository
 
 # database
-from app.database.session_manager import DatabaseSessionManager
-from app.database.association_user_company import AssociationUserCompany
 
 # models
 from app.models.company.company import (
@@ -22,7 +18,7 @@ from app.models.company.company import (
 from app.models.company.roles import CompanyDefaultRoles
 
 
-from app.models.user.user import UserQueryParams, UserRead
+from app.models.user.user import UserRead
 
 
 from app.models.company.response_messages import CompanyResponseMessages

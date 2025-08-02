@@ -6,10 +6,9 @@ from pydantic import EmailStr
 from app.models.app_error import AppErrorResponseModel
 from app.models.generic_response import GenericResponseModel
 from app.models.tags import UserverseApiTag
-from app.models.user.user import UserLoginModel
 
 # Auth & Logic
-from app.security.basic_auth import get_basic_auth_credentials
+from app.dependencies.common import CommonBasicAuthRouteDependencies
 from app.logic.user.password import UserPasswordService
 
 
@@ -44,25 +43,25 @@ def password_reset_request_api(email: EmailStr):
 
 
 @router.patch(
-    "/password-reset/validate-otp",
+    "/validate-otp",
     status_code=status.HTTP_202_ACCEPTED,
     response_model=GenericResponseModel[None],
 )
 def password_reset_validate_otp_api(
     one_time_pin: str,
-    credentials: UserLoginModel = Depends(get_basic_auth_credentials),
+    common: CommonBasicAuthRouteDependencies = Depends(),
 ):
     """
     Validate OTP and reset password.
 
     - **Requires**: Basic Auth (email as username, new password as password)
-    - **Also requires**: OTP provided in request body
+    - **Also requires**: OTP/one_time_pin provided in request body
     - **Returns**: Success message
     """
 
     response = UserPasswordService().validate_otp_and_change_password(
-        user_email=credentials.email,
-        new_password=credentials.password,
+        user_email=common.user.email,
+        new_password=common.user.password,
         otp=one_time_pin,
     )
     return JSONResponse(

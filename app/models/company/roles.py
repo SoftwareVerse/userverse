@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Optional
 from pydantic import BaseModel
-from pydantic import BaseModel, EmailStr, field_validator, Field
+from pydantic import field_validator, Field
 
 from app.models.generic_pagination import PaginationParams
 

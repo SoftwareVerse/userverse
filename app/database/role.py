@@ -5,7 +5,6 @@ from sqlalchemy.orm.exc import NoResultFound
 from fastapi import status
 
 from app.models.company.response_messages import (
-    CompanyResponseMessages,
     CompanyUserResponseMessages,
 )
 from app.models.user.user import UserReadModel

@@ -1,6 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
 from app.models.company.roles import CompanyDefaultRoles
-from app.models.user.user import UserReadModel
 
 
 class CompanyUserRead(UserRead):

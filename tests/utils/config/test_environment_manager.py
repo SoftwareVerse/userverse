@@ -4,9 +4,6 @@ from app.utils.config.environment import (
     EnvironmentManager,
 )  # Replace with your actual module name
 
-import unittest
-from unittest.mock import patch
-from app.utils.config.environment import EnvironmentManager  # Adjust as needed
 
 
 class TestEnvironmentManager(unittest.TestCase):

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Query, Path
+from fastapi import APIRouter, Depends, status, Path
 from fastapi.responses import JSONResponse
 
 # Models
@@ -13,14 +13,12 @@ from app.models.company.roles import (
 )
 from app.models.app_error import AppErrorResponseModel
 from app.models.company.response_messages import (
-    CompanyResponseMessages,
     CompanyRoleResponseMessages,
 )
 
 # Auth
 from app.models.tags import UserverseApiTag
 from app.security.jwt import get_current_user_from_jwt_token
-from app.models.user.user import UserReadModel
 
 # Business Logic
 from app.logic.company.role import RoleService

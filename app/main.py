@@ -1,29 +1,27 @@
-import os
 import logging
-import traceback
 import logging.config
+import os
+import traceback
+from contextlib import asynccontextmanager
+
 import click
 import uvicorn
-
 from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Counter
-from contextlib import asynccontextmanager
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 from uvicorn.config import Config
 from uvicorn.server import Server
 
+from app.database.session_manager import DatabaseSessionManager
 # user routers
 from app.middleware.logging import LogMiddleware
-from app.models.tags import UserverseApiTag
-from app.routers.user import user
-from app.routers.user import password
-
+from app.models.response_messages import ErrorResponseMessagesModel
+# from app.models.tags import UserverseApiTag
+from app.routers.user import basic_auth, password, user, verification
 # utils
 from app.utils.config.loader import ConfigLoader
-from app.utils.logging import logger, get_uvicorn_log_config
-from app.models.response_messages import ErrorResponseMessagesModel
-from app.database.session_manager import DatabaseSessionManager
+from app.utils.logging import get_uvicorn_log_config, logger
 
 
 @asynccontextmanager
@@ -63,6 +61,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Include routers
+    app.include_router(basic_auth.router)
+    app.include_router(verification.router)
     app.include_router(user.router)
     app.include_router(password.router)
 

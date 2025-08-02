@@ -1,5 +1,5 @@
 # app/models/generic_pagination.py
-from typing import Generic, List, TypeVar, Optional
+from typing import Generic, List, TypeVar
 from pydantic import BaseModel, Field
 from enum import Enum
 

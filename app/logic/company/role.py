@@ -15,9 +15,7 @@ from app.models.company.roles import (
     RoleCreate,
     RoleRead,
     RoleUpdate,
-    CompanyDefaultRoles,
 )
-from app.models.user.user import UserReadModel
 from app.models.company.response_messages import (
     CompanyRoleResponseMessages,
 )

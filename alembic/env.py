@@ -24,12 +24,6 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.database.base_model import BaseModel
-from app.database.user import User  # this ensures the model is registered
-from app.database.company import Company  # this ensures the model is registered
-from app.database.association_user_company import (
-    AssociationUserCompany,
-)  # this ensures the model is registered
-from app.database.role import Role
 
 target_metadata = BaseModel.metadata
 

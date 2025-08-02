@@ -1,7 +1,4 @@
-import pytest
 from app.database.company import Company
-from app.database.base_model import RecordNotFoundError
-from tests.database.conftest import test_company_data, test_session
 
 
 def test_create_company_one(test_session, test_company_data):

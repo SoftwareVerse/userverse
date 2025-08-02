@@ -78,7 +78,8 @@ class ConfigLoader:
         config_data = {
             "name": project_config.get("name") or userverse_config.get("name"),
             "version": project_config.get("version") or userverse_config.get("version"),
-            "server_url": project_config.get("server_url") or userverse_config.get("server_url"),
+            "server_url": project_config.get("server_url")
+            or userverse_config.get("server_url"),
             "description": project_config.get("description")
             or userverse_config.get("description"),
             "database": userverse_config.get("database", {}),

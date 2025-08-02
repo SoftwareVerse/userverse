@@ -1,4 +1,3 @@
-import re
 from typing import Optional, Literal
 from pydantic import BaseModel, EmailStr, field_validator, Field
 from app.models.phone_number import validate_phone_number_format

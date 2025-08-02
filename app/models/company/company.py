@@ -1,4 +1,3 @@
-import re
 from typing import Optional
 from app.models.company.address import CompanyAddress
 from pydantic import BaseModel, EmailStr, field_validator, Field

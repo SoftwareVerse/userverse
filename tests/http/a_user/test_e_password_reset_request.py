@@ -2,7 +2,6 @@ from app.models.user.response_messages import (
     UserResponseMessages,
     PasswordResetResponseMessages,
 )
-from tests.http.conftest import client, test_user_data, login_token
 
 
 def test_password_reset_success(client, test_user_data):

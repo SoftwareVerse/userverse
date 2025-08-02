@@ -1,4 +1,5 @@
-import string, random
+import string
+import random
 
 # models
 from app.logic.mailer import MailService

@@ -14,7 +14,6 @@ from sqlalchemy.orm import joinedload
 
 # models
 from app.models.user.user import UserQueryParams
-from app.models.company.response_messages import CompanyResponseMessages
 
 
 class CompanyUserRepository:

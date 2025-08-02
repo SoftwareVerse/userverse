@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Integer, Boolean
-from sqlalchemy.orm import relationship, backref, Session
+from sqlalchemy.orm import relationship, Session
 from sqlalchemy.exc import NoResultFound
 from .base_model import BaseModel
 

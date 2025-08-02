@@ -46,10 +46,6 @@ class DatabaseSessionManager:
         Import all models that need to be registered with the Base metadata.
         Ensure this is called before create_all().
         """
-        from .company import Company
-        from .role import Role
-        from .association_user_company import AssociationUserCompany
-        from .user import User
 
         # Add more models if needed
 

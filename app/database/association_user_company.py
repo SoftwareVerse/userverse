@@ -2,7 +2,7 @@ from app.models.company.response_messages import CompanyUserResponseMessages
 from app.models.user.user import UserReadModel
 from app.utils.app_error import AppError
 from sqlalchemy import Column, Integer, String, ForeignKey, ForeignKeyConstraint
-from sqlalchemy.orm import relationship, backref, Session
+from sqlalchemy.orm import relationship, Session
 from sqlalchemy.sql import func
 from sqlalchemy.orm.attributes import flag_modified
 from fastapi import status
