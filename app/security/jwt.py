@@ -12,6 +12,11 @@ from app.utils.app_error import AppError
 
 
 class JWTManager:
+    """
+    JWT Manager for handling JWT operations like signing, decoding, and refreshing tokens.
+    This class is responsible for creating and validating JWT tokens used in the application.
+    """
+
     def __init__(self):
         # load configs
         loader = ConfigLoader()
@@ -23,6 +28,7 @@ class JWTManager:
         self.REFRESH_TIMEOUT = int(jwt_config.get("REFRESH_TIMEOUT", 60))
 
     def sign_jwt(self, user: UserReadModel) -> TokenResponseModel:
+        """Sign a JWT token with user data and return the token response model."""
         now = datetime.now(timezone.utc)
         access_expire = now + timedelta(minutes=self.SESSION_TIMEOUT)
         refresh_expire = now + timedelta(minutes=self.REFRESH_TIMEOUT)
@@ -55,15 +61,20 @@ class JWTManager:
             access_token_expiration=access_expire.strftime("%Y-%m-%d %H:%M:%S"),
             refresh_token=refresh_token,
             refresh_token_expiration=refresh_expire.strftime("%Y-%m-%d %H:%M:%S"),
+            token_type="bearer",
         )
 
     def sign_payload(self, payload: dict, expires_delta: timedelta) -> str:
+        """Sign a payload with JWT and return the token."""
         payload = payload.copy()
         payload["exp"] = datetime.now(timezone.utc) + expires_delta
         return jwt.encode(payload, self.JWT_SECRET, algorithm=self.JWT_ALGORITHM)
 
-
     def decode_verification_token(self, token: str) -> dict:
+        """
+        Decode a JWT verification token.
+        Raises AppError if the token is invalid or expired.
+        """
         try:
             decoded = jwt.decode(
                 token, self.JWT_SECRET, algorithms=[self.JWT_ALGORITHM]
@@ -71,7 +82,8 @@ class JWTManager:
             if decoded.get("type") != "verification":
                 raise AppError(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    message=SecurityResponseMessages.INVALID_TOKEN.value + " for verification",
+                    message=SecurityResponseMessages.INVALID_TOKEN.value
+                    + " for verification",
                 )
             return decoded
         except jwt.ExpiredSignatureError as exc:
@@ -85,10 +97,9 @@ class JWTManager:
                 message=SecurityResponseMessages.INVALID_TOKEN.value,
             ) from exc
 
-
     def decode_token(self, token: str) -> UserReadModel:
         """
-        Decode a JWT token and return the user data. 
+        Decode a JWT token and return the user data.
         Raises AppError if the token is invalid or expired.
         """
         try:
@@ -109,16 +120,16 @@ class JWTManager:
                 )
             return UserReadModel(**user)
 
-        except jwt.ExpiredSignatureError:
+        except jwt.ExpiredSignatureError as e:
             raise AppError(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 message=SecurityResponseMessages.EXPIRED_TOKEN.value,
-            )
-        except jwt.InvalidTokenError:
+            ) from e
+        except jwt.InvalidTokenError as e:
             raise AppError(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 message=SecurityResponseMessages.INVALID_TOKEN.value,
-            )
+            ) from e
         except AppError:
             raise  # ⬅️ This ensures your own exceptions aren't re-wrapped
         except Exception as e:
@@ -126,7 +137,7 @@ class JWTManager:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message=SecurityResponseMessages.ERROR_DECODING.value,
                 error=str(e),
-            )
+            ) from e
 
     def refresh_token(self, refresh_token: str) -> TokenResponseModel:
         try:
@@ -152,12 +163,16 @@ class JWTManager:
             raise AppError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message=str(e),
-            )
+            ) from e
 
 
 async def get_current_user_from_jwt_token(
     authorization: str = Security(APIKeyHeader(name="Authorization")),
 ) -> UserReadModel:
+    """
+    Get the current user from the JWT token in the Authorization header.
+    Raises AppError if the token is missing or invalid.
+    """
 
     if authorization is None:
         raise AppError(
@@ -179,7 +194,7 @@ async def get_current_user_from_jwt_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             message=SecurityResponseMessages.INVALID_REQUEST.value,
             error=str(e),
-        )
+        ) from e
 
     current_user = JWTManager().decode_token(TOKEN)
 

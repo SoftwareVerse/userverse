@@ -8,7 +8,8 @@ from app.models.generic_response import GenericResponseModel
 from app.models.app_error import AppErrorResponseModel
 
 # Logic
-from app.logic.user.user import UserService
+from app.logic.user.verification import UserVerificationService
+from app.logic.user.basic_auth import UserBasicAuthService
 from app.utils.shared_context import SharedContext
 from app.dependencies.common import CommonJWTRouteDependencies
 
@@ -34,10 +35,10 @@ def verify_user_account(token: str):
     - **Requires**: Token from email verification link
     - **Returns**: Success message on verification
     """
-    response = UserService.verify_user_account(token=token)
+    response = UserVerificationService.verify_user_account(token=token)
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
-        content=GenericResponseModel(message=response, data=None).model_dump_json(),
+        content=GenericResponseModel(message=response, data=None).model_dump(),
     )
 
 
@@ -54,7 +55,7 @@ def resend_verification_email(
     - **Requires**: JWT token for authentication
     - **Returns**: Success message on email resend
     """
-    service = UserService(
+    service = UserBasicAuthService(
         SharedContext(configs={}, user=common.user, db_session=common.session)
     )
     service.send_verification_email(mode="verify")
@@ -63,5 +64,5 @@ def resend_verification_email(
         content=GenericResponseModel(
             message=UserResponseMessages.VERIFICATION_EMAIL_RESENT.value,
             data=None,
-        ),
+        ).model_dump(),
     )

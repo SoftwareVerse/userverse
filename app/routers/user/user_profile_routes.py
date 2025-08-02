@@ -1,15 +1,14 @@
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
-# Tags & Models
+# Dependencies
 from app.dependencies.common import CommonJWTRouteDependencies
+from app.utils.shared_context import SharedContext
 
+# Tags & Models
 from app.models.tags import UserverseApiTag
 from app.models.user.response_messages import UserResponseMessages
-from app.models.user.user import (
-    UserReadModel,
-    UserUpdateModel,
-)
+from app.models.user.user import UserReadModel, UserUpdateModel
 from app.models.company.company import CompanyQueryParams, CompanyRead
 from app.models.company.response_messages import CompanyUserResponseMessages
 from app.models.generic_response import GenericResponseModel
@@ -17,8 +16,7 @@ from app.models.generic_pagination import PaginatedResponse
 from app.models.app_error import AppErrorResponseModel
 
 # Logic
-from app.logic.user.user import UserService
-from app.utils.shared_context import SharedContext
+from app.logic.user.profile import UserProfileService
 
 router = APIRouter(
     prefix="/user",
@@ -44,7 +42,7 @@ def get_user_api(
     - **Requires**: JWT token for authentication
     - **Returns**: User details on successful retrieval
     """
-    service = UserService(
+    service = UserProfileService(
         SharedContext(user=common.user, db_session=common.session)
     )
     response = service.get_user(user_email=common.user.email)
@@ -71,7 +69,7 @@ def update_user_api(
     - **Requires**: JWT token for authentication
     - **Returns**: Updated user details on successful update
     """
-    service = UserService(
+    service = UserProfileService(
         SharedContext(user=common.user, db_session=common.session)
     )
     user_db = service.get_user(user_email=common.user.email)
@@ -102,8 +100,7 @@ def get_user_companies_api(
     - **Requires**: JWT token for authentication
     - **Returns**: List of companies associated with the user
     """
-
-    service = UserService(
+    service = UserProfileService(
         SharedContext(
             user=common.user,
             db_session=common.session,

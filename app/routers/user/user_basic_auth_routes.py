@@ -1,18 +1,19 @@
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
-# Tags & Models
+# Dependencies
 from app.dependencies.common import CommonBasicAuthRouteDependencies
+from app.utils.shared_context import SharedContext
+
+# Tags & Models
 from app.models.tags import UserverseApiTag
 from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import TokenResponseModel, UserCreateModel, UserReadModel
-
 from app.models.generic_response import GenericResponseModel
 from app.models.app_error import AppErrorResponseModel
 
 # Logic
-from app.logic.user.user import UserService
-from app.utils.shared_context import SharedContext
+from app.logic.user.basic_auth import UserBasicAuthService
 
 router = APIRouter(
     prefix="/user",
@@ -39,9 +40,7 @@ def user_login_api(
     - **Requires**: Basic Auth (email as username, password as password)
     - **Returns**: JWT token on successful login
     """
-    service = UserService(
-        SharedContext(db_session=common.session)
-    )
+    service = UserBasicAuthService(SharedContext(user=None, db_session=common.session))
     response = service.user_login(user_credentials=common.user)
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED,
@@ -67,7 +66,7 @@ def create_user_api(
     - **Requires**: Basic Auth (email as username, password as password)
     - **Returns**: Created user data on successful creation
     """
-    service = UserService(SharedContext(db_session=common.session))
+    service = UserBasicAuthService(SharedContext(user=None, db_session=common.session))
     response = service.create_user(
         user_credentials=common.user,
         user_data=user,

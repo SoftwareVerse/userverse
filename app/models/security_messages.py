@@ -15,3 +15,4 @@ class SecurityResponseMessages(str, Enum):
     MISSING_USER_DATA = "Missing user data in token"
     EXPIRED_TOKEN = "Token has expired"
     ERROR_DECODING = "Error decoding token"
+    INVALID_REQUEST = "Invalid request"
