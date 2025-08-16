@@ -57,7 +57,7 @@ def get_user_api(
 
 @router.patch(
     "/update",
-    status_code=status.HTTP_200_OK,
+    status_code=status.HTTP_201_CREATED,
     response_model=GenericResponseModel[UserReadModel],
 )
 def update_user_api(
@@ -78,7 +78,7 @@ def update_user_api(
         user_data=user_updates,
     )
     return JSONResponse(
-        status_code=status.HTTP_200_OK,
+        status_code=status.HTTP_201_CREATED,
         content={
             "message": UserResponseMessages.USER_UPDATED.value,
             "data": response.model_dump(),

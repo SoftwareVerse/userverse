@@ -1,6 +1,7 @@
 from app.models.security_messages import SecurityResponseMessages
 from app.models.user.response_messages import UserResponseMessages
 
+BASE_URL = "/user/update"
 
 def test_a_update_user_success(client, login_token_user_two, test_user_data):
     """Test updating user information successfully."""
@@ -16,7 +17,7 @@ def test_a_update_user_success(client, login_token_user_two, test_user_data):
         "password": update_data["password"],
     }
     response = client.patch(
-        "/user",
+        BASE_URL,
         json=payload,
         headers=headers,
     )
@@ -49,7 +50,7 @@ def test_b_update_user_fail_with_invalid_token(client, test_user_data):
         "password": update_data["password"],
     }
     response = client.patch(
-        "/user",
+        BASE_URL,
         json=payload,
         headers=headers,
     )
