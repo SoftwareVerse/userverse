@@ -11,11 +11,12 @@ from app.database.session_manager import DatabaseSessionManager
 from app.database.user import User
 from tests.utils.basic_auth import get_basic_auth_header
 
+TEST_DATA_BASE_PATH = "tests/data/http/"
 
 @pytest.fixture(scope="session")
 def client():
     os.environ["ENV"] = "testing"
-    os.environ["DATABASE_URL"] = "sqlite:///:memory:"  # Use a test database URL
+    # os.environ["DATABASE_URL"] = "sqlite:///:memory:"  # Use a test database URL
 
     # Load default test config from the loader (optional override)
     default_config = ConfigLoader(environment="testing").get_config()
@@ -30,14 +31,14 @@ def client():
 @pytest.fixture(scope="session")
 def test_user_data():
     """Fixture to load test user data."""
-    with open("tests/data/http/user.json") as f:
+    with open(f"{TEST_DATA_BASE_PATH}user.json") as f:
         return json.load(f)
 
 
 @pytest.fixture(scope="session")
 def test_company_data():
     """Fixture to load test company data."""
-    with open("tests/data/database/company.json") as f:
+    with open(f"{TEST_DATA_BASE_PATH}company.json") as f:
         return json.load(f)
 
 
