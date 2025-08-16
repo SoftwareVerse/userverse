@@ -43,7 +43,7 @@ class UserBasicAuthService:
 
     def user_login(self, user_credentials: UserLoginModel):
         user = self.user_repository.get_user_by_email(
-            user_credentials.email, hash_password(user_credentials.password)
+            user_credentials.email, user_credentials.password
         )
         if not user:
             raise AppError(

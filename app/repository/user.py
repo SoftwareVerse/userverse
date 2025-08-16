@@ -36,20 +36,24 @@ class UserRepository:
                 is_superuser=user.get("is_superuser"),
             )
 
-    def get_user_by_email(self, user_email, password: str = None) -> UserReadModel:
+    def get_user_by_email(self, user_email: str, password: str | None = None) -> UserReadModel:
         with self.db_manager.session_object() as session:
             user = session.query(User).filter(User.email == user_email).first()
-            if not user:
-                raise AppError(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    message=UserResponseMessages.USER_NOT_FOUND.value,
-                )
 
-            if password and verify_password(password, user.password):  # noqa: F821
+            # Avoid user enumeration: return the same error for unknown email or bad password
+            if not user:
                 raise AppError(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     message=UserResponseMessages.INVALID_CREDENTIALS.value,
                 )
+
+            if password is not None:
+                # True means match; False means bad password
+                if not verify_password(password, user.password):
+                    raise AppError(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        message=UserResponseMessages.INVALID_CREDENTIALS.value,
+                    )
 
             return UserReadModel(
                 id=user.id,
