@@ -31,10 +31,7 @@ class UserResponseMessages(str, Enum):
     INVALID_VERIFICATION_TOKEN = "Invalid token type for verification"
     ACCOUNT_LOCKED = "Account is locked"
     INVALID_REQUEST_MESSAGE = "Invalid request"
-
     USER_ACCOUNT_ALREADY_ACTIVE = "User account is already active"
-    EMAIL_VERIFICATION_FAILED = "Email verification failed. Token missing or invalid"
-    INVALID_VERIFICATION_TOKEN = "Invalid or expired verification token"
 
 
 class PasswordResetResponseMessages(str, Enum):
