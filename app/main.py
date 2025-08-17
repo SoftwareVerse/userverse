@@ -26,6 +26,11 @@ from app.routers.user import (
     user_profile_routes,
     user_verification_routes,
 )
+from app.routers.company import (
+    company, 
+    users,
+    roles,
+)
 
 # utils
 from app.utils.config.loader import ConfigLoader
@@ -69,11 +74,15 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Include routers
+    # Include user routers
     app.include_router(user_basic_auth_routes.router)
     app.include_router(user_verification_routes.router)
     app.include_router(user_profile_routes.router)
     app.include_router(user_password_routes.router)
+    # Include company routers
+    app.include_router(company.router)
+    app.include_router(users.router)
+    app.include_router(roles.router)
 
     # Root route
     @app.get("/", tags=["Root"])

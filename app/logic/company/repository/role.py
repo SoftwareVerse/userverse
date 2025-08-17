@@ -8,6 +8,7 @@ from app.database.session_manager import DatabaseSessionManager
 from app.database.role import Role
 
 # models
+from app.models.user.user import UserReadModel
 from app.models.company.roles import (
     RoleCreate,
     RoleQueryParams,
@@ -60,7 +61,7 @@ class RoleRepository:
                     error=str(e),
                 )
 
-    def delete_role(self, payload: RoleDelete, deleted_by: UserRead) -> dict:
+    def delete_role(self, payload: RoleDelete, deleted_by: UserReadModel) -> dict:
         """
         Delete role from a company
         """
@@ -105,7 +106,7 @@ class RoleRepository:
     def create_role(
         self,
         payload: RoleCreate,
-        created_by: UserRead,
+        created_by: UserReadModel,
     ) -> RoleRead:
         """
         Create a new role for a company.
@@ -131,7 +132,7 @@ class RoleRepository:
             return RoleRead(**registered_role)
 
     def _create_role_record(
-        self, session, payload: RoleCreate, created_by: UserRead
+        self, session, payload: RoleCreate, created_by: UserReadModel
     ) -> dict:
         """
         Create a new role record in the database.

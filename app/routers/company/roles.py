@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, status, Path
 from fastapi.responses import JSONResponse
 
 # Models
+from app.models.user.user import UserReadModel
 from app.models.generic_pagination import PaginatedResponse
 from app.models.generic_response import GenericResponseModel
 from app.models.company.roles import (
@@ -43,7 +44,7 @@ tag = UserverseApiTag.COMPANY_ROLE_MANAGEMENT.name
 def create_role_api(
     payload: RoleCreate,
     company_id: int = Path(..., description="The unique identifier of the company"),
-    user: UserRead = Depends(get_current_user_from_jwt_token),
+    user: UserReadModel = Depends(get_current_user_from_jwt_token),
 ):
     """
     Create a new role for the specified company.
@@ -82,7 +83,7 @@ def update_role_api(
     payload: RoleUpdate,
     company_id: int = Path(..., description="The company ID associated with the role"),
     name: str = Path(..., description="The name of the role to update"),
-    user: UserRead = Depends(get_current_user_from_jwt_token),
+    user: UserReadModel = Depends(get_current_user_from_jwt_token),
 ):
     """
     Update a role's description by its name.
@@ -120,7 +121,7 @@ def update_role_api(
 def delete_role_api(
     payload: RoleDelete,
     company_id: int = Path(..., description="Company ID to delete role from"),
-    user: UserRead = Depends(get_current_user_from_jwt_token),
+    user: UserReadModel = Depends(get_current_user_from_jwt_token),
 ):
     """
     Delete a role from a company and reassign affected users to a replacement role.
@@ -156,7 +157,7 @@ def delete_role_api(
 def get_company_roles_api(
     company_id: int = Path(..., description="ID of the company whose roles to fetch"),
     query_params: RoleQueryParams = Depends(),
-    user: UserRead = Depends(get_current_user_from_jwt_token),
+    user: UserReadModel = Depends(get_current_user_from_jwt_token),
 ):
     """
     Get a paginated list of all roles associated with a specific company.

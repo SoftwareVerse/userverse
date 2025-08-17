@@ -15,7 +15,7 @@ from app.models.company.response_messages import (
 # Auth
 from app.models.tags import UserverseApiTag
 from app.security.jwt import get_current_user_from_jwt_token
-from app.models.user.user import UserQueryParams, UserRead
+from app.models.user.user import UserQueryParams, UserReadModel
 
 # Logic
 from app.logic.company.company import CompanyService
@@ -40,7 +40,7 @@ tag = UserverseApiTag.COMPANY_MANAGEMENT.name
 )
 def create_company_api(
     payload: CompanyCreate,
-    user: UserRead = Depends(get_current_user_from_jwt_token),
+    user: UserReadModel = Depends(get_current_user_from_jwt_token),
 ):
     """
     Create a new company and initialize default roles.
@@ -77,7 +77,7 @@ def create_company_api(
 def get_company_api(
     email: str = Query(None, description="(Optional) Company email address"),
     company_id: int = Query(None, description="(Optional) Company ID"),
-    user: UserRead = Depends(get_current_user_from_jwt_token),
+    user: UserReadModel = Depends(get_current_user_from_jwt_token),
 ):
     """
     Retrieve a company by email or company ID.
@@ -121,7 +121,7 @@ def get_company_api(
 def update_company_api(
     company_updates: CompanyUpdate,
     company_id: int = Path(..., description="ID of the company to update"),
-    user: UserRead = Depends(get_current_user_from_jwt_token),
+    user: UserReadModel = Depends(get_current_user_from_jwt_token),
 ):
     """
     Update company details by its ID.
@@ -160,7 +160,7 @@ def update_company_api(
 def get_company_users_api(
     company_id: int = Path(..., description="Company ID"),
     params: UserQueryParams = Depends(),
-    user: UserRead = Depends(get_current_user_from_jwt_token),
+    user: UserReadModel = Depends(get_current_user_from_jwt_token),
 ):
     """
     Get paginated list of users belonging to a company.

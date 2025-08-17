@@ -10,6 +10,7 @@ from app.logic.company.repository.role import RoleRepository
 
 
 # models
+from app.models.user.user import UserReadModel
 from app.models.company.roles import CompanyDefaultRoles, RoleDelete, RoleQueryParams
 from app.models.company.roles import (
     RoleCreate,
@@ -25,7 +26,7 @@ class RoleService:
 
     @staticmethod
     def update_role(
-        company_id: int, updated_by: UserRead, name: str, payload: RoleUpdate
+        company_id: int, updated_by: UserReadModel, name: str, payload: RoleUpdate
     ) -> RoleRead:
         """
         Update the description of a role for a company.
@@ -49,7 +50,7 @@ class RoleService:
 
     @staticmethod
     def create_role(
-        payload: RoleCreate, created_by: UserRead, company_id: int
+        payload: RoleCreate, created_by: UserReadModel, company_id: int
     ) -> RoleRead:
         """
         Create a new company role and store its creator in primary_meta_data.
@@ -69,7 +70,7 @@ class RoleService:
         return role
 
     @staticmethod
-    def delete_role(payload: RoleDelete, deleted_by: UserRead, company_id: int) -> dict:
+    def delete_role(payload: RoleDelete, deleted_by: UserReadModel, company_id: int) -> dict:
         CompanyUserService.check_if_user_is_in_company(
             user_id=deleted_by.id,
             company_id=company_id,
@@ -80,7 +81,7 @@ class RoleService:
 
     @staticmethod
     def get_company_roles(
-        payload: RoleQueryParams, company_id: int, user: UserRead
+        payload: RoleQueryParams, company_id: int, user: UserReadModel
     ) -> PaginatedResponse[RoleRead]:
         """
         Get company roles with pagination and optional filtering.
