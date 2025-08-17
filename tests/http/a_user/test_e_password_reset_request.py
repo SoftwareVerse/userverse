@@ -9,8 +9,7 @@ def test_password_reset_success(client, test_user_data):
     user = test_user_data["user_two"]
 
     response = client.patch(
-        "password-reset/request",
-        json={"email": user["email"]},
+        "password-reset/request?email=" + user["email"],
     )
 
     assert response.status_code in [200, 201, 202]
@@ -28,8 +27,7 @@ def test_password_reset_user_not_found(client):
     unknown_email = "unknown@example.com"
 
     response = client.patch(
-        "password-reset/request",
-        json={"email": unknown_email},
+        "password-reset/request?email=" + unknown_email,
     )
 
     assert response.status_code in [400, 404]

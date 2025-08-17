@@ -34,8 +34,7 @@ class UserPasswordService:
         # check if user exists
         user_repository = UserRepository()
         user = user_repository.get_user_by_email(user_email)
-        if not user:
-            raise ValueError(UserResponseMessages.USER_NOT_FOUND.value)
+
         # reset token
         token = cls.generate_random_string(length=6)
         # populate the token in the database for the user

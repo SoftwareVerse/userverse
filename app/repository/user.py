@@ -27,13 +27,13 @@ class UserRepository:
                     message=UserResponseMessages.USER_NOT_FOUND.value,
                 )
             return UserReadModel(
-                id=user.get("id"),
+                id=user.get("id", -1),
                 first_name=user.get("first_name"),
                 last_name=user.get("last_name"),
-                email=user.get("email"),
+                email=user.get("email", ""),
                 phone_number=user.get("phone_number"),
                 status=user.get("primary_meta_data", {}).get("status"),
-                is_superuser=user.get("is_superuser"),
+                is_superuser=user.get("is_superuser", False),
             )
 
     def get_user_by_email(self, user_email: str, password: str | None = None) -> UserReadModel:
@@ -43,8 +43,8 @@ class UserRepository:
             # Avoid user enumeration: return the same error for unknown email or bad password
             if not user:
                 raise AppError(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    message=UserResponseMessages.INVALID_CREDENTIALS.value,
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    message=UserResponseMessages.USER_NOT_FOUND.value,
                 )
 
             if password is not None:
@@ -75,21 +75,22 @@ class UserRepository:
                 )
 
             self.update_user_status(
-                user_id=user.get("id"),
+                user_id=user.get("id", -1),
                 account_status=UserAccountStatus.AWAITING_VERIFICATION.name_value,
             )
 
             return UserReadModel(
-                id=user.get("id"),
+                id=user.get("id", -1),
                 first_name=user.get("first_name"),
                 last_name=user.get("last_name"),
-                email=user.get("email"),
+                email=user.get("email", ""),
                 phone_number=user.get("phone_number"),
                 status=UserAccountStatus.AWAITING_VERIFICATION.name_value,
-                is_superuser=user.get("is_superuser"),
+                is_superuser=user.get("is_superuser", False),
             )
 
     def update_user(self, user_id: int, data: dict):
+        """ Update user details by user ID. """
         with self.db_manager.session_object() as session:
             user = User.update(session, record_id=user_id, **data)
             if not user:
@@ -98,16 +99,17 @@ class UserRepository:
                     message=UserResponseMessages.USER_UPDATE_FAILED.value,
                 )
             return UserReadModel(
-                id=user.get("id"),
+                id=user.get("id", -1),
                 first_name=user.get("first_name"),
                 last_name=user.get("last_name"),
-                email=user.get("email"),
+                email=user.get("email", ""),
                 phone_number=user.get("phone_number"),
-                is_superuser=user.get("is_superuser"),
+                is_superuser=user.get("is_superuser", False),
                 status=user.get("primary_meta_data", {}).get("status"),
             )
 
     def update_user_status(self, user_id: int, account_status: str):
+        """ Update user account status by user ID. """
         with self.db_manager.session_object() as session:
             user = User.update_json_field(
                 session=session,
@@ -122,12 +124,12 @@ class UserRepository:
                     message=UserResponseMessages.USER_ACCOUNT_STATUS_UPDATE_FAILED.value,
                 )
             return UserReadModel(
-                id=user.get("id"),
+                id=user.get("id", -1),
                 first_name=user.get("first_name"),
                 last_name=user.get("last_name"),
-                email=user.get("email"),
+                email=user.get("email", ""),
                 phone_number=user.get("phone_number"),
-                is_superuser=user.get("is_superuser"),
+                is_superuser=user.get("is_superuser", False),
                 status=account_status,
             )
 
