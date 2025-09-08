@@ -3,6 +3,7 @@ from app.models.user.response_messages import UserResponseMessages
 
 BASE_URL = "/user/update"
 
+
 def test_a_update_user_success(client, login_token_user_two, test_user_data):
     """Test updating user information successfully."""
     user_two = test_user_data["user_two"]

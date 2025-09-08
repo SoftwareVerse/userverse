@@ -36,7 +36,9 @@ class UserRepository:
                 is_superuser=user.get("is_superuser", False),
             )
 
-    def get_user_by_email(self, user_email: str, password: str | None = None) -> UserReadModel:
+    def get_user_by_email(
+        self, user_email: str, password: str | None = None
+    ) -> UserReadModel:
         with self.db_manager.session_object() as session:
             user = session.query(User).filter(User.email == user_email).first()
 
@@ -90,7 +92,7 @@ class UserRepository:
             )
 
     def update_user(self, user_id: int, data: dict):
-        """ Update user details by user ID. """
+        """Update user details by user ID."""
         with self.db_manager.session_object() as session:
             user = User.update(session, record_id=user_id, **data)
             if not user:
@@ -109,7 +111,7 @@ class UserRepository:
             )
 
     def update_user_status(self, user_id: int, account_status: str):
-        """ Update user account status by user ID. """
+        """Update user account status by user ID."""
         with self.db_manager.session_object() as session:
             user = User.update_json_field(
                 session=session,

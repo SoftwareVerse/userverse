@@ -27,7 +27,7 @@ from app.routers.user import (
     user_verification_routes,
 )
 from app.routers.company import (
-    company, 
+    company,
     users,
     roles,
 )

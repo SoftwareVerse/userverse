@@ -27,7 +27,9 @@ from app.models.company.response_messages import CompanyResponseMessages
 class CompanyService:
 
     @staticmethod
-    def create_company(payload: CompanyCreate, created_by: UserReadModel) -> CompanyRead:
+    def create_company(
+        payload: CompanyCreate, created_by: UserReadModel
+    ) -> CompanyRead:
         """
         Create a new company and store its address in primary_meta_data.
         Also sets up default roles (Administrator, Viewer).

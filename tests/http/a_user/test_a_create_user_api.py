@@ -4,6 +4,7 @@ from tests.utils.basic_auth import get_basic_auth_header
 
 BASE_URL = "/user/create"
 
+
 def test_a_create_user_one_success(client, test_user_data):
     """Test user creation with valid payload (user one)"""
     use_one = test_user_data["user_one"]

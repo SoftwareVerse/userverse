@@ -2,6 +2,7 @@ from app.models.user.response_messages import UserResponseMessages
 
 BASE_URL = "/user/get"
 
+
 def test_get_user_success(client, login_token, test_user_data):
     """Test fetching user details with valid token"""
     user = test_user_data["user_one"]

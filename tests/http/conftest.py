@@ -13,6 +13,7 @@ from tests.utils.basic_auth import get_basic_auth_header
 
 TEST_DATA_BASE_PATH = "tests/data/http/"
 
+
 @pytest.fixture(scope="session")
 def client():
     os.environ["ENV"] = "testing"

@@ -70,7 +70,9 @@ class RoleService:
         return role
 
     @staticmethod
-    def delete_role(payload: RoleDelete, deleted_by: UserReadModel, company_id: int) -> dict:
+    def delete_role(
+        payload: RoleDelete, deleted_by: UserReadModel, company_id: int
+    ) -> dict:
         CompanyUserService.check_if_user_is_in_company(
             user_id=deleted_by.id,
             company_id=company_id,

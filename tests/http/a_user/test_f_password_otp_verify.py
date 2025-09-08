@@ -15,7 +15,6 @@ def test_a_password_reset_validate_otp_fail(client, test_user_data, get_user_two
     response = client.patch(
         f"password-reset/validate-otp?one_time_pin={get_user_two_otp}FGWSE",
         headers=headers,
-
     )
 
     assert response.status_code in [400, 401, 402]
