@@ -2,8 +2,6 @@ import pytest
 from app.database.user import User
 from app.database.base_model import RecordNotFoundError
 
-from tests.database.conftest import test_user_data, test_session
-
 
 def test_create_user(test_session, test_user_data):
     user_data = test_user_data["create_user"]

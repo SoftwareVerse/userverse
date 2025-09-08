@@ -6,7 +6,7 @@ from app.models.generic_pagination import PaginatedResponse, PaginationMeta
 from app.utils.app_error import AppError
 
 # database
-from app.database import DatabaseSessionManager
+from app.database.session_manager import DatabaseSessionManager
 from app.database.user import User
 from app.database.role import Role
 from app.database.association_user_company import AssociationUserCompany
@@ -14,7 +14,6 @@ from sqlalchemy.orm import joinedload
 
 # models
 from app.models.user.user import UserQueryParams
-from app.models.company.response_messages import CompanyResponseMessages
 
 
 class CompanyUserRepository:

@@ -1,12 +1,13 @@
-import string, random
+import string
+import random
 
 # models
 from app.logic.mailer import MailService
 from app.models.generic_response import GenericResponseModel
 
 # repository
-from app.logic.user.repository.user import UserRepository
-from app.logic.user.repository.password import UserPasswordRepository
+from app.repository.user import UserRepository
+from app.repository.user_password import UserPasswordRepository
 
 # UTILS
 from app.models.user.response_messages import (
@@ -33,8 +34,7 @@ class UserPasswordService:
         # check if user exists
         user_repository = UserRepository()
         user = user_repository.get_user_by_email(user_email)
-        if not user:
-            raise ValueError(UserResponseMessages.USER_NOT_FOUND.value)
+
         # reset token
         token = cls.generate_random_string(length=6)
         # populate the token in the database for the user
@@ -49,7 +49,7 @@ class UserPasswordService:
             subject=cls.OTP_EMAIL_SUBJECT,
             template_name=cls.SEND_OTP_EMAIL_TEMPLATE,
             context={
-                "user_name": user.first_name + " " + user.last_name,
+                "user_name": (user.first_name or "") + " " + (user.last_name or ""),
                 "otp": token,
             },
         )

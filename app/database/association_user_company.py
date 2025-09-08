@@ -1,8 +1,8 @@
 from app.models.company.response_messages import CompanyUserResponseMessages
-from app.models.user.user import UserRead
+from app.models.user.user import UserReadModel
 from app.utils.app_error import AppError
 from sqlalchemy import Column, Integer, String, ForeignKey, ForeignKeyConstraint
-from sqlalchemy.orm import relationship, backref, Session
+from sqlalchemy.orm import relationship, Session
 from sqlalchemy.sql import func
 from sqlalchemy.orm.attributes import flag_modified
 from fastapi import status
@@ -51,7 +51,7 @@ class AssociationUserCompany(BaseModel):
         company_id: int,
         user_id: int,
         role_name: str,
-        added_by: UserRead,
+        added_by: UserReadModel,
     ) -> "AssociationUserCompany":
         # Prevent duplicate active links
         existing = (
@@ -80,7 +80,7 @@ class AssociationUserCompany(BaseModel):
         session: Session,
         company_id: int,
         user_id: int,
-        removed_by: UserRead,
+        added_by: UserReadModel,
     ) -> "AssociationUserCompany":
         assoc = (
             session.query(cls)

@@ -1,8 +1,7 @@
 # Unit tests
 from fastapi import status
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.security import HTTPBasicCredentials
 import pytest
-from app.models.security_messages import SecurityResponseMessages
 from app.models.user.user import UserLogin
 
 from app.security.basic_auth import get_basic_auth_credentials

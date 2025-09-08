@@ -1,6 +1,5 @@
 from app.models.user.response_messages import UserResponseMessages
 from tests.utils.basic_auth import get_basic_auth_header
-from tests.http.conftest import client, test_user_data
 
 
 def test_user_login_success(client, test_user_data):

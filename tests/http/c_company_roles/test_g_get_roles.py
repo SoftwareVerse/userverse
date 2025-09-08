@@ -1,6 +1,5 @@
 import pytest
 from app.models.company.response_messages import CompanyRoleResponseMessages
-from tests.http.conftest import client, login_token, test_company_data
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,6 @@
 {
+    "server_url": "http://localhost:8501",
+    "name": "Userverse",
     "cor_origins": {
         "allowed": [
             "*"

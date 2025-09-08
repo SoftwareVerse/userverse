@@ -1,6 +1,3 @@
-from app.utils.logging import logger
-
-
 class CorsConfig:
     """
     Database configuration class.

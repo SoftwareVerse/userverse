@@ -1,11 +1,5 @@
 import pytest
 from app.models.company.response_messages import CompanyResponseMessages
-from tests.http.conftest import (
-    client,
-    test_company_data,
-    login_token,
-    login_token_user_two,
-)
 
 
 def test_a_create_company_one_success(client, test_company_data, login_token):

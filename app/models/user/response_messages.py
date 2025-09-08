@@ -12,6 +12,8 @@ class UserResponseMessages(str, Enum):
     # user update
     USER_UPDATED = "User updated successfully"
     USER_UPDATE_FAILED = "User update failed"
+    USER_ACCOUNT_STATUS_UPDATED = "User status updated successfully"
+    USER_ACCOUNT_STATUS_UPDATE_FAILED = "User status update failed"
     # user delete
     USER_DELETED = "User deleted successfully"
     USER_DELETION_FAILED = "User deletion failed"
@@ -23,9 +25,13 @@ class UserResponseMessages(str, Enum):
     PASSWORD_RESET = "Password reset successfully"
     EMAIL_VERIFIED = "Email verified successfully"
     PASSWORD_RESET_FAILED = "Password reset failed"
+    USER_ACCOUNT_VERIFIED = "User account verified successfully"
+    VERIFICATION_EMAIL_RESENT = "Verification email resent successfully"
     EMAIL_VERIFICATION_FAILED = "Email verification failed"
+    INVALID_VERIFICATION_TOKEN = "Invalid token type for verification"
     ACCOUNT_LOCKED = "Account is locked"
     INVALID_REQUEST_MESSAGE = "Invalid request"
+    USER_ACCOUNT_ALREADY_ACTIVE = "User account is already active"
 
 
 class PasswordResetResponseMessages(str, Enum):

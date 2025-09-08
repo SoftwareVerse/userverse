@@ -1,17 +1,23 @@
+"""
+Base model for all database entities.
+Provides common fields and methods for CRUD operations.
+ - path: app/database/base_model.py
+"""
+
+from typing import Any, Dict, List, Optional, Union
 from sqlalchemy import Column, DateTime, JSON
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
-
-from typing import Any, Dict, List, Optional, Union
-import logging
-
 from sqlalchemy.ext.mutable import MutableDict
 
+from app.utils.date_converter import convert_datetime
 
-from . import Base  # Ensure this points to your declarative base
+
 from app.utils.logging import logger
+
+from app.database import Base  # Ensure Base is imported from the correct module
 
 
 class RecordNotFoundError(Exception):
@@ -35,7 +41,13 @@ class BaseModel(Base):
     @staticmethod
     def to_dict(obj: Any) -> Dict[str, Any]:
         """Converts SQLAlchemy model object to dictionary."""
-        return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
+        if obj is None:
+            return {}
+        if isinstance(obj, list):
+            return [BaseModel.to_dict(item) for item in obj]
+        if isinstance(obj, BaseModel):
+            return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
+        return convert_datetime(obj)
 
     @classmethod
     def get_all(
@@ -205,6 +217,55 @@ class BaseModel(Base):
                 f"Updated JSON field '{column_name}' for {cls.__name__} with id={record_id}"
             )
             return cls.to_dict(record)
+        except NoResultFound:
+            raise RecordNotFoundError(cls.__name__, record_id)
+
+    @classmethod
+    def bulk_update_json_field(
+        cls,
+        session: Session,
+        record_id: Any,
+        column_name: str,
+        updates: Dict[str, Union[str, int, list, dict]],
+    ) -> Dict[str, Any]:
+        """
+        Atomically updates multiple keys in a JSON/dict column with MutableDict support.
+
+        Args:
+            session: SQLAlchemy session.
+            record_id: ID of the record to update.
+            column_name: Name of the JSON column to update.
+            updates: Dictionary of key-value pairs to merge.
+
+        Returns:
+            Updated record as a dictionary.
+        """
+        try:
+            record = session.query(cls).filter_by(id=record_id).one()
+
+            if not hasattr(record, column_name):
+                raise ValueError(f"Column '{column_name}' does not exist on the model.")
+
+            json_field = getattr(record, column_name)
+
+            if json_field is None:
+                json_field = {}
+                setattr(record, column_name, json_field)
+
+            if not isinstance(json_field, dict):
+                raise ValueError(f"Column '{column_name}' is not a JSON/dict field.")
+
+            for key, value in updates.items():
+                json_field[key] = value  # MutableDict handles change tracking
+
+            session.commit()
+            session.refresh(record)  # Ensure we return fresh state after commit
+
+            logger.info(
+                f"Bulk updated JSON field '{column_name}' for {cls.__name__} with id={record_id}: {updates}"
+            )
+            return cls.to_dict(record)
+
         except NoResultFound:
             raise RecordNotFoundError(cls.__name__, record_id)
 

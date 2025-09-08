@@ -3,12 +3,6 @@ from app.models.company.response_messages import (
     CompanyResponseMessages,
     CompanyUserResponseMessages,
 )
-from tests.http.conftest import (
-    client,
-    test_company_data,
-    login_token,  # Token for user.one@email.com (User 1, company 1)
-    login_token_user_two,  # Token for user.two@email.com (User 2, company 2)
-)
 
 
 @pytest.mark.parametrize(

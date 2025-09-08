@@ -1,13 +1,13 @@
-from tests.http.conftest import client, test_user_data, login_token
 from app.models.user.response_messages import UserResponseMessages
 
+BASE_URL = "/user/get"
 
 def test_get_user_success(client, login_token, test_user_data):
     """Test fetching user details with valid token"""
     user = test_user_data["user_one"]
     # Assuming the login_token is valid and corresponds to user_one
     headers = {"Authorization": f"Bearer {login_token}"}
-    response = client.get("/user", headers=headers)
+    response = client.get(BASE_URL, headers=headers)
     assert response.status_code == 200
     json_data = response.json()
     assert "data" in json_data

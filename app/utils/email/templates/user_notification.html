@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="header">
+    <img src="https://supappbackend.co.za/assets/assets/images/oxiLogo.png">
+    <h1>{{ template_name }}</h1>
+</div>
+<div class="content">
+    <h3>Hello {{ user_name }}</h3>
+
+    {% if mode == "create" %}
+        <p>Your user account registration with Oxilium was successful.</p>
+        <p>Please verify your email to activate your account.</p>
+        <div>
+            <a class="button" href="{{ verification_link }}" title="Verify Email">Verify Email</a>
+        </div>
+    {% elif mode == "verify" %}
+        <p>This is a reminder to verify your email address to activate your Oxilium account.</p>
+        <div>
+            <a class="button" href="{{ verification_link }}" title="Verify Email">Verify Email</a>
+        </div>
+    {% endif %}
+
+    <p>If you did not create this account, you can safely ignore this email.</p>
+</div>
+{% endblock %}

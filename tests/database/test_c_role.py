@@ -1,8 +1,6 @@
 import pytest
-from sqlalchemy.exc import IntegrityError
 from app.database.company import Company
 from app.database.role import Role
-from tests.database.conftest import test_company_data, test_role_data, test_session
 
 
 def test_create_admin_role(test_session, test_company_data, test_role_data):

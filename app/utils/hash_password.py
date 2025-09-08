@@ -1,8 +1,32 @@
-import hashlib
+from passlib.context import CryptContext
+
+# Configure password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
     """
-    Hashes a password using SHA-256 and returns the first 30 characters of the hash.
+    Hash a plain password using bcrypt.
+    Returns the salted hash string.
     """
-    return hashlib.md5(password.encode()).hexdigest()[:30]
+    return pwd_context.hash(password)
+
+
+def verify_password(password: str, hashed: str) -> bool:
+    """
+    Verify a plain password against the stored hash.
+    Returns True if it matches, False otherwise.
+    """
+    return pwd_context.verify(password, hashed)
+
+
+# Demo usage
+if __name__ == "__main__":
+    plain = "MyS3cret!"
+    hashed = hash_password(plain)
+    # uv run -m app.utils.hash_password
+
+    print("Password:", plain)
+    print("Hashed:  ", hashed)
+    print("Verify (correct):", verify_password("MyS3cret!", hashed))
+    print("Verify (wrong):  ", verify_password("WrongPass", hashed))

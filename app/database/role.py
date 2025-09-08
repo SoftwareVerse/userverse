@@ -5,10 +5,9 @@ from sqlalchemy.orm.exc import NoResultFound
 from fastapi import status
 
 from app.models.company.response_messages import (
-    CompanyResponseMessages,
     CompanyUserResponseMessages,
 )
-from app.models.user.user import UserRead
+from app.models.user.user import UserReadModel
 from app.utils.app_error import AppError
 from .base_model import BaseModel
 
@@ -128,7 +127,7 @@ class Role(BaseModel):
         company_id: int,
         name_to_delete: str,
         replacement_name: str,
-        deleted_by: UserRead,
+        deleted_by: UserReadModel,
     ):
         """
         Delete a role and reassign its users to a replacement role.

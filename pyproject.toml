@@ -17,6 +17,7 @@ dependencies = [
     "opentelemetry-instrumentation-requests>=0.53b1",
     "opentelemetry-sdk>=1.32.1",
     "passlib>=1.7.4",
+    "prometheus-client>=0.22.1",
     "psycopg2-binary==2.9.10",
     "pydantic>=2.11.3",
     "pyjwt>=2.10.1",
@@ -32,23 +33,24 @@ dependencies = [
 name = "Userverse"
 version = "0.1.0"
 description = "Userverse backend API"
+server_url = "http://localhost:8501"
 
-[tool.userverse.config.database]
-HOST = "localhost"
-PORT = 5432
-USERNAME = "sandile"
-PASSWORD = "Password123"
-NAME = "userverse"
-TYPE = "postgresql"
+# [tool.userverse.config.database]
+# HOST = "localhost"
+# PORT = 5432
+# USERNAME = "sandile"
+# PASSWORD = "Password123"
+# NAME = "userverse"
+# TYPE = "postgresql"
 
 [tool.userverse.config.cor_origins]
 allowed = ["*"]
 
-[tool.userverse.config.email]
-USERNAME = "your_email@example.com"
-PASSWORD = "your_email_password"
-HOST = "smtp.example.com"
-PORT = 587
+# [tool.userverse.config.email]
+# USERNAME = "your_email@example.com"
+# PASSWORD = "your_email_password"
+# HOST = "smtp.example.com"
+# PORT = 587
 
 [tool.userverse.config.jwt]
 SECRET = "your_jwt_secret"

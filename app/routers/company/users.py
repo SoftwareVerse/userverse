@@ -1,3 +1,4 @@
+from app.dependencies.common import CommonJWTRouteDependencies
 from fastapi import APIRouter, Depends, status, Path
 from fastapi.responses import JSONResponse
 
@@ -11,8 +12,7 @@ from app.models.company.response_messages import CompanyUserResponseMessages
 
 # Auth and security
 from app.models.tags import UserverseApiTag
-from app.security.jwt import get_current_user_from_jwt_token
-from app.models.user.user import UserQueryParams, UserRead
+from app.models.user.user import UserQueryParams
 
 # Logic layer
 from app.logic.company.user import CompanyUserService
@@ -39,7 +39,7 @@ company_id_description = "The ID of the company"
 def get_company_users_api(
     company_id: int = Path(..., description=company_id_description),
     params: UserQueryParams = Depends(),
-    user: UserRead = Depends(get_current_user_from_jwt_token),
+    common_dependecies: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Get a paginated list of users associated with a specific company.
@@ -50,7 +50,7 @@ def get_company_users_api(
     try:
         service = CompanyUserService()
         response = service.get_company_user(
-            company_id=company_id, params=params, user=user
+            company_id=company_id, params=params, user=common_dependecies.user
         )
 
         return JSONResponse(
@@ -76,8 +76,8 @@ def get_company_users_api(
 )
 def add_user_to_company_api(
     company_id: int = Path(..., description=company_id_description),
-    payload: CompanyUserAdd = ...,
-    user: UserRead = Depends(get_current_user_from_jwt_token),
+    payload: CompanyUserAdd = Depends(),
+    common_dependecies: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Add a user to a company with a specified role.
@@ -87,7 +87,7 @@ def add_user_to_company_api(
     """
     try:
         response = CompanyUserService().add_user_to_company(
-            company_id=company_id, payload=payload, added_by=user
+            company_id=company_id, payload=payload, added_by=common_dependecies.user
         )
 
         return JSONResponse(
@@ -114,7 +114,7 @@ def add_user_to_company_api(
 def delete_user_from_company_api(
     company_id: int = Path(..., description=company_id_description),
     user_id: int = Path(..., description="The ID of the user to remove"),
-    user: UserRead = Depends(get_current_user_from_jwt_token),
+    common_dependecies: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Remove a specific user from a company.
@@ -124,7 +124,7 @@ def delete_user_from_company_api(
     """
     try:
         response = CompanyUserService().remove_user_from_company(
-            company_id=company_id, user_id=user_id, removed_by=user
+            company_id=company_id, user_id=user_id, removed_by=common_dependecies.user
         )
 
         return JSONResponse(

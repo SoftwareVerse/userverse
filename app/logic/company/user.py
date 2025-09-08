@@ -11,14 +11,14 @@ from app.utils.app_error import AppError
 from app.logic.company.repository.user import CompanyUserRepository
 
 # database
-from app.database import DatabaseSessionManager
+from app.database.session_manager import DatabaseSessionManager
 from app.database.association_user_company import AssociationUserCompany
 
 
 from app.models.company.roles import CompanyDefaultRoles
 
 
-from app.models.user.user import UserQueryParams, UserRead
+from app.models.user.user import UserQueryParams, UserReadModel
 
 
 from app.models.company.response_messages import CompanyResponseMessages
@@ -30,7 +30,7 @@ class CompanyUserService:
 
     @classmethod
     def add_user_to_company(
-        cls, company_id: int, payload: CompanyUserAdd, added_by: UserRead
+        cls, company_id: int, payload: CompanyUserAdd, added_by: UserReadModel
     ) -> CompanyUserRead:
         CompanyUserService.check_if_user_is_in_company(
             user_id=added_by.id,
@@ -59,7 +59,7 @@ class CompanyUserService:
     def remove_user_from_company(
         company_id: int,
         user_id: int,
-        removed_by: UserRead,
+        added_by: UserReadModel,
     ) -> CompanyUserRead:
         CompanyUserService.check_if_user_is_in_company(
             user_id=removed_by.id,
@@ -77,7 +77,7 @@ class CompanyUserService:
     def get_company_user(
         company_id: int,
         params: UserQueryParams,
-        user: UserRead,
+        user: UserReadModel,
     ) -> PaginatedResponse[CompanyUserRead]:
         CompanyUserService.check_if_user_is_in_company(
             user_id=user.id,

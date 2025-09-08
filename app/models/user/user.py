@@ -1,50 +1,50 @@
-import re
 from typing import Optional, Literal
 from pydantic import BaseModel, EmailStr, field_validator, Field
-from app.utils.hash_password import hash_password
 from app.models.phone_number import validate_phone_number_format
 
 
-class UserLogin(BaseModel):
+class UserLoginModel(BaseModel):
     email: EmailStr
     password: str
 
-    @field_validator("password")
-    def hash_password(cls, v: str) -> str:
-        return hash_password(v)
 
-
-class UserUpdate(BaseModel):
+class UserUpdateModel(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    phone_number: Optional[str] = Field(None, example="1236547899")
+    phone_number: Optional[str] = Field(
+        None, json_schema_extra={"example": "1236547899"}
+    )
     password: Optional[str] = None
 
-    @field_validator("password")
-    def hash_password(cls, v: str) -> str:
-        return hash_password(v)
-
     @field_validator("phone_number")
     def validate_phone_number(cls, v: Optional[str]) -> Optional[str]:
         return validate_phone_number_format(v)
 
 
-class UserCreate(BaseModel):
+class UserCreateModel(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    phone_number: Optional[str] = Field(None, example="1236547899")
+    phone_number: Optional[str] = Field(
+        None, json_schema_extra={"example": "1236547899"}
+    )
 
     @field_validator("phone_number")
     def validate_phone_number(cls, v: Optional[str]) -> Optional[str]:
         return validate_phone_number_format(v)
 
 
-class UserRead(BaseModel):
+class UserReadModel(BaseModel):
     id: int
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     email: EmailStr
-    phone_number: Optional[str] = Field(None, example="1236547899")
+    phone_number: Optional[str] = Field(
+        None, json_schema_extra={"example": "1236547899"}
+    )
+    status: Optional[str] = None  # <-- Add this
+    is_superuser: bool = Field(
+        False, description="Indicates if the user has superuser privileges"
+    )
 
 
 class TokenResponseModel(BaseModel):

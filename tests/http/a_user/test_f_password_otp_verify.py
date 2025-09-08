@@ -1,5 +1,4 @@
 from app.models.user.response_messages import PasswordResetResponseMessages
-from tests.http.conftest import client, get_user_two_otp, test_user_data
 from tests.utils.basic_auth import get_basic_auth_header
 
 
@@ -14,9 +13,9 @@ def test_a_password_reset_validate_otp_fail(client, test_user_data, get_user_two
     )
 
     response = client.patch(
-        "password-reset/validate-otp",
+        f"password-reset/validate-otp?one_time_pin={get_user_two_otp}FGWSE",
         headers=headers,
-        json={"otp": get_user_two_otp + "FGWSE"},
+
     )
 
     assert response.status_code in [400, 401, 402]
@@ -43,9 +42,8 @@ def test_b_password_reset_validate_otp_success(
     )
 
     response = client.patch(
-        "password-reset/validate-otp",
+        f"password-reset/validate-otp?one_time_pin={get_user_two_otp}",
         headers=headers,
-        json={"otp": get_user_two_otp},
     )
 
     assert response.status_code in [200, 201, 202]

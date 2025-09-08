@@ -1,5 +1,5 @@
-from sqlalchemy import Column, String, Integer
-from sqlalchemy.orm import relationship, backref, Session
+from sqlalchemy import Column, String, Integer, Boolean
+from sqlalchemy.orm import relationship, Session
 from sqlalchemy.exc import NoResultFound
 from .base_model import BaseModel
 
@@ -13,6 +13,7 @@ class User(BaseModel):
     email = Column(String(255), nullable=False, unique=True)
     phone_number = Column(String(255), nullable=True)
     password = Column(String(255), nullable=False)
+    is_superuser = Column(Boolean, nullable=False, default=False)
 
     # All the companies agent is linked with
     companies = relationship("AssociationUserCompany", back_populates="user")

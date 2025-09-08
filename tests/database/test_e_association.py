@@ -3,13 +3,6 @@ from app.database.user import User
 from app.database.company import Company
 from app.database.role import Role
 from app.database.association_user_company import AssociationUserCompany
-from sqlalchemy.exc import IntegrityError
-from tests.database.conftest import (
-    test_company_data,
-    test_user_data,
-    test_role_data,
-    test_session,
-)
 
 
 def test_create_association(

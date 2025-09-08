@@ -1,8 +1,6 @@
 from fastapi import status
 
 # utils
-from app.models.company.user import CompanyUserAdd, CompanyUserRead
-from app.models.generic_pagination import PaginatedResponse
 from app.utils.app_error import AppError
 
 # service and repository
@@ -10,8 +8,6 @@ from app.logic.company.user import CompanyUserService
 from app.logic.company.repository.company import CompanyRepository
 
 # database
-from app.database import DatabaseSessionManager
-from app.database.association_user_company import AssociationUserCompany
 
 # models
 from app.models.company.company import (
@@ -22,7 +18,7 @@ from app.models.company.company import (
 from app.models.company.roles import CompanyDefaultRoles
 
 
-from app.models.user.user import UserQueryParams, UserRead
+from app.models.user.user import UserReadModel
 
 
 from app.models.company.response_messages import CompanyResponseMessages
@@ -31,7 +27,7 @@ from app.models.company.response_messages import CompanyResponseMessages
 class CompanyService:
 
     @staticmethod
-    def create_company(payload: CompanyCreate, created_by: UserRead) -> CompanyRead:
+    def create_company(payload: CompanyCreate, created_by: UserReadModel) -> CompanyRead:
         """
         Create a new company and store its address in primary_meta_data.
         Also sets up default roles (Administrator, Viewer).
@@ -47,7 +43,7 @@ class CompanyService:
 
     @staticmethod
     def get_company(
-        user: UserRead, company_id: str = None, email: str = None
+        user: UserReadModel, company_id: str = None, email: str = None
     ) -> CompanyRead:
         """
         Get a company by its ID.
@@ -74,7 +70,7 @@ class CompanyService:
 
     @staticmethod
     def update_company(
-        payload: CompanyUpdate, company_id: str, user: UserRead
+        payload: CompanyUpdate, company_id: str, user: UserReadModel
     ) -> CompanyRead:
         """
         Update a company by its ID.

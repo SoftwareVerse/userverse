@@ -1,12 +1,4 @@
-import pytest
 from app.models.company.response_messages import CompanyResponseMessages
-from app.database.base_model import RecordNotFoundError
-from tests.http.conftest import (
-    client,
-    test_company_data,
-    login_token,
-    login_token_user_two,
-)
 
 
 def test_a_update_company_one_success(client, login_token, test_company_data):

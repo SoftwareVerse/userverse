@@ -1,39 +1,48 @@
+import logging
+import logging.config
 import os
 import traceback
-import logging
+from contextlib import asynccontextmanager
+
 import click
 import uvicorn
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 from uvicorn.config import Config
 from uvicorn.server import Server
-from contextlib import asynccontextmanager
 
+from app.database.session_manager import DatabaseSessionManager
 
-from app.middleware.otel import setup_otel
+# user routers
 from app.middleware.logging import LogMiddleware
+from app.models.response_messages import ErrorResponseMessagesModel
 
-# user
-from app.models.tags import UserverseApiTag
-from app.routers.user import user
-from app.routers.user import password
+# from app.models.tags import UserverseApiTag
+from app.routers.user import (
+    user_basic_auth_routes,
+    user_password_routes,
+    user_profile_routes,
+    user_verification_routes,
+)
+from app.routers.company import (
+    company, 
+    users,
+    roles,
+)
 
-# company
-from app.routers.company import company
-from app.routers.company import roles
-from app.routers.company import users as company_users
+# utils
 from app.utils.config.loader import ConfigLoader
-from app.utils.logging import logger, get_uvicorn_log_config
-import logging.config
+from app.utils.logging import get_uvicorn_log_config, logger
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("🚀 Application starting up")
-    # Optionally: setup_otel(app)
+    logger.info("Userverse API starting up")
+    DatabaseSessionManager()
     yield
-    logger.info("🛑 Application shutting down")
+    logger.info("Userverse API shutting down")
 
 
 def create_app() -> FastAPI:
@@ -52,7 +61,7 @@ def create_app() -> FastAPI:
         title=configs.get("name"),
         version=configs.get("version"),
         description=configs.get("description"),
-        openapi_tags=UserverseApiTag.list(),
+        # openapi_tags=UserverseApiTag.list(),
     )
 
     # setup_otel(app)
@@ -65,13 +74,18 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    app.include_router(user.router)
-    app.include_router(password.router)
+    # Include user routers
+    app.include_router(user_basic_auth_routes.router)
+    app.include_router(user_verification_routes.router)
+    app.include_router(user_profile_routes.router)
+    app.include_router(user_password_routes.router)
+    # Include company routers
     app.include_router(company.router)
+    app.include_router(users.router)
     app.include_router(roles.router)
-    app.include_router(company_users.router)
 
-    @app.get("/")
+    # Root route
+    @app.get("/", tags=["Root"])
     async def root():
         from opentelemetry import trace
 
@@ -89,8 +103,23 @@ def create_app() -> FastAPI:
                 },
             )
 
+    # Prometheus metrics
+    @app.get("/metrics")
+    def metrics():
+        return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+    # Exception tracking
+    UNHANDLED_EXCEPTIONS = Counter(
+        "unhandled_exceptions_total",
+        "Total number of unhandled exceptions",
+        ["method", "endpoint"],
+    )
+
     @app.exception_handler(Exception)
     async def app_error_handler(request: Request, exc: Exception):
+        UNHANDLED_EXCEPTIONS.labels(
+            method=request.method, endpoint=request.url.path
+        ).inc()
         logger.error(
             "Unhandled exception",
             extra={
@@ -104,34 +133,23 @@ def create_app() -> FastAPI:
         )
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": {"message": "Internal server error", "error": str(exc)}},
+            content={
+                "detail": {
+                    "message": ErrorResponseMessagesModel.GENERIC_ERROR,
+                    "error": str(exc),
+                }
+            },
         )
 
     return app
 
 
 @click.command()
-@click.option("--port", default=8500, type=int, help="Port to run the server on.")
+@click.option("--port", default=8000, type=int, help="Port to run the server on.")
 @click.option("--host", default="0.0.0.0", type=str, help="Host to run the server on.")
-@click.option(
-    "--env",
-    default="development",
-    type=click.Choice(["development", "production", "testing"]),
-    help="Environment to run the server in.",
-)
-@click.option("--reload", is_flag=True, help="Reload the server on code change.")
-@click.option(
-    "--workers",
-    default=1,
-    type=int,
-    help="Number of Uvicorn worker processes (ignored in reload mode).",
-)
-@click.option(
-    "--json_config_path",
-    default=None,
-    type=click.Path(exists=True, dir_okay=False, readable=True),
-    help="Path to a custom JSON configuration file.",
-)
+@click.option("--env", default="development", help="Environment to run in.")
+@click.option("--reload", is_flag=True, help="Enable auto-reload.")
+@click.option("--workers", default=1, type=int, help="Number of worker processes.")
 @click.option("--verbose", is_flag=True, help="Enable verbose logging.")
 def main(
     port: int,
@@ -140,29 +158,19 @@ def main(
     reload: bool,
     workers: int,
     verbose: bool,
-    json_config_path: str | None,
 ):
-
     os.environ["ENV"] = env
-    if json_config_path:
-        os.environ["JSON_CONFIG_PATH"] = json_config_path
 
     if reload and workers > 1:
         os.environ["WATCHFILES_IGNORE"] = "*.pyc;.venv;tests;scripts"
-        logger.warning(
-            "Reload mode does not support multiple workers. Using a single worker."
-        )
+        logger.warning("Reload mode only supports a single worker.")
         workers = 1
 
-    # Silence all Uvicorn-related logs
-    logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
-    logging.getLogger("uvicorn.error").setLevel(logging.CRITICAL)
-    logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
-    logging.getLogger("watchfiles.main").setLevel(logging.WARNING)
-    logger.info(f"🚀 Starting Userverse API on http://{host}:{port} [env={env}]")
-    #
+    logger.info("🚀 Starting Userverse API at http://%s:%d [env=%s]", host, port, env)
+
     logging_config = get_uvicorn_log_config(reload=reload, verbose=verbose)
     logging.config.dictConfig(logging_config)
+
     if reload:
         uvicorn.run(
             "app.main:create_app",
@@ -179,8 +187,8 @@ def main(
             host=host,
             port=port,
             workers=workers,
-            use_colors=False,
-            log_config=None,
+            use_colors=True,
+            log_config=logging_config,
         )
         server = Server(config)
         server.run()
