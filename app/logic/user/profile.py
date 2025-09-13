@@ -1,7 +1,7 @@
 from typing import Optional
 from app.utils.shared_context import SharedContext
 from app.repository.user import UserRepository
-from app.logic.company.repository.company import CompanyRepository
+from app.repository.company import CompanyRepository
 from app.models.company.company import CompanyQueryParamsModel
 from app.models.user.user import UserUpdateModel, UserReadModel
 from app.utils.hash_password import hash_password

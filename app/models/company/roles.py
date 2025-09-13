@@ -21,17 +21,17 @@ class CompanyDefaultRoles(str, Enum):
         return self.value.split(":", 1)[1].strip()
 
 
-class RoleCreate(BaseModel):
+class RoleCreateModel(BaseModel):
     name: str
     description: Optional[str]
 
 
-class RoleUpdate(BaseModel):
+class RoleUpdateModel(BaseModel):
     name: Optional[str]
     description: Optional[str]
 
 
-class RoleDelete(BaseModel):
+class RoleDeleteModel(BaseModel):
     replacement_role_name: str
     role_name_to_delete: str
 
@@ -43,11 +43,11 @@ class RoleDelete(BaseModel):
         return v
 
 
-class RoleRead(BaseModel):
+class RoleReadModel(BaseModel):
     name: Optional[str]
     description: Optional[str]
 
 
-class RoleQueryParams(PaginationParams):
+class RoleQueryParamsModel(PaginationParams):
     name: Optional[str] = Field(None, description="Filter by role name")
     description: Optional[str] = Field(None, description="Filter by role description")

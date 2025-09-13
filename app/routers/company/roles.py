@@ -6,11 +6,11 @@ from app.models.user.user import UserReadModel
 from app.models.generic_pagination import PaginatedResponse
 from app.models.generic_response import GenericResponseModel
 from app.models.company.roles import (
-    RoleCreate,
-    RoleDelete,
-    RoleQueryParams,
-    RoleRead,
-    RoleUpdate,
+    RoleCreateModel,
+    RoleDeleteModel,
+    RoleQueryParamsModel,
+    RoleReadModel,
+    RoleUpdateModel,
 )
 from app.models.app_error import AppErrorResponseModel
 from app.models.company.response_messages import (
@@ -36,13 +36,13 @@ tag = UserverseApiTag.COMPANY_ROLE_MANAGEMENT.name
     tags=[tag],
     status_code=status.HTTP_201_CREATED,
     responses={
-        201: {"model": GenericResponseModel[RoleRead]},
+        201: {"model": GenericResponseModel[RoleReadModel]},
         400: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
     },
 )
 def create_role_api(
-    payload: RoleCreate,
+    payload: RoleCreateModel,
     company_id: int = Path(..., description="The unique identifier of the company"),
     user: UserReadModel = Depends(get_current_user_from_jwt_token),
 ):
@@ -73,14 +73,14 @@ def create_role_api(
     tags=[tag],
     status_code=status.HTTP_200_OK,
     responses={
-        201: {"model": GenericResponseModel[RoleRead]},
+        201: {"model": GenericResponseModel[RoleReadModel]},
         400: {"model": AppErrorResponseModel},
         404: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
     },
 )
 def update_role_api(
-    payload: RoleUpdate,
+    payload: RoleUpdateModel,
     company_id: int = Path(..., description="The company ID associated with the role"),
     name: str = Path(..., description="The name of the role to update"),
     user: UserReadModel = Depends(get_current_user_from_jwt_token),
@@ -119,7 +119,7 @@ def update_role_api(
     },
 )
 def delete_role_api(
-    payload: RoleDelete,
+    payload: RoleDeleteModel,
     company_id: int = Path(..., description="Company ID to delete role from"),
     user: UserReadModel = Depends(get_current_user_from_jwt_token),
 ):
@@ -149,14 +149,14 @@ def delete_role_api(
     tags=[tag],
     status_code=status.HTTP_200_OK,
     responses={
-        200: {"model": GenericResponseModel[PaginatedResponse[RoleRead]]},
+        200: {"model": GenericResponseModel[PaginatedResponse[RoleReadModel]]},
         400: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
     },
 )
 def get_company_roles_api(
     company_id: int = Path(..., description="ID of the company whose roles to fetch"),
-    query_params: RoleQueryParams = Depends(),
+    query_params: RoleQueryParamsModel = Depends(),
     user: UserReadModel = Depends(get_current_user_from_jwt_token),
 ):
     """
