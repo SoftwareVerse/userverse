@@ -1,7 +1,7 @@
 from fastapi import status
 
 # utils
-from app.models.company.user import CompanyUserAdd, CompanyUserRead
+from app.models.company.user import CompanyUserAddModel, CompanyUserReadModel
 from app.models.generic_pagination import PaginatedResponse, PaginationMeta
 from app.utils.app_error import AppError
 
@@ -21,8 +21,8 @@ class CompanyUserRepository:
         self.db_manager = DatabaseSessionManager()
 
     def add_user_to_company(
-        self, company_id: int, payload: CompanyUserAdd, added_by
-    ) -> CompanyUserRead:
+        self, company_id: int, payload: CompanyUserAddModel, added_by
+    ) -> CompanyUserReadModel:
         with self.db_manager.session_object() as session:
             user = User.get_user_by_email(session=session, email=payload.email)
             user_id = user.get("id")
@@ -44,11 +44,11 @@ class CompanyUserRepository:
                 added_by=added_by,
             )
 
-            return CompanyUserRead(**user, role_name=assoc.role_name)
+            return CompanyUserReadModel(**user, role_name=assoc.role_name)
 
     def remove_user_from_company(
         self, company_id: int, user_id: int, removed_by
-    ) -> CompanyUserRead:
+    ) -> CompanyUserReadModel:
         with self.db_manager.session_object() as session:
             assoc = AssociationUserCompany.unlink_user(
                 session=session,
@@ -58,11 +58,11 @@ class CompanyUserRepository:
             )
 
             user = User.get_by_id(session=session, record_id=user_id)
-            return CompanyUserRead(**user, role_name=assoc.role_name)
+            return CompanyUserReadModel(**user, role_name=assoc.role_name)
 
     def get_company_users(
         self, company_id: int, params: UserQueryParams
-    ) -> PaginatedResponse[CompanyUserRead]:
+    ) -> PaginatedResponse[CompanyUserReadModel]:
         with self.db_manager.session_object() as session:
             query = (
                 session.query(AssociationUserCompany)
@@ -95,11 +95,11 @@ class CompanyUserRepository:
             )
 
             users = [
-                CompanyUserRead(**User.to_dict(assoc.user), role_name=assoc.role_name)
+                CompanyUserReadModel(**User.to_dict(assoc.user), role_name=assoc.role_name)
                 for assoc in results
             ]
 
-            return PaginatedResponse[CompanyUserRead](
+            return PaginatedResponse[CompanyUserReadModel](
                 records=users,
                 pagination=PaginationMeta(
                     total_records=total,

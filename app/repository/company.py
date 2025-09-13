@@ -11,7 +11,7 @@ from app.database.association_user_company import AssociationUserCompany
 from sqlalchemy.orm import joinedload
 
 # models
-from app.models.company.address import CompanyAddress
+from app.models.company.address import CompanyAddressModel
 from app.models.company.company import (
     CompanyQueryParamsModel,
     CompanyReadModel,
@@ -161,7 +161,7 @@ class CompanyRepository:
         return company
 
     def _add_company_address(
-        self, session, company_id: str, address: CompanyAddress
+        self, session, company_id: str, address: CompanyAddressModel
     ) -> None:
         Company.update_json_field(
             session,

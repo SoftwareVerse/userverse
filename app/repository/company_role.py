@@ -10,11 +10,11 @@ from app.database.role import Role
 # models
 from app.models.user.user import UserReadModel
 from app.models.company.roles import (
-    RoleCreate,
-    RoleQueryParams,
-    RoleRead,
-    RoleUpdate,
-    RoleDelete,
+    RoleCreateModel,
+    RoleQueryParamsModel,
+    RoleReadModel,
+    RoleUpdateModel,
+    RoleDeleteModel,
 )
 from app.models.company.response_messages import (
     CompanyRoleResponseMessages,
@@ -29,7 +29,7 @@ class RoleRepository:
 
     def get_roles(
         self,
-        payload: RoleQueryParams,
+        payload: RoleQueryParamsModel,
     ) -> dict:
         """
         Get paginated roles for the company with optional filtering.
@@ -61,7 +61,7 @@ class RoleRepository:
                     error=str(e),
                 )
 
-    def delete_role(self, payload: RoleDelete, deleted_by: UserReadModel) -> dict:
+    def delete_role(self, payload: RoleDeleteModel, deleted_by: UserReadModel) -> dict:
         """
         Delete role from a company
         """
@@ -82,7 +82,7 @@ class RoleRepository:
                     error=str(e),
                 )
 
-    def update_role(self, name: str, payload: RoleUpdate) -> RoleRead:
+    def update_role(self, name: str, payload: RoleUpdateModel) -> RoleReadModel:
         """
         Update the description of a role for this company.
         """
@@ -95,7 +95,7 @@ class RoleRepository:
                     new_description=payload.description,
                     new_name=payload.name,
                 )
-                return RoleRead(**updated)
+                return RoleReadModel(**updated)
             except Exception as e:
                 raise AppError(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -105,9 +105,9 @@ class RoleRepository:
 
     def create_role(
         self,
-        payload: RoleCreate,
+        payload: RoleCreateModel,
         created_by: UserReadModel,
-    ) -> RoleRead:
+    ) -> RoleReadModel:
         """
         Create a new role for a company.
 
@@ -129,10 +129,10 @@ class RoleRepository:
             # 2. Get the registered role with complete data
             registered_role = self._get_registered_role(session, role["name"])
 
-            return RoleRead(**registered_role)
+            return RoleReadModel(**registered_role)
 
     def _create_role_record(
-        self, session, payload: RoleCreate, created_by: UserReadModel
+        self, session, payload: RoleCreateModel, created_by: UserReadModel
     ) -> dict:
         """
         Create a new role record in the database.
