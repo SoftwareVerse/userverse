@@ -20,7 +20,7 @@ class FilterLogic(str, Enum):
 
 class PaginationParams(BaseModel):
     limit: int = Field(10, ge=1, le=100)
-    page: int = Field(1, ge=1)  # Make sure page starts at 1
+    page: int = Field(1, ge=1)  # Page is 1-indexed
 
     @property
     def offset(self) -> int:
@@ -28,10 +28,8 @@ class PaginationParams(BaseModel):
 
 
 class PaginationMeta(BaseModel):
-
     total_records: int
     limit: int
-    offset: int
     current_page: int
     total_pages: int
 

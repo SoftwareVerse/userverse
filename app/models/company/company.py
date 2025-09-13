@@ -2,6 +2,7 @@ from typing import Optional
 from app.models.company.address import CompanyAddressModel
 from pydantic import BaseModel, EmailStr, field_validator, Field
 from app.models.phone_number import validate_phone_number_format
+from app.models.generic_pagination import PaginationParams
 
 
 class CompanyReadModel(BaseModel):
@@ -45,9 +46,7 @@ class CompanyCreateModel(BaseModel):
         return validate_phone_number_format(v)
 
 
-class CompanyQueryParamsModel(BaseModel):
-    limit: int = Field(10, ge=1, le=100)
-    offset: int = Field(0, ge=0)
+class CompanyQueryParamsModel(PaginationParams):
     role_name: Optional[str] = None
     name: Optional[str] = None
     description: Optional[str] = None

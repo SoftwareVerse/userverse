@@ -8,9 +8,7 @@ from app.utils.app_error import AppError
 # repository
 from app.repository.company_role import RoleRepository
 
-
 # models
-from app.models.user.user import UserReadModel
 from app.models.company.roles import (
     CompanyDefaultRoles,
     RoleDeleteModel,
@@ -22,23 +20,25 @@ from app.models.company.roles import (
 from app.models.company.response_messages import (
     CompanyRoleResponseMessages,
 )
+from app.utils.shared_context import SharedContext
 
 
 class RoleService:
+    def __init__(self, context: SharedContext):
+        self.context = context
 
-    @staticmethod
     def update_role(
-        company_id: int, updated_by: UserReadModel, name: str, payload: RoleUpdateModel
+        self, company_id: int, name: str, payload: RoleUpdateModel
     ) -> RoleReadModel:
         """
-        Update the description of a role for a company.
+        Update the description or name of a role for a company.
         """
-        CompanyUserService.check_if_user_is_in_company(
-            user_id=updated_by.id,
+        CompanyUserService(self.context).check_if_user_is_in_company(
+            user_id=self.context.user.id,
             company_id=company_id,
             role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
         )
-        role_repository = RoleRepository(company_id=company_id)
+        role_repository = RoleRepository(company_id=company_id, session=self.context.db_session)
         role = role_repository.update_role(
             name=name,
             payload=payload,
@@ -50,20 +50,17 @@ class RoleService:
             )
         return role
 
-    @staticmethod
-    def create_role(
-        payload: RoleCreateModel, created_by: UserReadModel, company_id: int
-    ) -> RoleReadModel:
+    def create_role(self, payload: RoleCreateModel, company_id: int) -> RoleReadModel:
         """
         Create a new company role and store its creator in primary_meta_data.
         """
-        CompanyUserService.check_if_user_is_in_company(
-            user_id=created_by.id,
+        CompanyUserService(self.context).check_if_user_is_in_company(
+            user_id=self.context.user.id,
             company_id=company_id,
             role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
         )
-        role_repository = RoleRepository(company_id=company_id)
-        role = role_repository.create_role(payload, created_by)
+        role_repository = RoleRepository(company_id=company_id, session=self.context.db_session)
+        role = role_repository.create_role(payload, self.context.user)
         if not role:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -71,31 +68,27 @@ class RoleService:
             )
         return role
 
-    @staticmethod
-    def delete_role(
-        payload: RoleDeleteModel, deleted_by: UserReadModel, company_id: int
-    ) -> dict:
-        CompanyUserService.check_if_user_is_in_company(
-            user_id=deleted_by.id,
+    def delete_role(self, payload: RoleDeleteModel, company_id: int) -> dict:
+        CompanyUserService(self.context).check_if_user_is_in_company(
+            user_id=self.context.user.id,
             company_id=company_id,
             role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
         )
-        role_repository = RoleRepository(company_id=company_id)
-        return role_repository.delete_role(payload=payload, deleted_by=deleted_by)
+        role_repository = RoleRepository(company_id=company_id, session=self.context.db_session)
+        return role_repository.delete_role(payload=payload, deleted_by=self.context.user)
 
-    @staticmethod
     def get_company_roles(
-        payload: RoleQueryParamsModel, company_id: int, user: UserReadModel
+        self, payload: RoleQueryParamsModel, company_id: int
     ) -> PaginatedResponse[RoleReadModel]:
         """
         Get company roles with pagination and optional filtering.
         """
-        CompanyUserService.check_if_user_is_in_company(
-            user_id=user.id,
+        CompanyUserService(self.context).check_if_user_is_in_company(
+            user_id=self.context.user.id,
             company_id=company_id,
             role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
         )
-        role_repository = RoleRepository(company_id=company_id)
+        role_repository = RoleRepository(company_id=company_id, session=self.context.db_session)
         result = role_repository.get_roles(payload=payload)
 
         return PaginatedResponse[RoleReadModel](

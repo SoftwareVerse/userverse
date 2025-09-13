@@ -8,14 +8,13 @@ from app.models.generic_pagination import PaginatedResponse
 from app.utils.app_error import AppError
 
 # database
-from app.database.session_manager import DatabaseSessionManager
 from app.database.association_user_company import AssociationUserCompany
 
 
 from app.models.company.roles import CompanyDefaultRoles
 
 
-from app.models.user.user import UserQueryParams, UserReadModel
+from app.models.user.user import UserQueryParams
 
 
 from app.models.company.response_messages import CompanyResponseMessages
@@ -25,8 +24,8 @@ from app.utils.shared_context import SharedContext
 class CompanyUserService:
     def __init__(self, context: SharedContext):
         self.context = context
-        self.company_user_repository = CompanyUserRepository()
-        self.company_repository = CompanyRepository()
+        self.company_user_repository = CompanyUserRepository(context.db_session)
+        self.company_repository = CompanyRepository(context.db_session)
 
     def add_user_to_company(
         self, company_id: int, payload: CompanyUserAddModel

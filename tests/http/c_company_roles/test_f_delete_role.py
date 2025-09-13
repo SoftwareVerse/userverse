@@ -10,7 +10,6 @@ def test_a_delete_role_success(client, login_token, test_company_data):
     """
     headers = {
         "Authorization": f"Bearer {login_token}",
-        "Content-Type": "application/json",
     }
     payload = {
         "role_name_to_delete": "Client Updated",
@@ -20,7 +19,7 @@ def test_a_delete_role_success(client, login_token, test_company_data):
     response = client.request(
         method="DELETE",
         url="/company/1/role",
-        data=json.dumps(payload),
+        json=payload,
         headers=headers,
     )
 
@@ -41,7 +40,6 @@ def test_b_delete_default_role_forbidden(client, login_token):
     """
     headers = {
         "Authorization": f"Bearer {login_token}",
-        "Content-Type": "application/json",
     }
     payload = {
         "role_name_to_delete": "Administrator",
@@ -51,7 +49,7 @@ def test_b_delete_default_role_forbidden(client, login_token):
     response = client.request(
         method="DELETE",
         url="/company/1/role",
-        data=json.dumps(payload),
+        json=payload,
         headers=headers,
     )
 
@@ -69,7 +67,6 @@ def test_c_delete_role_not_found(client, login_token):
     """
     headers = {
         "Authorization": f"Bearer {login_token}",
-        "Content-Type": "application/json",
     }
     payload = {
         "role_name_to_delete": "NonExistentRole",
@@ -79,7 +76,7 @@ def test_c_delete_role_not_found(client, login_token):
     response = client.request(
         method="DELETE",
         url="/company/1/role",
-        data=json.dumps(payload),
+        json=payload,
         headers=headers,
     )
 
@@ -101,7 +98,6 @@ def test_d_delete_role_self_replacement_forbidden(client, login_token):
     """
     headers = {
         "Authorization": f"Bearer {login_token}",
-        "Content-Type": "application/json",
     }
     payload = {
         "role_name_to_delete": "Client Updated",
@@ -111,7 +107,7 @@ def test_d_delete_role_self_replacement_forbidden(client, login_token):
     response = client.request(
         method="DELETE",
         url="/company/1/role",
-        data=json.dumps(payload),
+        json=payload,
         headers=headers,
     )
 
