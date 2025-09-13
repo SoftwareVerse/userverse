@@ -7,14 +7,14 @@ from app.models.company.response_messages import (
 @pytest.mark.parametrize(
     "login_token_key, query_params, expected_company_ids, expected_status",
     [
-        ("login_token", "limit=10&offset=0", {1}, 200),
-        ("login_token", "limit=10&offset=0&name=Test", set(), 200),  # updated
-        ("login_token", "limit=10&offset=0&email=notfound@example.com", set(), 200),
-        ("login_token_user_two", "limit=10&offset=0", {2}, 200),
-        ("login_token_user_two", "limit=10&offset=0&role_name=Admin", {2}, 200),
+        ("login_token", "limit=10&page=1", {1}, 200),
+        ("login_token", "limit=10&page=1&name=Test", set(), 200),  # updated
+        ("login_token", "limit=10&page=1&email=notfound@example.com", set(), 200),
+        ("login_token_user_two", "limit=10&page=1", {2}, 200),
+        ("login_token_user_two", "limit=10&page=1&role_name=Admin", {2}, 200),
         (
             "login_token_user_two",
-            "limit=10&offset=0&industry=Healthcare",
+            "limit=10&page=1&industry=Healthcare",
             set(),
             200,
         ),  # updated
@@ -24,6 +24,7 @@ def test_get_user_companies(
     client,
     login_token,
     login_token_user_two,
+    verify_both_users,
     login_token_key,
     query_params,
     expected_company_ids,
@@ -55,4 +56,4 @@ def test_get_user_companies(
 
         pagination = json_data["data"]["pagination"]
         assert pagination["limit"] == 10
-        assert pagination["offset"] == 0
+        assert pagination["current_page"] == 1

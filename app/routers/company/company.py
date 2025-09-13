@@ -5,7 +5,11 @@ from fastapi.responses import JSONResponse
 from app.models.company.user import CompanyUserReadModel
 from app.models.generic_pagination import PaginatedResponse
 from app.models.generic_response import GenericResponseModel
-from app.models.company.company import CompanyCreateModel, CompanyReadModel, CompanyUpdateModel
+from app.models.company.company import (
+    CompanyCreateModel,
+    CompanyReadModel,
+    CompanyUpdateModel,
+)
 from app.models.app_error import AppErrorResponseModel
 from app.models.company.response_messages import (
     CompanyResponseMessages,
@@ -159,44 +163,4 @@ def update_company_api(
         raise e
 
 
-@router.get(
-    "/company/{company_id}/users",
-    tags=[tag],
-    status_code=status.HTTP_200_OK,
-    responses={
-        200: {"model": GenericResponseModel[PaginatedResponse[CompanyUserReadModel]]},
-        400: {"model": AppErrorResponseModel},
-        404: {"model": AppErrorResponseModel},
-        500: {"model": AppErrorResponseModel},
-    },
-)
-def get_company_users_api(
-    company_id: int = Path(..., description="Company ID"),
-    params: UserQueryParams = Depends(),
-    common_deps: CommonJWTRouteDependencies = Depends(),
-):
-    """
-    Get paginated list of users belonging to a company.
-
-    - **Supports**: Filtering, pagination
-    - **Requires**: Authenticated user
-    - **Returns**: List of company users
-    """
-    try:
-        context = SharedContext(
-            db_session=common_deps.session,
-            user=common_deps.user,
-        )
-        response = CompanyUserService(context).get_company_user(
-            company_id=company_id,
-            params=params,
-        )
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content=GenericResponseModel(
-                message=CompanyUserResponseMessages.GET_COMPANY_USERS.value,
-                data=response.model_dump(),
-            ).model_dump(),
-        )
-    except (AppError, Exception) as e:
-        raise e
+# NOTE: Company users endpoints live in app/routers/company/users.py

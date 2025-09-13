@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, status, Path
 from fastapi.responses import JSONResponse
 
 # Models
-from app.models.user.user import UserReadModel
 from app.models.generic_pagination import PaginatedResponse
 from app.models.generic_response import GenericResponseModel
 from app.models.company.roles import (
@@ -19,10 +18,11 @@ from app.models.company.response_messages import (
 
 # Auth
 from app.models.tags import UserverseApiTag
-from app.security.jwt import get_current_user_from_jwt_token
+from app.dependencies.common import CommonJWTRouteDependencies
 
 # Business Logic
 from app.logic.company.role import RoleService
+from app.utils.shared_context import SharedContext
 
 # Utilities
 from app.utils.app_error import AppError
@@ -44,7 +44,7 @@ tag = UserverseApiTag.COMPANY_ROLE_MANAGEMENT.name
 def create_role_api(
     payload: RoleCreateModel,
     company_id: int = Path(..., description="The unique identifier of the company"),
-    user: UserReadModel = Depends(get_current_user_from_jwt_token),
+    common: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Create a new role for the specified company.
@@ -53,10 +53,10 @@ def create_role_api(
     - **Returns**: The created role
     """
     try:
-        role_service = RoleService()
-        response = role_service.create_role(
-            payload=payload, created_by=user, company_id=company_id
+        service = RoleService(
+            SharedContext(user=common.user, db_session=common.session)
         )
+        response = service.create_role(payload=payload, company_id=company_id)
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
             content={
@@ -83,7 +83,7 @@ def update_role_api(
     payload: RoleUpdateModel,
     company_id: int = Path(..., description="The company ID associated with the role"),
     name: str = Path(..., description="The name of the role to update"),
-    user: UserReadModel = Depends(get_current_user_from_jwt_token),
+    common: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Update a role's description by its name.
@@ -92,10 +92,10 @@ def update_role_api(
     - **Returns**: Updated role data
     """
     try:
-        role_service = RoleService()
-        response = role_service.update_role(
-            updated_by=user, company_id=company_id, name=name, payload=payload
+        service = RoleService(
+            SharedContext(user=common.user, db_session=common.session)
         )
+        response = service.update_role(company_id=company_id, name=name, payload=payload)
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
             content={
@@ -121,7 +121,7 @@ def update_role_api(
 def delete_role_api(
     payload: RoleDeleteModel,
     company_id: int = Path(..., description="Company ID to delete role from"),
-    user: UserReadModel = Depends(get_current_user_from_jwt_token),
+    common: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Delete a role from a company and reassign affected users to a replacement role.
@@ -130,9 +130,10 @@ def delete_role_api(
     - **Returns**: Success message with result info
     """
     try:
-        response = RoleService.delete_role(
-            payload=payload, deleted_by=user, company_id=company_id
+        service = RoleService(
+            SharedContext(user=common.user, db_session=common.session)
         )
+        response = service.delete_role(payload=payload, company_id=company_id)
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
             content={
@@ -157,7 +158,7 @@ def delete_role_api(
 def get_company_roles_api(
     company_id: int = Path(..., description="ID of the company whose roles to fetch"),
     query_params: RoleQueryParamsModel = Depends(),
-    user: UserReadModel = Depends(get_current_user_from_jwt_token),
+    common: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Get a paginated list of all roles associated with a specific company.
@@ -166,14 +167,17 @@ def get_company_roles_api(
     - **Requires**: Authenticated user
     """
     try:
-        response = RoleService.get_company_roles(
-            payload=query_params, company_id=company_id, user=user
+        service = RoleService(
+            SharedContext(user=common.user, db_session=common.session)
+        )
+        response = service.get_company_roles(
+            payload=query_params, company_id=company_id
         )
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content=GenericResponseModel(
                 message=CompanyRoleResponseMessages.ROLE_GET_SUCCESS.value,
-                data=response,
+                data=response.model_dump(),
             ).model_dump(),
         )
     except (AppError, Exception) as e:

@@ -1,5 +1,6 @@
 from app.models.company.response_messages import CompanyUserResponseMessages
 from app.models.user.user import UserReadModel
+from app.models.company.roles import CompanyDefaultRoles
 from app.utils.app_error import AppError
 from sqlalchemy import Column, Integer, String, ForeignKey, ForeignKeyConstraint
 from sqlalchemy.orm import relationship, Session
@@ -80,7 +81,7 @@ class AssociationUserCompany(BaseModel):
         session: Session,
         company_id: int,
         user_id: int,
-        added_by: UserReadModel,
+        removed_by: UserReadModel,
     ) -> "AssociationUserCompany":
         assoc = (
             session.query(cls)
@@ -94,11 +95,8 @@ class AssociationUserCompany(BaseModel):
                 message=CompanyUserResponseMessages.USER_ALREADY_REMOVED.value,
             )
 
-        # Ensure the user being removed is not super admin
-        if (
-            assoc.primary_meta_data.get("added_by") == removed_by.model_dump()
-            and assoc.user_id == removed_by.id
-        ):
+        # Prevent removing oneself if they are the Administrator (super admin)
+        if assoc.user_id == removed_by.id and assoc.role_name == CompanyDefaultRoles.ADMINISTRATOR.name_value:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 message=CompanyUserResponseMessages.SUPER_ADMIN_REMOVE_FORBIDDEN.value,

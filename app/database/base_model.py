@@ -279,7 +279,6 @@ class BaseModel(Base):
         return {
             "total_records": total_records,
             "limit": limit,
-            "offset": offset,
             "current_page": offset // limit + 1,
             "total_pages": (total_records + limit - 1) // limit,  # Ceiling division
         }

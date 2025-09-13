@@ -5,9 +5,9 @@ from app.models.company.response_messages import CompanyRoleResponseMessages
 @pytest.mark.parametrize(
     "query_params,expected_names",
     [
-        ("limit=10&offset=0", {"Administrator", "User Updated", "Viewer"}),
-        ("limit=10&offset=0&name=Ad", {"Administrator"}),
-        ("limit=10&offset=0&name=er&description=access", {"User Updated", "Viewer"}),
+        ("limit=10&page=1", {"Administrator", "User Updated", "Viewer"}),
+        ("limit=10&page=1&name=Ad", {"Administrator"}),
+        ("limit=10&page=1&name=er&description=access", {"User Updated", "Viewer"}),
     ],
 )
 def test_get_company_roles(
@@ -40,7 +40,7 @@ def test_get_company_roles(
 
     pagination = json_data["data"]["pagination"]
     assert pagination["limit"] == 10
-    assert pagination["offset"] == 0
+    assert pagination["current_page"] == 1
     assert pagination["total_records"] == len(expected_names)
 
 
@@ -64,14 +64,14 @@ def test_get_roles_with_invalid_filter(client, login_token, test_company_data):
 
 def test_get_roles_with_pagination(client, login_token, test_company_data):
     """
-    Test pagination with limit=1 and offset=1.
+    Test pagination with limit=1 and page=2.
     """
     headers = {
         "Authorization": f"Bearer {login_token}",
         "accept": "application/json",
     }
 
-    response = client.get("/company/1/roles?limit=1&offset=1", headers=headers)
+    response = client.get("/company/1/roles?limit=1&page=2", headers=headers)
     assert response.status_code == 200
 
     json_data = response.json()
@@ -80,5 +80,4 @@ def test_get_roles_with_pagination(client, login_token, test_company_data):
 
     pagination = json_data["data"]["pagination"]
     assert pagination["limit"] == 1
-    assert pagination["offset"] == 1
     assert pagination["current_page"] == 2

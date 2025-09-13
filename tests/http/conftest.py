@@ -10,6 +10,8 @@ from app.utils.config.loader import ConfigLoader
 from app.database.session_manager import DatabaseSessionManager
 from app.database.user import User
 from tests.utils.basic_auth import get_basic_auth_header
+from app.security.jwt import JWTManager
+from datetime import timedelta
 
 TEST_DATA_BASE_PATH = "tests/data/http/"
 
@@ -79,3 +81,27 @@ def login_token_user_two(client, test_user_data):
     )
     assert response.status_code in [200, 201, 202]
     return response.json()["data"]["access_token"]
+
+
+def _verify_user_account(client: TestClient, email: str):
+    token = JWTManager().sign_payload(
+        {"sub": email, "type": "verification"}, expires_delta=timedelta(minutes=60)
+    )
+    response = client.get(f"/user/verify?token={token}")
+    assert response.status_code in [200, 201]
+
+
+@pytest.fixture
+def verify_user_one_account(client, test_user_data):
+    _verify_user_account(client, test_user_data["user_one"]["email"])
+
+
+@pytest.fixture
+def verify_user_two_account(client, test_user_data):
+    _verify_user_account(client, test_user_data["user_two"]["email"])
+
+
+@pytest.fixture
+def verify_both_users(verify_user_one_account, verify_user_two_account):
+    # Ensures both users verified before tests
+    pass

@@ -18,8 +18,8 @@ class UserProfileService:
 
     def __init__(self, context: SharedContext):
         self.context = context
-        self.user_repository = UserRepository()
-        self.company_repository = CompanyRepository()
+        self.user_repository = UserRepository(context.db_session)
+        self.company_repository = CompanyRepository(context.db_session)
 
     def get_user(
         self, user_id: Optional[int] = None, user_email: Optional[str] = None

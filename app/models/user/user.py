@@ -1,6 +1,7 @@
 from typing import Optional, Literal
 from pydantic import BaseModel, EmailStr, field_validator, Field
 from app.models.phone_number import validate_phone_number_format
+from app.models.generic_pagination import PaginationParams
 
 
 class UserLoginModel(BaseModel):
@@ -62,9 +63,7 @@ class TokenResponseModel(BaseModel):
     )
 
 
-class UserQueryParams(BaseModel):
-    limit: int = Field(10, ge=1, le=100)
-    offset: int = Field(0, ge=0)
+class UserQueryParams(PaginationParams):
     role_name: Optional[str] = Field(None, description="Filter by role name")
     first_name: Optional[str] = Field(None, description="Filter by user first name")
     last_name: Optional[str] = Field(None, description="Filter by user last name")

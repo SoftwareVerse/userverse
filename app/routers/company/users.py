@@ -19,6 +19,7 @@ from app.logic.company.user import CompanyUserService
 
 # Utilities
 from app.utils.app_error import AppError
+from app.utils.shared_context import SharedContext
 
 router = APIRouter()
 tag = UserverseApiTag.COMPANY_USER_MANAGEMENT.name
@@ -48,9 +49,14 @@ def get_company_users_api(
     - **Supports**: Query parameters for filtering, sorting, pagination
     """
     try:
-        service = CompanyUserService()
+        context = SharedContext(
+            user=common_dependecies.user,
+            db_session=common_dependecies.session,
+        )
+        service = CompanyUserService(context)
         response = service.get_company_user(
-            company_id=company_id, params=params, user=common_dependecies.user
+            company_id=company_id,
+            params=params,
         )
 
         return JSONResponse(
@@ -75,8 +81,8 @@ def get_company_users_api(
     },
 )
 def add_user_to_company_api(
+    payload: CompanyUserAddModel,
     company_id: int = Path(..., description=company_id_description),
-    payload: CompanyUserAddModel = Depends(),
     common_dependecies: CommonJWTRouteDependencies = Depends(),
 ):
     """
@@ -86,8 +92,13 @@ def add_user_to_company_api(
     - **Returns**: The updated company info or user assignment info
     """
     try:
-        response = CompanyUserService().add_user_to_company(
-            company_id=company_id, payload=payload, added_by=common_dependecies.user
+        context = SharedContext(
+            user=common_dependecies.user,
+            db_session=common_dependecies.session,
+        )
+        response = CompanyUserService(context).add_user_to_company(
+            company_id=company_id,
+            payload=payload,
         )
 
         return JSONResponse(
@@ -123,8 +134,13 @@ def delete_user_from_company_api(
     - **Returns**: The removed user's data
     """
     try:
-        response = CompanyUserService().remove_user_from_company(
-            company_id=company_id, user_id=user_id, removed_by=common_dependecies.user
+        context = SharedContext(
+            user=common_dependecies.user,
+            db_session=common_dependecies.session,
+        )
+        response = CompanyUserService(context).remove_user_from_company(
+            company_id=company_id,
+            user_id=user_id,
         )
 
         return JSONResponse(

@@ -1,6 +1,6 @@
 [project]
 name = "userverse"
-version = "0.6.8"
+version = "0.6.10"
 description = "Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -29,11 +29,10 @@ dependencies = [
 ]
 
 [tool.pytest.ini_options]
-# Silence noisy DeprecationWarning originating from passlib importing Python's 'crypt'
-# This keeps CI logs clean while we plan a long-term fix.
-# filterwarnings = [
-#     "ignore::DeprecationWarning:passlib.utils",
-# ]
+# Silence DeprecationWarning from passlib importing Python's 'crypt' (Py3.13 removal)
+filterwarnings = [
+    "ignore::DeprecationWarning:passlib.utils",
+]
 
 [tool.userverse.config]
 

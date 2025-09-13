@@ -9,40 +9,41 @@ from app.models.company.response_messages import (
     "login_token_key, company_id, query_params, expected_emails, expected_status",
     [
         # ✅ User 1 accessing own company
-        ("login_token", 1, "limit=10&offset=0", {"user.one@email.com"}, 200),
+        ("login_token", 1, "limit=10&page=1", {"user.one@email.com"}, 200),
         (
             "login_token",
             1,
-            "limit=10&offset=0&role_name=Admin",
+            "limit=10&page=1&role_name=Admin",
             {"user.one@email.com"},
             200,
         ),
         (
             "login_token",
             1,
-            "limit=10&offset=0&email=user.one@email.com",
+            "limit=10&page=1&email=user.one@email.com",
             {"user.one@email.com"},
             200,
         ),
         # ❌ User 1 accessing company 2
-        ("login_token", 2, "limit=10&offset=0", set(), 403),
+        ("login_token", 2, "limit=10&page=1", set(), 403),
         # ✅ User 2 accessing own company
-        ("login_token_user_two", 2, "limit=10&offset=0", {"user.two@email.com"}, 200),
+        ("login_token_user_two", 2, "limit=10&page=1", {"user.two@email.com"}, 200),
         (
             "login_token_user_two",
             2,
-            "limit=10&offset=0&first_name=Jane",
+            "limit=10&page=1&first_name=Jane",
             {"user.two@email.com"},
             200,
         ),
         # ❌ User 2 accessing company 1
-        ("login_token_user_two", 1, "limit=10&offset=0", set(), 403),
+        ("login_token_user_two", 1, "limit=10&page=1", set(), 403),
     ],
 )
 def test_get_users_for_company(
     client,
     login_token,
     login_token_user_two,
+    verify_both_users,
     login_token_key,
     company_id,
     query_params,
@@ -79,7 +80,7 @@ def test_get_users_for_company(
         assert actual_emails == expected_emails
         pagination = json_data["data"]["pagination"]
         assert pagination["limit"] == 10
-        assert pagination["offset"] == 0
+        assert pagination["current_page"] == 1
 
     elif expected_status == 403:
         json_data = response.json()
