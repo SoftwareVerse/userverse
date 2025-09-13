@@ -4,7 +4,7 @@ from pydantic import BaseModel, EmailStr, field_validator, Field
 from app.models.phone_number import validate_phone_number_format
 
 
-class CompanyRead(BaseModel):
+class CompanyReadModel(BaseModel):
     id: int
     name: Optional[str] = None
     description: Optional[str] = None
@@ -16,7 +16,7 @@ class CompanyRead(BaseModel):
     address: Optional[CompanyAddress] = None
 
 
-class CompanyUpdate(BaseModel):
+class CompanyUpdateModel(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     industry: Optional[str] = None
@@ -30,7 +30,7 @@ class CompanyUpdate(BaseModel):
         return validate_phone_number_format(v)
 
 
-class CompanyCreate(BaseModel):
+class CompanyCreateModel(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     industry: Optional[str] = None
@@ -45,7 +45,7 @@ class CompanyCreate(BaseModel):
         return validate_phone_number_format(v)
 
 
-class CompanyQueryParams(BaseModel):
+class CompanyQueryParamsModel(BaseModel):
     limit: int = Field(10, ge=1, le=100)
     offset: int = Field(0, ge=0)
     role_name: Optional[str] = None

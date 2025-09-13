@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from app.models.company.user import CompanyUserRead
 from app.models.generic_pagination import PaginatedResponse
 from app.models.generic_response import GenericResponseModel
-from app.models.company.company import CompanyCreate, CompanyRead, CompanyUpdate
+from app.models.company.company import CompanyCreateModel, CompanyReadModel, CompanyUpdateModel
 from app.models.app_error import AppErrorResponseModel
 from app.models.company.response_messages import (
     CompanyResponseMessages,
@@ -33,13 +33,13 @@ tag = UserverseApiTag.COMPANY_MANAGEMENT.name
     tags=[tag],
     status_code=status.HTTP_201_CREATED,
     responses={
-        201: {"model": GenericResponseModel[CompanyRead]},
+        201: {"model": GenericResponseModel[CompanyReadModel]},
         400: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
     },
 )
 def create_company_api(
-    payload: CompanyCreate,
+    payload: CompanyCreateModel,
     user: UserReadModel = Depends(get_current_user_from_jwt_token),
 ):
     """
@@ -68,7 +68,7 @@ def create_company_api(
     tags=[tag],
     status_code=status.HTTP_200_OK,
     responses={
-        200: {"model": GenericResponseModel[CompanyRead]},
+        200: {"model": GenericResponseModel[CompanyReadModel]},
         400: {"model": AppErrorResponseModel},
         404: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
@@ -113,13 +113,13 @@ def get_company_api(
     tags=[tag],
     status_code=status.HTTP_200_OK,
     responses={
-        200: {"model": GenericResponseModel[CompanyRead]},
+        200: {"model": GenericResponseModel[CompanyReadModel]},
         400: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
     },
 )
 def update_company_api(
-    company_updates: CompanyUpdate,
+    company_updates: CompanyUpdateModel,
     company_id: int = Path(..., description="ID of the company to update"),
     user: UserReadModel = Depends(get_current_user_from_jwt_token),
 ):

@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from app.models.company.user import CompanyUserAdd, CompanyUserRead
 from app.models.generic_pagination import PaginatedResponse
 from app.models.generic_response import GenericResponseModel
-from app.models.company.company import CompanyRead
+from app.models.company.company import CompanyReadModel
 from app.models.app_error import AppErrorResponseModel
 from app.models.company.response_messages import CompanyUserResponseMessages
 
@@ -69,7 +69,7 @@ def get_company_users_api(
     tags=[tag],
     status_code=status.HTTP_201_CREATED,
     responses={
-        201: {"model": GenericResponseModel[CompanyRead]},
+        201: {"model": GenericResponseModel[CompanyReadModel]},
         400: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
     },

@@ -11,9 +11,9 @@ from app.logic.company.repository.company import CompanyRepository
 
 # models
 from app.models.company.company import (
-    CompanyCreate,
-    CompanyUpdate,
-    CompanyRead,
+    CompanyCreateModel,
+    CompanyUpdateModel,
+    CompanyReadModel,
 )
 from app.models.company.roles import CompanyDefaultRoles
 
@@ -28,8 +28,8 @@ class CompanyService:
 
     @staticmethod
     def create_company(
-        payload: CompanyCreate, created_by: UserReadModel
-    ) -> CompanyRead:
+        payload: CompanyCreateModel, created_by: UserReadModel
+    ) -> CompanyReadModel:
         """
         Create a new company and store its address in primary_meta_data.
         Also sets up default roles (Administrator, Viewer).
@@ -46,7 +46,7 @@ class CompanyService:
     @staticmethod
     def get_company(
         user: UserReadModel, company_id: str = None, email: str = None
-    ) -> CompanyRead:
+    ) -> CompanyReadModel:
         """
         Get a company by its ID.
         """
@@ -72,8 +72,8 @@ class CompanyService:
 
     @staticmethod
     def update_company(
-        payload: CompanyUpdate, company_id: str, user: UserReadModel
-    ) -> CompanyRead:
+        payload: CompanyUpdateModel, company_id: str, user: UserReadModel
+    ) -> CompanyReadModel:
         """
         Update a company by its ID.
         """

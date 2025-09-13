@@ -13,10 +13,10 @@ from sqlalchemy.orm import joinedload
 # models
 from app.models.company.address import CompanyAddress
 from app.models.company.company import (
-    CompanyQueryParams,
-    CompanyRead,
-    CompanyCreate,
-    CompanyUpdate,
+    CompanyQueryParamsModel,
+    CompanyReadModel,
+    CompanyCreateModel,
+    CompanyUpdateModel,
 )
 from app.models.company.roles import CompanyDefaultRoles
 from app.models.company.response_messages import CompanyResponseMessages
@@ -27,7 +27,7 @@ class CompanyRepository:
     def __init__(self):
         self.db_manager = DatabaseSessionManager()
 
-    def create_company(self, payload: CompanyCreate, created_by) -> CompanyRead:
+    def create_company(self, payload: CompanyCreateModel, created_by) -> CompanyReadModel:
         with self.db_manager.session_object() as session:
             company = self._create_company_record(session, payload)
             company_id = company["id"]
@@ -46,9 +46,9 @@ class CompanyRepository:
             )
 
             registered_company = self._get_registered_company(session, company_id)
-            return CompanyRead(**registered_company)
+            return CompanyReadModel(**registered_company)
 
-    def get_company_by_id(self, company_id: str) -> CompanyRead:
+    def get_company_by_id(self, company_id: str) -> CompanyReadModel:
         with self.db_manager.session_object() as session:
             company = self._get_registered_company(session, company_id)
 
@@ -58,9 +58,9 @@ class CompanyRepository:
                     message=CompanyResponseMessages.COMPANY_NOT_FOUND.value,
                 )
 
-            return CompanyRead(**company)
+            return CompanyReadModel(**company)
 
-    def get_company_by_email(self, email: str) -> CompanyRead:
+    def get_company_by_email(self, email: str) -> CompanyReadModel:
         with self.db_manager.session_object() as session:
             company = Company.get_company_by_email(session, email)
 
@@ -70,11 +70,11 @@ class CompanyRepository:
                     message=CompanyResponseMessages.COMPANY_NOT_FOUND.value,
                 )
 
-            return CompanyRead(**self._get_registered_company(session, company["id"]))
+            return CompanyReadModel(**self._get_registered_company(session, company["id"]))
 
     def update_company(
-        self, payload: CompanyUpdate, company_id: str, user
-    ) -> CompanyRead:
+        self, payload: CompanyUpdateModel, company_id: str, user
+    ) -> CompanyReadModel:
         with self.db_manager.session_object() as session:
             company = Company.update(session, company_id, **payload.model_dump())
 
@@ -87,11 +87,11 @@ class CompanyRepository:
                     message=CompanyResponseMessages.COMPANY_UPDATE_FAILED.value,
                 )
 
-            return CompanyRead(**self._get_registered_company(session, company["id"]))
+            return CompanyReadModel(**self._get_registered_company(session, company["id"]))
 
     def get_user_companies(
-        self, user_id: int, params: CompanyQueryParams
-    ) -> PaginatedResponse[CompanyRead]:
+        self, user_id: int, params: CompanyQueryParamsModel
+    ) -> PaginatedResponse[CompanyReadModel]:
         with self.db_manager.session_object() as session:
             query = (
                 session.query(AssociationUserCompany)
@@ -136,9 +136,9 @@ class CompanyRepository:
                         address = primary_meta_data.get("address")
                         registered_company["address"] = address
 
-                companies.append(CompanyRead(**registered_company))
+                companies.append(CompanyReadModel(**registered_company))
 
-            return PaginatedResponse[CompanyRead](
+            return PaginatedResponse[CompanyReadModel](
                 records=companies,
                 pagination=PaginationMeta(
                     total_records=total,
@@ -149,7 +149,7 @@ class CompanyRepository:
                 ),
             )
 
-    def _create_company_record(self, session, payload: CompanyCreate) -> dict:
+    def _create_company_record(self, session, payload: CompanyCreateModel) -> dict:
         company = Company.create(session, **payload.model_dump(exclude={"address"}))
 
         if not company:
