@@ -5,7 +5,11 @@ from fastapi.responses import JSONResponse
 from app.models.company.user import CompanyUserReadModel
 from app.models.generic_pagination import PaginatedResponse
 from app.models.generic_response import GenericResponseModel
-from app.models.company.company import CompanyCreateModel, CompanyReadModel, CompanyUpdateModel
+from app.models.company.company import (
+    CompanyCreateModel,
+    CompanyReadModel,
+    CompanyUpdateModel,
+)
 from app.models.app_error import AppErrorResponseModel
 from app.models.company.response_messages import (
     CompanyResponseMessages,

@@ -95,7 +95,9 @@ class CompanyUserRepository:
             )
 
             users = [
-                CompanyUserReadModel(**User.to_dict(assoc.user), role_name=assoc.role_name)
+                CompanyUserReadModel(
+                    **User.to_dict(assoc.user), role_name=assoc.role_name
+                )
                 for assoc in results
             ]
 

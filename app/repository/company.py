@@ -27,7 +27,9 @@ class CompanyRepository:
     def __init__(self):
         self.db_manager = DatabaseSessionManager()
 
-    def create_company(self, payload: CompanyCreateModel, created_by) -> CompanyReadModel:
+    def create_company(
+        self, payload: CompanyCreateModel, created_by
+    ) -> CompanyReadModel:
         with self.db_manager.session_object() as session:
             company = self._create_company_record(session, payload)
             company_id = company["id"]
@@ -70,7 +72,9 @@ class CompanyRepository:
                     message=CompanyResponseMessages.COMPANY_NOT_FOUND.value,
                 )
 
-            return CompanyReadModel(**self._get_registered_company(session, company["id"]))
+            return CompanyReadModel(
+                **self._get_registered_company(session, company["id"])
+            )
 
     def update_company(
         self, payload: CompanyUpdateModel, company_id: str, user
@@ -87,7 +91,9 @@ class CompanyRepository:
                     message=CompanyResponseMessages.COMPANY_UPDATE_FAILED.value,
                 )
 
-            return CompanyReadModel(**self._get_registered_company(session, company["id"]))
+            return CompanyReadModel(
+                **self._get_registered_company(session, company["id"])
+            )
 
     def get_user_companies(
         self, user_id: int, params: CompanyQueryParamsModel
