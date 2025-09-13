@@ -3,12 +3,13 @@ from datetime import datetime, timedelta, timezone
 from fastapi import status
 import jwt
 
+from app.models.user.user import UserReadModel
 from app.models.security_messages import SecurityResponseMessages
 from app.security.jwt import JWTManager
 from app.utils.app_error import AppError
 
 # Sample user
-sample_user = UserRead(
+sample_user = UserReadModel(
     id=1,
     first_name="Test",
     last_name="User",

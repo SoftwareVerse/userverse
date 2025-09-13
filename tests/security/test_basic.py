@@ -2,7 +2,7 @@
 from fastapi import status
 from fastapi.security import HTTPBasicCredentials
 import pytest
-from app.models.user.user import UserLogin
+from app.models.user.user import UserLoginModel
 
 from app.security.basic_auth import get_basic_auth_credentials
 from app.utils.app_error import AppError
@@ -13,8 +13,8 @@ def test_valid_credentials():
         username="user@example.com", password="securepass"
     )
     result = get_basic_auth_credentials(credentials)
-    expected = UserLogin(email="user@example.com", password="securepass")
-    assert isinstance(result, UserLogin)
+    expected = UserLoginModel(email="user@example.com", password="securepass")
+    assert isinstance(result, UserLoginModel)
     assert result.email == expected.email
     assert result.password == expected.password
 

@@ -2,7 +2,7 @@
 
     -   To run the first suite 
     ```bash
-    
+    export TEST_ENVIRONMENT=true
     ```
 
 ## Database

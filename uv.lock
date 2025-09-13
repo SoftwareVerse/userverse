@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -1225,7 +1225,7 @@ wheels = [
 
 [[package]]
 name = "userverse"
-version = "0.6.7"
+version = "0.6.8"
 source = { virtual = "." }
 dependencies = [
     { name = "alembic" },
