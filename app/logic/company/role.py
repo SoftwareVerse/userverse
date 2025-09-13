@@ -38,7 +38,9 @@ class RoleService:
             company_id=company_id,
             role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
         )
-        role_repository = RoleRepository(company_id=company_id, session=self.context.db_session)
+        role_repository = RoleRepository(
+            company_id=company_id, session=self.context.db_session
+        )
         role = role_repository.update_role(
             name=name,
             payload=payload,
@@ -59,7 +61,9 @@ class RoleService:
             company_id=company_id,
             role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
         )
-        role_repository = RoleRepository(company_id=company_id, session=self.context.db_session)
+        role_repository = RoleRepository(
+            company_id=company_id, session=self.context.db_session
+        )
         role = role_repository.create_role(payload, self.context.user)
         if not role:
             raise AppError(
@@ -74,8 +78,12 @@ class RoleService:
             company_id=company_id,
             role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
         )
-        role_repository = RoleRepository(company_id=company_id, session=self.context.db_session)
-        return role_repository.delete_role(payload=payload, deleted_by=self.context.user)
+        role_repository = RoleRepository(
+            company_id=company_id, session=self.context.db_session
+        )
+        return role_repository.delete_role(
+            payload=payload, deleted_by=self.context.user
+        )
 
     def get_company_roles(
         self, payload: RoleQueryParamsModel, company_id: int
@@ -88,7 +96,9 @@ class RoleService:
             company_id=company_id,
             role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
         )
-        role_repository = RoleRepository(company_id=company_id, session=self.context.db_session)
+        role_repository = RoleRepository(
+            company_id=company_id, session=self.context.db_session
+        )
         result = role_repository.get_roles(payload=payload)
 
         return PaginatedResponse[RoleReadModel](

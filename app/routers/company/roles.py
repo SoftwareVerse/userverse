@@ -95,7 +95,9 @@ def update_role_api(
         service = RoleService(
             SharedContext(user=common.user, db_session=common.session)
         )
-        response = service.update_role(company_id=company_id, name=name, payload=payload)
+        response = service.update_role(
+            company_id=company_id, name=name, payload=payload
+        )
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
             content={

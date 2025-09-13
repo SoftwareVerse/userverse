@@ -30,7 +30,9 @@ router = APIRouter(
     status_code=status.HTTP_202_ACCEPTED,
     response_model=GenericResponseModel[None],
 )
-def password_reset_request_api(email: EmailStr, session: Session = Depends(get_session)):
+def password_reset_request_api(
+    email: EmailStr, session: Session = Depends(get_session)
+):
     """
     Trigger a password reset request.
 
