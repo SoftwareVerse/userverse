@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, status, Query, Path
 from fastapi.responses import JSONResponse
 
 # Models
-from app.models.company.user import CompanyUserRead
+from app.models.company.user import CompanyUserReadModel
 from app.models.generic_pagination import PaginatedResponse
 from app.models.generic_response import GenericResponseModel
-from app.models.company.company import CompanyCreate, CompanyRead, CompanyUpdate
+from app.models.company.company import CompanyCreateModel, CompanyReadModel, CompanyUpdateModel
 from app.models.app_error import AppErrorResponseModel
 from app.models.company.response_messages import (
     CompanyResponseMessages,
@@ -14,7 +14,7 @@ from app.models.company.response_messages import (
 
 # Auth
 from app.models.tags import UserverseApiTag
-from app.security.jwt import get_current_user_from_jwt_token
+from app.dependencies.common import CommonJWTRouteDependencies
 from app.models.user.user import UserQueryParams, UserReadModel
 
 # Logic
@@ -23,6 +23,7 @@ from app.logic.company.user import CompanyUserService
 
 # Utils
 from app.utils.app_error import AppError
+from app.utils.shared_context import SharedContext
 
 router = APIRouter()
 tag = UserverseApiTag.COMPANY_MANAGEMENT.name
@@ -33,14 +34,14 @@ tag = UserverseApiTag.COMPANY_MANAGEMENT.name
     tags=[tag],
     status_code=status.HTTP_201_CREATED,
     responses={
-        201: {"model": GenericResponseModel[CompanyRead]},
+        201: {"model": GenericResponseModel[CompanyReadModel]},
         400: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
     },
 )
 def create_company_api(
-    payload: CompanyCreate,
-    user: UserReadModel = Depends(get_current_user_from_jwt_token),
+    payload: CompanyCreateModel,
+    common_deps: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Create a new company and initialize default roles.
@@ -51,7 +52,11 @@ def create_company_api(
     - **Returns**: Created company data
     """
     try:
-        response = CompanyService().create_company(payload, created_by=user)
+        context = SharedContext(
+            db_session=common_deps.session,
+            user=common_deps.user,
+        )
+        response = CompanyService(context).create_company(payload)
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
             content=GenericResponseModel(
@@ -68,7 +73,7 @@ def create_company_api(
     tags=[tag],
     status_code=status.HTTP_200_OK,
     responses={
-        200: {"model": GenericResponseModel[CompanyRead]},
+        200: {"model": GenericResponseModel[CompanyReadModel]},
         400: {"model": AppErrorResponseModel},
         404: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
@@ -77,7 +82,7 @@ def create_company_api(
 def get_company_api(
     email: str = Query(None, description="(Optional) Company email address"),
     company_id: int = Query(None, description="(Optional) Company ID"),
-    user: UserReadModel = Depends(get_current_user_from_jwt_token),
+    common_deps: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Retrieve a company by email or company ID.
@@ -87,10 +92,15 @@ def get_company_api(
     - **Returns**: Company data if found
     """
     try:
+        context = SharedContext(
+            db_session=common_deps.session,
+            user=common_deps.user,
+        )
+        service = CompanyService(context)
         if email:
-            company = CompanyService().get_company(user=user, email=email)
+            company = service.get_company(email=email)
         elif company_id:
-            company = CompanyService().get_company(user=user, company_id=company_id)
+            company = service.get_company(company_id=company_id)
         else:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -113,15 +123,15 @@ def get_company_api(
     tags=[tag],
     status_code=status.HTTP_200_OK,
     responses={
-        200: {"model": GenericResponseModel[CompanyRead]},
+        200: {"model": GenericResponseModel[CompanyReadModel]},
         400: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
     },
 )
 def update_company_api(
-    company_updates: CompanyUpdate,
+    company_updates: CompanyUpdateModel,
     company_id: int = Path(..., description="ID of the company to update"),
-    user: UserReadModel = Depends(get_current_user_from_jwt_token),
+    common_deps: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Update company details by its ID.
@@ -130,10 +140,13 @@ def update_company_api(
     - **Returns**: Updated company data
     """
     try:
-        response = CompanyService().update_company(
+        context = SharedContext(
+            db_session=common_deps.session,
+            user=common_deps.user,
+        )
+        response = CompanyService(context).update_company(
             payload=company_updates,
             company_id=company_id,
-            user=user,
         )
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -151,7 +164,7 @@ def update_company_api(
     tags=[tag],
     status_code=status.HTTP_200_OK,
     responses={
-        200: {"model": GenericResponseModel[PaginatedResponse[CompanyUserRead]]},
+        200: {"model": GenericResponseModel[PaginatedResponse[CompanyUserReadModel]]},
         400: {"model": AppErrorResponseModel},
         404: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
@@ -160,7 +173,7 @@ def update_company_api(
 def get_company_users_api(
     company_id: int = Path(..., description="Company ID"),
     params: UserQueryParams = Depends(),
-    user: UserReadModel = Depends(get_current_user_from_jwt_token),
+    common_deps: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Get paginated list of users belonging to a company.
@@ -170,10 +183,13 @@ def get_company_users_api(
     - **Returns**: List of company users
     """
     try:
-        response = CompanyUserService().get_company_user(
+        context = SharedContext(
+            db_session=common_deps.session,
+            user=common_deps.user,
+        )
+        response = CompanyUserService(context).get_company_user(
             company_id=company_id,
             params=params,
-            user=user,
         )
         return JSONResponse(
             status_code=status.HTTP_200_OK,

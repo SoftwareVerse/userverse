@@ -17,6 +17,7 @@ dependencies = [
     "opentelemetry-instrumentation-requests>=0.53b1",
     "opentelemetry-sdk>=1.32.1",
     "passlib>=1.7.4",
+    "bcrypt>=4.2.0",
     "prometheus-client>=0.22.1",
     "psycopg2-binary==2.9.10",
     "pydantic>=2.11.3",
@@ -26,6 +27,13 @@ dependencies = [
     "sqlalchemy>=2.0.40",
     "sqlalchemy-utils>=0.41.2",
 ]
+
+[tool.pytest.ini_options]
+# Silence noisy DeprecationWarning originating from passlib importing Python's 'crypt'
+# This keeps CI logs clean while we plan a long-term fix.
+# filterwarnings = [
+#     "ignore::DeprecationWarning:passlib.utils",
+# ]
 
 [tool.userverse.config]
 

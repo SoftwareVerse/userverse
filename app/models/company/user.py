@@ -3,11 +3,11 @@ from app.models.company.roles import CompanyDefaultRoles
 from app.models.user.user import UserReadModel
 
 
-class CompanyUserRead(UserReadModel):
+class CompanyUserReadModel(UserReadModel):
     role_name: str
 
 
-class CompanyUserAdd(BaseModel):
+class CompanyUserAddModel(BaseModel):
     email: EmailStr = Field(
         default=None,
         json_schema_extra={"example": "user.one@email.com"},

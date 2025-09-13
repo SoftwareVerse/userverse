@@ -1,10 +1,10 @@
 from typing import Optional
-from app.models.company.address import CompanyAddress
+from app.models.company.address import CompanyAddressModel
 from pydantic import BaseModel, EmailStr, field_validator, Field
 from app.models.phone_number import validate_phone_number_format
 
 
-class CompanyRead(BaseModel):
+class CompanyReadModel(BaseModel):
     id: int
     name: Optional[str] = None
     description: Optional[str] = None
@@ -13,24 +13,24 @@ class CompanyRead(BaseModel):
         None, json_schema_extra={"example": "1236547899"}
     )
     email: EmailStr
-    address: Optional[CompanyAddress] = None
+    address: Optional[CompanyAddressModel] = None
 
 
-class CompanyUpdate(BaseModel):
+class CompanyUpdateModel(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     industry: Optional[str] = None
     phone_number: Optional[str] = Field(
         None, json_schema_extra={"example": "1236547899"}
     )
-    address: Optional[CompanyAddress] = None
+    address: Optional[CompanyAddressModel] = None
 
     @field_validator("phone_number")
     def validate_phone_number(cls, v: Optional[str]) -> Optional[str]:
         return validate_phone_number_format(v)
 
 
-class CompanyCreate(BaseModel):
+class CompanyCreateModel(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     industry: Optional[str] = None
@@ -38,14 +38,14 @@ class CompanyCreate(BaseModel):
         None, json_schema_extra={"example": "1236547899"}
     )
     email: EmailStr
-    address: Optional[CompanyAddress] = None
+    address: Optional[CompanyAddressModel] = None
 
     @field_validator("phone_number")
     def validate_phone_number(cls, v: Optional[str]) -> Optional[str]:
         return validate_phone_number_format(v)
 
 
-class CompanyQueryParams(BaseModel):
+class CompanyQueryParamsModel(BaseModel):
     limit: int = Field(10, ge=1, le=100)
     offset: int = Field(0, ge=0)
     role_name: Optional[str] = None

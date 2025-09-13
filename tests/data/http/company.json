@@ -1,0 +1,50 @@
+{
+    "company_one": {
+        "email": "company.one@email.com",
+        "name": "Company One",
+        "description": "A leading company in the industry.",
+        "industry": "Finance",
+        "phone_number": "+27112345678"
+    },
+    "company_two": {
+        "email": "company.two@email.com",
+        "name": "Company Two",
+        "description": "Innovative solutions for modern problems.",
+        "industry": "Technology",
+        "phone_number": "+27123456789"
+    },
+    "roles":{
+        "user": {
+            "name": "User",
+            "description": "Standard user role with limited access."
+        },
+        "client": {
+            "name": "Client",
+            "description": "Client role with access to client-specific features."
+        }
+    },
+    "update_company_one": {
+        "name": "Updated Company One",
+        "description": "An updated description for Company One.",
+        "industry": "Updated Finance",
+        "phone_number": "+27123456789"
+    },
+    "json_field": {
+        "column": "primary_meta_data",
+        "key": "address",
+        "value": {
+            "street": "123 Main St",
+            "city": "Johannesburg",
+            "state": "Gauteng",
+            "postal_code": "2000",
+            "country": "South Africa"
+        },
+        "updated_value": {
+            "street": "456 Elm St",
+            "city": "Cape Town",
+            "state": "Western Cape",
+            "postal_code": "8000",
+            "country": "South Africa"
+        }
+    }
+}

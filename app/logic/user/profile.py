@@ -1,8 +1,8 @@
 from typing import Optional
 from app.utils.shared_context import SharedContext
 from app.repository.user import UserRepository
-from app.logic.company.repository.company import CompanyRepository
-from app.models.company.company import CompanyQueryParams
+from app.repository.company import CompanyRepository
+from app.models.company.company import CompanyQueryParamsModel
 from app.models.user.user import UserUpdateModel, UserReadModel
 from app.utils.hash_password import hash_password
 from app.utils.app_error import AppError
@@ -60,7 +60,7 @@ class UserProfileService:
             )
         return self.user_repository.update_user(user_id, data)
 
-    def get_user_companies(self, params: CompanyQueryParams):
+    def get_user_companies(self, params: CompanyQueryParamsModel):
         """
         Get companies associated with the user.
         This method retrieves a list of companies that the user is associated with.

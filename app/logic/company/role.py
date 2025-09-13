@@ -6,16 +6,18 @@ from app.models.generic_pagination import PaginatedResponse, PaginationMeta
 from app.utils.app_error import AppError
 
 # repository
-from app.logic.company.repository.role import RoleRepository
+from app.repository.company_role import RoleRepository
 
 
 # models
 from app.models.user.user import UserReadModel
-from app.models.company.roles import CompanyDefaultRoles, RoleDelete, RoleQueryParams
 from app.models.company.roles import (
-    RoleCreate,
-    RoleRead,
-    RoleUpdate,
+    CompanyDefaultRoles,
+    RoleDeleteModel,
+    RoleQueryParamsModel,
+    RoleCreateModel,
+    RoleReadModel,
+    RoleUpdateModel,
 )
 from app.models.company.response_messages import (
     CompanyRoleResponseMessages,
@@ -26,8 +28,8 @@ class RoleService:
 
     @staticmethod
     def update_role(
-        company_id: int, updated_by: UserReadModel, name: str, payload: RoleUpdate
-    ) -> RoleRead:
+        company_id: int, updated_by: UserReadModel, name: str, payload: RoleUpdateModel
+    ) -> RoleReadModel:
         """
         Update the description of a role for a company.
         """
@@ -50,8 +52,8 @@ class RoleService:
 
     @staticmethod
     def create_role(
-        payload: RoleCreate, created_by: UserReadModel, company_id: int
-    ) -> RoleRead:
+        payload: RoleCreateModel, created_by: UserReadModel, company_id: int
+    ) -> RoleReadModel:
         """
         Create a new company role and store its creator in primary_meta_data.
         """
@@ -71,7 +73,7 @@ class RoleService:
 
     @staticmethod
     def delete_role(
-        payload: RoleDelete, deleted_by: UserReadModel, company_id: int
+        payload: RoleDeleteModel, deleted_by: UserReadModel, company_id: int
     ) -> dict:
         CompanyUserService.check_if_user_is_in_company(
             user_id=deleted_by.id,
@@ -83,8 +85,8 @@ class RoleService:
 
     @staticmethod
     def get_company_roles(
-        payload: RoleQueryParams, company_id: int, user: UserReadModel
-    ) -> PaginatedResponse[RoleRead]:
+        payload: RoleQueryParamsModel, company_id: int, user: UserReadModel
+    ) -> PaginatedResponse[RoleReadModel]:
         """
         Get company roles with pagination and optional filtering.
         """
@@ -96,7 +98,7 @@ class RoleService:
         role_repository = RoleRepository(company_id=company_id)
         result = role_repository.get_roles(payload=payload)
 
-        return PaginatedResponse[RoleRead](
-            records=[RoleRead(**role) for role in result["records"]],
+        return PaginatedResponse[RoleReadModel](
+            records=[RoleReadModel(**role) for role in result["records"]],
             pagination=PaginationMeta(**result["pagination"]),
         )

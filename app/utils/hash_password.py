@@ -1,23 +1,39 @@
-from passlib.context import CryptContext
+import bcrypt
 
-# Configure password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+class UnknownHashError(Exception):
+    """Raised when a stored password is not a recognized bcrypt hash."""
+
+
+def _is_bcrypt_hash(value: str) -> bool:
+    if not isinstance(value, str):
+        return False
+    return value.startswith(("$2a$", "$2b$", "$2y$")) and len(value) >= 60
 
 
 def hash_password(password: str) -> str:
-    """
-    Hash a plain password using bcrypt.
-    Returns the salted hash string.
-    """
-    return pwd_context.hash(password)
+    """Hash a plain password using bcrypt and return a UTF-8 string."""
+    if not isinstance(password, str) or not password:
+        raise ValueError("Password must be a non-empty string")
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
 
 
 def verify_password(password: str, hashed: str) -> bool:
     """
-    Verify a plain password against the stored hash.
+    Verify a plain password against a bcrypt hash.
     Returns True if it matches, False otherwise.
+
+    Raises UnknownHashError if the stored value doesn't look like a bcrypt hash.
     """
-    return pwd_context.verify(password, hashed)
+    if not _is_bcrypt_hash(hashed):
+        raise UnknownHashError("hash could not be identified")
+    try:
+        return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
+    except ValueError:
+        # Malformed hash string
+        raise UnknownHashError("hash could not be identified")
 
 
 # Demo usage

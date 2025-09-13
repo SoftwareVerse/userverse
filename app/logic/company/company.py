@@ -5,19 +5,20 @@ from app.utils.app_error import AppError
 
 # service and repository
 from app.logic.company.user import CompanyUserService
-from app.logic.company.repository.company import CompanyRepository
+from app.repository.company import CompanyRepository
 
 # database
 
 # models
 from app.models.company.company import (
-    CompanyCreate,
-    CompanyUpdate,
-    CompanyRead,
+    CompanyCreateModel,
+    CompanyUpdateModel,
+    CompanyReadModel,
 )
 from app.models.company.roles import CompanyDefaultRoles
 
 
+from app.utils.shared_context import SharedContext
 from app.models.user.user import UserReadModel
 
 
@@ -25,17 +26,17 @@ from app.models.company.response_messages import CompanyResponseMessages
 
 
 class CompanyService:
+    def __init__(self, context: SharedContext):
+        self.context = context
+        self.company_repository = CompanyRepository()
+        self.company_user_service = CompanyUserService(context)
 
-    @staticmethod
-    def create_company(
-        payload: CompanyCreate, created_by: UserReadModel
-    ) -> CompanyRead:
+    def create_company(self, payload: CompanyCreateModel) -> CompanyReadModel:
         """
         Create a new company and store its address in primary_meta_data.
         Also sets up default roles (Administrator, Viewer).
         """
-        company_repository = CompanyRepository()
-        company = company_repository.create_company(payload, created_by)
+        company = self.company_repository.create_company(payload, self.context.user)
         if not company:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -43,10 +44,9 @@ class CompanyService:
             )
         return company
 
-    @staticmethod
     def get_company(
-        user: UserReadModel, company_id: str = None, email: str = None
-    ) -> CompanyRead:
+        self, company_id: str = None, email: str = None
+    ) -> CompanyReadModel:
         """
         Get a company by its ID.
         """
@@ -55,36 +55,35 @@ class CompanyService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 message=CompanyResponseMessages.COMPANY_ID_OR_EMAIL_REQUIRED.value,
             )
-        company_repository = CompanyRepository()
         company = None
         if company_id:
-            company = company_repository.get_company_by_id(company_id)
+            company = self.company_repository.get_company_by_id(company_id)
 
         if email:
-            company = company_repository.get_company_by_email(email)
+            company = self.company_repository.get_company_by_email(email)
 
-        CompanyUserService.check_if_user_is_in_company(
-            user_id=user.id,
+        self.company_user_service.check_if_user_is_in_company(
+            user_id=self.context.user.id,
             company_id=company.id,
         )
 
         return company
 
-    @staticmethod
     def update_company(
-        payload: CompanyUpdate, company_id: str, user: UserReadModel
-    ) -> CompanyRead:
+        self, payload: CompanyUpdateModel, company_id: str
+    ) -> CompanyReadModel:
         """
         Update a company by its ID.
         """
-        CompanyUserService.check_if_user_is_in_company(
-            user_id=user.id,
+        self.company_user_service.check_if_user_is_in_company(
+            user_id=self.context.user.id,
             company_id=company_id,
             role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
         )
 
-        company_repository = CompanyRepository()
-        company = company_repository.update_company(payload, company_id, user)
+        company = self.company_repository.update_company(
+            payload, company_id, self.context.user
+        )
         if not company:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,

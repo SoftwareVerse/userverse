@@ -3,10 +3,10 @@ from fastapi import APIRouter, Depends, status, Path
 from fastapi.responses import JSONResponse
 
 # Models
-from app.models.company.user import CompanyUserAdd, CompanyUserRead
+from app.models.company.user import CompanyUserAddModel, CompanyUserReadModel
 from app.models.generic_pagination import PaginatedResponse
 from app.models.generic_response import GenericResponseModel
-from app.models.company.company import CompanyRead
+from app.models.company.company import CompanyReadModel
 from app.models.app_error import AppErrorResponseModel
 from app.models.company.response_messages import CompanyUserResponseMessages
 
@@ -30,7 +30,7 @@ company_id_description = "The ID of the company"
     tags=[tag],
     status_code=status.HTTP_200_OK,
     responses={
-        200: {"model": GenericResponseModel[PaginatedResponse[CompanyUserRead]]},
+        200: {"model": GenericResponseModel[PaginatedResponse[CompanyUserReadModel]]},
         400: {"model": AppErrorResponseModel},
         404: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
@@ -69,14 +69,14 @@ def get_company_users_api(
     tags=[tag],
     status_code=status.HTTP_201_CREATED,
     responses={
-        201: {"model": GenericResponseModel[CompanyRead]},
+        201: {"model": GenericResponseModel[CompanyReadModel]},
         400: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
     },
 )
 def add_user_to_company_api(
     company_id: int = Path(..., description=company_id_description),
-    payload: CompanyUserAdd = Depends(),
+    payload: CompanyUserAddModel = Depends(),
     common_dependecies: CommonJWTRouteDependencies = Depends(),
 ):
     """
@@ -106,7 +106,7 @@ def add_user_to_company_api(
     tags=[tag],
     status_code=status.HTTP_200_OK,
     responses={
-        201: {"model": GenericResponseModel[CompanyUserRead]},
+        201: {"model": GenericResponseModel[CompanyUserReadModel]},
         400: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
     },

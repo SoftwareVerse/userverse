@@ -25,3 +25,18 @@ class User(BaseModel):
             return cls.to_dict(agent)
         except NoResultFound:
             raise ValueError(f"User with email:{email}, not found.")
+
+    @classmethod
+    def create(cls, session: Session, **kwargs) -> dict:
+        """Create a user ensuring password is stored as a secure hash.
+
+        If a "password" is provided and it doesn't look like a bcrypt hash,
+        it will be hashed before persisting.
+        """
+        pwd = kwargs.get("password")
+        if isinstance(pwd, str) and pwd and not pwd.startswith("$2"):
+            # Lazily import to avoid circulars at module import time
+            from app.utils.hash_password import hash_password
+
+            kwargs["password"] = hash_password(pwd)
+        return super(User, cls).create(session, **kwargs)
