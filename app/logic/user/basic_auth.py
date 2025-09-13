@@ -16,7 +16,7 @@ class UserBasicAuthService:
 
     def __init__(self, context: SharedContext):
         self.context = context
-        self.user_repository = UserRepository()
+        self.user_repository = UserRepository(context.db_session)
 
     def generate_verification_link(self) -> str:
         token = JWTManager().sign_payload(

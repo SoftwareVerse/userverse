@@ -1,4 +1,5 @@
 from fastapi import status
+from sqlalchemy.orm import Session
 from app.repository.user import UserRepository
 from app.security.jwt import JWTManager
 from app.utils.app_error import AppError
@@ -12,8 +13,10 @@ class UserVerificationService:
     This service does not require an authenticated context to run.
     """
 
-    @staticmethod
-    def verify_user_account(token: str) -> str:
+    def __init__(self, session: Session):
+        self.session = session
+
+    def verify_user_account(self, token: str) -> str:
         """
         Verifies a user account using a JWT email verification token.
         This method runs without requiring an authenticated context.
@@ -35,7 +38,7 @@ class UserVerificationService:
                 message=UserResponseMessages.INVALID_VERIFICATION_TOKEN.value,
             )
 
-        user_repository = UserRepository()
+        user_repository = UserRepository(self.session)
         user = user_repository.get_user_by_email(email)
 
         if user.status == UserAccountStatus.ACTIVE.name_value:

@@ -8,6 +8,7 @@ from app.models.generic_response import GenericResponseModel
 # repository
 from app.repository.user import UserRepository
 from app.repository.user_password import UserPasswordRepository
+from sqlalchemy.orm import Session
 
 # UTILS
 from app.models.user.response_messages import (
@@ -26,19 +27,21 @@ class UserPasswordService:
         characters = string.ascii_letters + string.digits
         return "".join(random.choice(characters) for _ in range(length))
 
-    @classmethod
-    def request_password_reset(cls, user_email: str) -> GenericResponseModel:
+    def __init__(self, session: Session):
+        self.session = session
+
+    def request_password_reset(self, user_email: str) -> GenericResponseModel:
         """
         Request a password reset by sending an OTP to the user's email.
         """
         # check if user exists
-        user_repository = UserRepository()
+        user_repository = UserRepository(self.session)
         user = user_repository.get_user_by_email(user_email)
 
         # reset token
-        token = cls.generate_random_string(length=6)
+        token = self.generate_random_string(length=6)
         # populate the token in the database for the user
-        user_password_repository = UserPasswordRepository()
+        user_password_repository = UserPasswordRepository(self.session)
         user_password_repository.update_password_reset_token(
             user_email=user.email,
             token=token,
@@ -46,8 +49,8 @@ class UserPasswordService:
         # send email
         MailService.send_template_email(
             to=user.email,
-            subject=cls.OTP_EMAIL_SUBJECT,
-            template_name=cls.SEND_OTP_EMAIL_TEMPLATE,
+            subject=self.OTP_EMAIL_SUBJECT,
+            template_name=self.SEND_OTP_EMAIL_TEMPLATE,
             context={
                 "user_name": (user.first_name or "") + " " + (user.last_name or ""),
                 "otp": token,
@@ -59,22 +62,21 @@ class UserPasswordService:
             data=None,
         )
 
-    @classmethod
     def validate_otp_and_change_password(
-        cls, user_email: str, otp: str, new_password
+        self, user_email: str, otp: str, new_password
     ) -> GenericResponseModel:
         """
         Validate the OTP sent to the user's email. Ensure that the OTP is valid and not expired.
         Return token for the next step(Change Password).
         """
         # check if user exists
-        user_repository = UserRepository()
+        user_repository = UserRepository(self.session)
         user = user_repository.get_user_by_email(user_email)
         if not user:
             raise ValueError(UserResponseMessages.USER_NOT_FOUND.value)
 
         # populate the token in the database for the user
-        user_password_repository = UserPasswordRepository()
+        user_password_repository = UserPasswordRepository(self.session)
         if user_password_repository.verify_password_reset_token(
             user_email=user.email,
             token=otp,

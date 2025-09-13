@@ -19,7 +19,6 @@ from app.models.company.roles import CompanyDefaultRoles
 
 
 from app.utils.shared_context import SharedContext
-from app.models.user.user import UserReadModel
 
 
 from app.models.company.response_messages import CompanyResponseMessages
@@ -28,7 +27,7 @@ from app.models.company.response_messages import CompanyResponseMessages
 class CompanyService:
     def __init__(self, context: SharedContext):
         self.context = context
-        self.company_repository = CompanyRepository()
+        self.company_repository = CompanyRepository(context.db_session)
         self.company_user_service = CompanyUserService(context)
 
     def create_company(self, payload: CompanyCreateModel) -> CompanyReadModel:

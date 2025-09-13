@@ -12,6 +12,8 @@ from app.logic.user.verification import UserVerificationService
 from app.logic.user.basic_auth import UserBasicAuthService
 from app.utils.shared_context import SharedContext
 from app.dependencies.common import CommonJWTRouteDependencies
+from sqlalchemy.orm import Session
+from app.database.session_manager import get_session
 
 router = APIRouter(
     prefix="/user",
@@ -29,13 +31,13 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
     response_model=GenericResponseModel[None],
 )
-def verify_user_account(token: str):
+def verify_user_account(token: str, session: Session = Depends(get_session)):
     """
     Verify user account using the provided token.
     - **Requires**: Token from email verification link
     - **Returns**: Success message on verification
     """
-    response = UserVerificationService.verify_user_account(token=token)
+    response = UserVerificationService(session).verify_user_account(token=token)
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
         content=GenericResponseModel(message=response, data=None).model_dump(),
