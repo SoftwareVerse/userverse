@@ -29,6 +29,7 @@ class CompanyService:
     def __init__(self, context: SharedContext):
         self.context = context
         self.company_repository = CompanyRepository()
+        self.company_user_service = CompanyUserService(context)
 
     def create_company(self, payload: CompanyCreateModel) -> CompanyReadModel:
         """
@@ -61,7 +62,7 @@ class CompanyService:
         if email:
             company = self.company_repository.get_company_by_email(email)
 
-        CompanyUserService.check_if_user_is_in_company(
+        self.company_user_service.check_if_user_is_in_company(
             user_id=self.context.user.id,
             company_id=company.id,
         )
@@ -74,7 +75,7 @@ class CompanyService:
         """
         Update a company by its ID.
         """
-        CompanyUserService.check_if_user_is_in_company(
+        self.company_user_service.check_if_user_is_in_company(
             user_id=self.context.user.id,
             company_id=company_id,
             role=CompanyDefaultRoles.ADMINISTRATOR.name_value,

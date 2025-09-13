@@ -1,0 +1,1276 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.11, pytest-8.3.5, pluggy-1.5.0
+rootdir: /home/sandile/projects/userverse
+configfile: pyproject.toml
+plugins: anyio-4.9.0, cov-6.1.1
+collected 5 items
+
+tests/http/b_company/test_b_get_company.py FF..F                         [100%]
+
+=================================== FAILURES ===================================
+_____________________ test_a_get_company_one_by_id_success _____________________
+  + Exception Group Traceback (most recent call last):
+  |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py", line 76, in collapse_excgroups
+  |     yield
+  |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 177, in __call__
+  |     async with anyio.create_task_group() as task_group:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 341, in from_call
+    |     result: TResult | None = func()
+    |                              ^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 242, in <lambda>
+    |     lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 513, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     raise exception.with_traceback(exception.__traceback__)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/threadexception.py", line 92, in pytest_runtest_call
+    |     yield from thread_exception_runtest_hook()
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/threadexception.py", line 68, in thread_exception_runtest_hook
+    |     yield
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py", line 95, in pytest_runtest_call
+    |     yield from unraisable_exception_runtest_hook()
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py", line 70, in unraisable_exception_runtest_hook
+    |     yield
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/logging.py", line 846, in pytest_runtest_call
+    |     yield from self._runtest_for(item, "call")
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/logging.py", line 829, in _runtest_for
+    |     yield
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/capture.py", line 898, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/skipping.py", line 257, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 103, in _multicall
+    |     res = hook_impl.function(*args)
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 174, in pytest_runtest_call
+    |     item.runtest()
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/python.py", line 1627, in runtest
+    |     self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 513, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     raise exception.with_traceback(exception.__traceback__)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 103, in _multicall
+    |     res = hook_impl.function(*args)
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/python.py", line 159, in pytest_pyfunc_call
+    |     result = testfunction(**testargs)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/tests/http/b_company/test_b_get_company.py", line 9, in test_a_get_company_one_by_id_success
+    |     response = client.get(f"/company?company_id={1}", headers=headers)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/testclient.py", line 465, in get
+    |     return super().get(
+    |            ^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 1053, in get
+    |     return self.request(
+    |            ^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/testclient.py", line 437, in request
+    |     return super().request(
+    |            ^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 825, in request
+    |     return self.send(request, auth=auth, follow_redirects=follow_redirects)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 914, in send
+    |     response = self._send_handling_auth(
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    |     response = self._send_handling_redirects(
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    |     response = self._send_single_request(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    |     response = transport.handle_request(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/testclient.py", line 340, in handle_request
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/testclient.py", line 337, in handle_request
+    |     portal.call(self.app, scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/from_thread.py", line 290, in call
+    |     return cast(T_Retval, self.start_task_soon(func, *args).result())
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 456, in result
+    |     return self.__get_result()
+    |            ^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    |     raise self._exception
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/from_thread.py", line 221, in _call_func
+    |     retval = await retval_or_awaitable
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/applications.py", line 1054, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/applications.py", line 112, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 187, in __call__
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 165, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 176, in __call__
+    |     with recv_stream, send_stream, collapse_excgroups():
+    |                                    ^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/contextlib.py", line 158, in __exit__
+    |     self.gen.throw(value)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py", line 82, in collapse_excgroups
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 178, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/app/middleware/logging.py", line 12, in dispatch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    |     raise app_exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    |     await route.handle(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    |     await self.app(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    |     raw_response = await run_endpoint_function(
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 214, in run_endpoint_function
+    |     return await run_in_threadpool(dependant.call, **values)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/concurrency.py", line 37, in run_in_threadpool
+    |     return await anyio.to_thread.run_sync(func)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/to_thread.py", line 56, in run_sync
+    |     return await get_async_backend().run_sync_in_worker_thread(
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2470, in run_sync_in_worker_thread
+    |     return await future
+    |            ^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 967, in run
+    |     result = context.run(func, *args)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/app/routers/company/company.py", line 118, in get_company_api
+    |     raise e
+    |   File "/home/sandile/projects/userverse/app/routers/company/company.py", line 103, in get_company_api
+    |     company = service.get_company(company_id=company_id)
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/app/logic/company/company.py", line 64, in get_company
+    |     CompanyUserService.check_if_user_is_in_company(
+    | TypeError: CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'
+    +------------------------------------
+
+During handling of the above exception, another exception occurred:
+
+client = <starlette.testclient.TestClient object at 0x7a6fb3d681a0>
+login_token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoxLCJmaXJzdF9uYW1lIjoiSm9obiIsImxhc3RfbmFtZSI6IkRvZSIsImVtYWls...ImlzX3N1cGVydXNlciI6ZmFsc2V9LCJ0eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU3NzcyODE2fQ.rulJbZTPImGcbV91jEeNYi1xpBauRk3Zx0mF3G7E1To'
+
+    def test_a_get_company_one_by_id_success(client, login_token):
+        """Test creating Company One using User One's token"""
+        headers = {"Authorization": f"Bearer {login_token}"}
+>       response = client.get(f"/company?company_id={1}", headers=headers)
+
+tests/http/b_company/test_b_get_company.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/starlette/testclient.py:465: in get
+    return super().get(
+.venv/lib/python3.12/site-packages/httpx/_client.py:1053: in get
+    return self.request(
+.venv/lib/python3.12/site-packages/starlette/testclient.py:437: in request
+    return super().request(
+.venv/lib/python3.12/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+.venv/lib/python3.12/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib/python3.12/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib/python3.12/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+.venv/lib/python3.12/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+.venv/lib/python3.12/site-packages/starlette/testclient.py:340: in handle_request
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/testclient.py:337: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib/python3.12/site-packages/anyio/from_thread.py:290: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib/python3.12/site-packages/anyio/from_thread.py:221: in _call_func
+    retval = await retval_or_awaitable
+.venv/lib/python3.12/site-packages/fastapi/applications.py:1054: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/applications.py:112: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/middleware/errors.py:187: in __call__
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/middleware/errors.py:165: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib/python3.12/site-packages/starlette/middleware/cors.py:85: in __call__
+    await self.app(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/middleware/base.py:176: in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+.venv/lib/python3.12/site-packages/starlette/_utils.py:82: in collapse_excgroups
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/middleware/base.py:178: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/middleware/logging.py:12: in dispatch
+    response = await call_next(request)
+.venv/lib/python3.12/site-packages/starlette/middleware/base.py:156: in call_next
+    raise app_exc
+.venv/lib/python3.12/site-packages/starlette/middleware/base.py:141: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py:62: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib/python3.12/site-packages/starlette/routing.py:714: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/routing.py:734: in app
+    await route.handle(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/routing.py:288: in handle
+    await self.app(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/routing.py:76: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib/python3.12/site-packages/starlette/routing.py:73: in app
+    response = await f(request)
+.venv/lib/python3.12/site-packages/fastapi/routing.py:301: in app
+    raw_response = await run_endpoint_function(
+.venv/lib/python3.12/site-packages/fastapi/routing.py:214: in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+.venv/lib/python3.12/site-packages/starlette/concurrency.py:37: in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+.venv/lib/python3.12/site-packages/anyio/to_thread.py:56: in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2470: in run_sync_in_worker_thread
+    return await future
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:967: in run
+    result = context.run(func, *args)
+app/routers/company/company.py:118: in get_company_api
+    raise e
+app/routers/company/company.py:103: in get_company_api
+    company = service.get_company(company_id=company_id)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <app.logic.company.company.CompanyService object at 0x7a6fb390af90>
+company_id = 1, email = None
+
+    def get_company(
+        self, company_id: str = None, email: str = None
+    ) -> CompanyReadModel:
+        """
+        Get a company by its ID.
+        """
+        if not company_id and not email:
+            raise AppError(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                message=CompanyResponseMessages.COMPANY_ID_OR_EMAIL_REQUIRED.value,
+            )
+        company = None
+        if company_id:
+            company = self.company_repository.get_company_by_id(company_id)
+    
+        if email:
+            company = self.company_repository.get_company_by_email(email)
+    
+>       CompanyUserService.check_if_user_is_in_company(
+            user_id=self.context.user.id,
+            company_id=company.id,
+        )
+E       TypeError: CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'
+
+app/logic/company/company.py:64: TypeError
+---------------------------- Captured stderr setup -----------------------------
+{"timestamp": "2025-09-13T13:58:36.090191+00:00Z", "level": "INFO", "message": "Loading configuration from pyproject.toml", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 57, "process": 33904}
+INFO:app:Loading configuration from pyproject.toml
+{"timestamp": "2025-09-13T13:58:36.090675+00:00Z", "level": "INFO", "message": "\ud83d\udce6 [project] section loaded from pyproject.toml:", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 73, "process": 33904}
+INFO:app:📦 [project] section loaded from pyproject.toml:
+{"timestamp": "2025-09-13T13:58:36.090739+00:00Z", "level": "INFO", "message": "  name = userverse", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  name = userverse
+{"timestamp": "2025-09-13T13:58:36.090780+00:00Z", "level": "INFO", "message": "  version = 0.6.8", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  version = 0.6.8
+{"timestamp": "2025-09-13T13:58:36.090813+00:00Z", "level": "INFO", "message": "  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+{"timestamp": "2025-09-13T13:58:36.090845+00:00Z", "level": "INFO", "message": "  readme = README.md", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  readme = README.md
+{"timestamp": "2025-09-13T13:58:36.090875+00:00Z", "level": "INFO", "message": "  requires-python = >=3.12", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  requires-python = >=3.12
+{"timestamp": "2025-09-13T13:58:36.090908+00:00Z", "level": "INFO", "message": "  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+{"timestamp": "2025-09-13T13:58:36.090952+00:00Z", "level": "WARNING", "message": "No database config found. Falling back to SQLite.", "logger": "app", "filename": "database.py", "function": "get_connection_string", "line": 30, "process": 33904}
+WARNING:app:No database config found. Falling back to SQLite.
+{"timestamp": "2025-09-13T13:58:36.091192+00:00Z", "level": "INFO", "message": "Loading configuration from pyproject.toml", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 57, "process": 33904}
+INFO:app:Loading configuration from pyproject.toml
+{"timestamp": "2025-09-13T13:58:36.091503+00:00Z", "level": "INFO", "message": "\ud83d\udce6 [project] section loaded from pyproject.toml:", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 73, "process": 33904}
+INFO:app:📦 [project] section loaded from pyproject.toml:
+{"timestamp": "2025-09-13T13:58:36.091562+00:00Z", "level": "INFO", "message": "  name = userverse", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  name = userverse
+{"timestamp": "2025-09-13T13:58:36.091599+00:00Z", "level": "INFO", "message": "  version = 0.6.8", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  version = 0.6.8
+{"timestamp": "2025-09-13T13:58:36.091633+00:00Z", "level": "INFO", "message": "  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+{"timestamp": "2025-09-13T13:58:36.091670+00:00Z", "level": "INFO", "message": "  readme = README.md", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  readme = README.md
+{"timestamp": "2025-09-13T13:58:36.091702+00:00Z", "level": "INFO", "message": "  requires-python = >=3.12", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  requires-python = >=3.12
+{"timestamp": "2025-09-13T13:58:36.091736+00:00Z", "level": "INFO", "message": "  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+{"timestamp": "2025-09-13T13:58:36.121293+00:00Z", "level": "INFO", "message": "Userverse API starting up", "logger": "app", "filename": "main.py", "function": "lifespan", "line": 42, "process": 33904}
+INFO:app:Userverse API starting up
+{"timestamp": "2025-09-13T13:58:36.123567+00:00Z", "level": "INFO", "message": "Database initialized and tables created if not existing.", "logger": "app.database.session_manager", "filename": "session_manager.py", "function": "__init__", "line": 31, "process": 33904}
+INFO:app.database.session_manager:Database initialized and tables created if not existing.
+{"timestamp": "2025-09-13T13:58:36.132990+00:00Z", "level": "INFO", "message": "Database initialized and tables created if not existing.", "logger": "app.database.session_manager", "filename": "session_manager.py", "function": "__init__", "line": 31, "process": 33904}
+INFO:app.database.session_manager:Database initialized and tables created if not existing.
+{"timestamp": "2025-09-13T13:58:36.355574+00:00Z", "level": "INFO", "message": "Loading configuration from pyproject.toml", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 57, "process": 33904}
+INFO:app:Loading configuration from pyproject.toml
+{"timestamp": "2025-09-13T13:58:36.356137+00:00Z", "level": "INFO", "message": "\ud83d\udce6 [project] section loaded from pyproject.toml:", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 73, "process": 33904}
+INFO:app:📦 [project] section loaded from pyproject.toml:
+{"timestamp": "2025-09-13T13:58:36.356308+00:00Z", "level": "INFO", "message": "  name = userverse", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  name = userverse
+{"timestamp": "2025-09-13T13:58:36.356370+00:00Z", "level": "INFO", "message": "  version = 0.6.8", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  version = 0.6.8
+{"timestamp": "2025-09-13T13:58:36.356416+00:00Z", "level": "INFO", "message": "  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+{"timestamp": "2025-09-13T13:58:36.356467+00:00Z", "level": "INFO", "message": "  readme = README.md", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  readme = README.md
+{"timestamp": "2025-09-13T13:58:36.356507+00:00Z", "level": "INFO", "message": "  requires-python = >=3.12", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  requires-python = >=3.12
+{"timestamp": "2025-09-13T13:58:36.356552+00:00Z", "level": "INFO", "message": "  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+{"timestamp": "2025-09-13T13:58:36.357572+00:00Z", "level": "INFO", "message": "Request handled", "logger": "app", "filename": "logging.py", "function": "dispatch", "line": 32, "process": 33904, "method": "PATCH", "url": "http://testserver/user/login", "client": "testclient", "user_agent": "testclient", "status_code": 202, "duration_ms": 232.43}
+INFO:app:Request handled
+INFO:httpx:HTTP Request: PATCH http://testserver/user/login "HTTP/1.1 202 Accepted"
+------------------------------ Captured log setup ------------------------------
+INFO     app:loader.py:57 Loading configuration from pyproject.toml
+INFO     app:loader.py:73 📦 [project] section loaded from pyproject.toml:
+INFO     app:loader.py:75   name = userverse
+INFO     app:loader.py:75   version = 0.6.8
+INFO     app:loader.py:75   description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+INFO     app:loader.py:75   readme = README.md
+INFO     app:loader.py:75   requires-python = >=3.12
+INFO     app:loader.py:75   dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+WARNING  app:database.py:30 No database config found. Falling back to SQLite.
+INFO     app:loader.py:57 Loading configuration from pyproject.toml
+INFO     app:loader.py:73 📦 [project] section loaded from pyproject.toml:
+INFO     app:loader.py:75   name = userverse
+INFO     app:loader.py:75   version = 0.6.8
+INFO     app:loader.py:75   description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+INFO     app:loader.py:75   readme = README.md
+INFO     app:loader.py:75   requires-python = >=3.12
+INFO     app:loader.py:75   dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+INFO     app:main.py:42 Userverse API starting up
+INFO     app.database.session_manager:session_manager.py:31 Database initialized and tables created if not existing.
+INFO     app.database.session_manager:session_manager.py:31 Database initialized and tables created if not existing.
+INFO     app:loader.py:57 Loading configuration from pyproject.toml
+INFO     app:loader.py:73 📦 [project] section loaded from pyproject.toml:
+INFO     app:loader.py:75   name = userverse
+INFO     app:loader.py:75   version = 0.6.8
+INFO     app:loader.py:75   description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+INFO     app:loader.py:75   readme = README.md
+INFO     app:loader.py:75   requires-python = >=3.12
+INFO     app:loader.py:75   dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+INFO     app:logging.py:32 Request handled
+INFO     httpx:_client.py:1025 HTTP Request: PATCH http://testserver/user/login "HTTP/1.1 202 Accepted"
+----------------------------- Captured stderr call -----------------------------
+{"timestamp": "2025-09-13T13:58:36.359919+00:00Z", "level": "INFO", "message": "Loading configuration from pyproject.toml", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 57, "process": 33904}
+INFO:app:Loading configuration from pyproject.toml
+{"timestamp": "2025-09-13T13:58:36.360297+00:00Z", "level": "INFO", "message": "\ud83d\udce6 [project] section loaded from pyproject.toml:", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 73, "process": 33904}
+INFO:app:📦 [project] section loaded from pyproject.toml:
+{"timestamp": "2025-09-13T13:58:36.360354+00:00Z", "level": "INFO", "message": "  name = userverse", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  name = userverse
+{"timestamp": "2025-09-13T13:58:36.360416+00:00Z", "level": "INFO", "message": "  version = 0.6.8", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  version = 0.6.8
+{"timestamp": "2025-09-13T13:58:36.360453+00:00Z", "level": "INFO", "message": "  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+{"timestamp": "2025-09-13T13:58:36.360486+00:00Z", "level": "INFO", "message": "  readme = README.md", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  readme = README.md
+{"timestamp": "2025-09-13T13:58:36.360518+00:00Z", "level": "INFO", "message": "  requires-python = >=3.12", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  requires-python = >=3.12
+{"timestamp": "2025-09-13T13:58:36.360553+00:00Z", "level": "INFO", "message": "  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+{"timestamp": "2025-09-13T13:58:36.362628+00:00Z", "level": "INFO", "message": "Database initialized and tables created if not existing.", "logger": "app.database.session_manager", "filename": "session_manager.py", "function": "__init__", "line": 31, "process": 33904}
+INFO:app.database.session_manager:Database initialized and tables created if not existing.
+{"timestamp": "2025-09-13T13:58:36.366493+00:00Z", "level": "ERROR", "message": "Request failed", "logger": "app", "filename": "logging.py", "function": "dispatch", "line": 15, "process": 33904, "method": "GET", "url": "http://testserver/company?company_id=1", "client": "testclient", "user_agent": "testclient", "duration_ms": 7.15, "status_code": 500, "error": "CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'"}
+ERROR:app:Request failed
+{"timestamp": "2025-09-13T13:58:36.369963+00:00Z", "level": "ERROR", "message": "Unhandled exception", "logger": "app", "filename": "main.py", "function": "app_error_handler", "line": 123, "process": 33904, "method": "GET", "url": "http://testserver/company?company_id=1", "error": "CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'", "trace": "  + Exception Group Traceback (most recent call last):\n  |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py\", line 76, in collapse_excgroups\n  |     yield\n  |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 177, in __call__\n  |     async with anyio.create_task_group() as task_group:\n  |                ^^^^^^^^^^^^^^^^^^^^^^^^^\n  |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 772, in __aexit__\n  |     raise BaseExceptionGroup(\n  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)\n  +-+---------------- 1 ----------------\n    | Traceback (most recent call last):\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 165, in __call__\n    |     await self.app(scope, receive, _send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/cors.py\", line 85, in __call__\n    |     await self.app(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 176, in __call__\n    |     with recv_stream, send_stream, collapse_excgroups():\n    |                                    ^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/contextlib.py\", line 158, in __exit__\n    |     self.gen.throw(value)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py\", line 82, in collapse_excgroups\n    |     raise exc\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 178, in __call__\n    |     response = await self.dispatch_func(request, call_next)\n    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/app/middleware/logging.py\", line 12, in dispatch\n    |     response = await call_next(request)\n    |                ^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 156, in call_next\n    |     raise app_exc\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 141, in coro\n    |     await self.app(scope, receive_or_disconnect, send_no_error)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 62, in __call__\n    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    |     raise exc\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    |     await app(scope, receive, sender)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 714, in __call__\n    |     await self.middleware_stack(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 734, in app\n    |     await route.handle(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 288, in handle\n    |     await self.app(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 76, in app\n    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    |     raise exc\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    |     await app(scope, receive, sender)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 73, in app\n    |     response = await f(request)\n    |                ^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 301, in app\n    |     raw_response = await run_endpoint_function(\n    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 214, in run_endpoint_function\n    |     return await run_in_threadpool(dependant.call, **values)\n    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 37, in run_in_threadpool\n    |     return await anyio.to_thread.run_sync(func)\n    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 56, in run_sync\n    |     return await get_async_backend().run_sync_in_worker_thread(\n    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2470, in run_sync_in_worker_thread\n    |     return await future\n    |            ^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 967, in run\n    |     result = context.run(func, *args)\n    |              ^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/app/routers/company/company.py\", line 118, in get_company_api\n    |     raise e\n    |   File \"/home/sandile/projects/userverse/app/routers/company/company.py\", line 103, in get_company_api\n    |     company = service.get_company(company_id=company_id)\n    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/app/logic/company/company.py\", line 64, in get_company\n    |     CompanyUserService.check_if_user_is_in_company(\n    | TypeError: CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'\n    +------------------------------------\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 165, in __call__\n    await self.app(scope, receive, _send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/cors.py\", line 85, in __call__\n    await self.app(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 176, in __call__\n    with recv_stream, send_stream, collapse_excgroups():\n                                   ^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/contextlib.py\", line 158, in __exit__\n    self.gen.throw(value)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py\", line 82, in collapse_excgroups\n    raise exc\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 178, in __call__\n    response = await self.dispatch_func(request, call_next)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/app/middleware/logging.py\", line 12, in dispatch\n    response = await call_next(request)\n               ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 156, in call_next\n    raise app_exc\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 141, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 62, in __call__\n    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 714, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 734, in app\n    await route.handle(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 288, in handle\n    await self.app(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 76, in app\n    await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 73, in app\n    response = await f(request)\n               ^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 301, in app\n    raw_response = await run_endpoint_function(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 214, in run_endpoint_function\n    return await run_in_threadpool(dependant.call, **values)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 37, in run_in_threadpool\n    return await anyio.to_thread.run_sync(func)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 56, in run_sync\n    return await get_async_backend().run_sync_in_worker_thread(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2470, in run_sync_in_worker_thread\n    return await future\n           ^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 967, in run\n    result = context.run(func, *args)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/app/routers/company/company.py\", line 118, in get_company_api\n    raise e\n  File \"/home/sandile/projects/userverse/app/routers/company/company.py\", line 103, in get_company_api\n    company = service.get_company(company_id=company_id)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/app/logic/company/company.py\", line 64, in get_company\n    CompanyUserService.check_if_user_is_in_company(\nTypeError: CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'\n"}
+ERROR:app:Unhandled exception
+------------------------------ Captured log call -------------------------------
+INFO     app:loader.py:57 Loading configuration from pyproject.toml
+INFO     app:loader.py:73 📦 [project] section loaded from pyproject.toml:
+INFO     app:loader.py:75   name = userverse
+INFO     app:loader.py:75   version = 0.6.8
+INFO     app:loader.py:75   description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+INFO     app:loader.py:75   readme = README.md
+INFO     app:loader.py:75   requires-python = >=3.12
+INFO     app:loader.py:75   dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+INFO     app.database.session_manager:session_manager.py:31 Database initialized and tables created if not existing.
+ERROR    app:logging.py:15 Request failed
+ERROR    app:main.py:123 Unhandled exception
+___________________ test_b_get_company_one_by_email_success ____________________
+  + Exception Group Traceback (most recent call last):
+  |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py", line 76, in collapse_excgroups
+  |     yield
+  |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 177, in __call__
+  |     async with anyio.create_task_group() as task_group:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 341, in from_call
+    |     result: TResult | None = func()
+    |                              ^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 242, in <lambda>
+    |     lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 513, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     raise exception.with_traceback(exception.__traceback__)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/threadexception.py", line 92, in pytest_runtest_call
+    |     yield from thread_exception_runtest_hook()
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/threadexception.py", line 68, in thread_exception_runtest_hook
+    |     yield
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py", line 95, in pytest_runtest_call
+    |     yield from unraisable_exception_runtest_hook()
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py", line 70, in unraisable_exception_runtest_hook
+    |     yield
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/logging.py", line 846, in pytest_runtest_call
+    |     yield from self._runtest_for(item, "call")
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/logging.py", line 829, in _runtest_for
+    |     yield
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/capture.py", line 898, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/skipping.py", line 257, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 103, in _multicall
+    |     res = hook_impl.function(*args)
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 174, in pytest_runtest_call
+    |     item.runtest()
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/python.py", line 1627, in runtest
+    |     self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 513, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     raise exception.with_traceback(exception.__traceback__)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 103, in _multicall
+    |     res = hook_impl.function(*args)
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/python.py", line 159, in pytest_pyfunc_call
+    |     result = testfunction(**testargs)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/tests/http/b_company/test_b_get_company.py", line 26, in test_b_get_company_one_by_email_success
+    |     response = client.get(f"/company?email={company_email}", headers=headers)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/testclient.py", line 465, in get
+    |     return super().get(
+    |            ^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 1053, in get
+    |     return self.request(
+    |            ^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/testclient.py", line 437, in request
+    |     return super().request(
+    |            ^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 825, in request
+    |     return self.send(request, auth=auth, follow_redirects=follow_redirects)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 914, in send
+    |     response = self._send_handling_auth(
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    |     response = self._send_handling_redirects(
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    |     response = self._send_single_request(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    |     response = transport.handle_request(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/testclient.py", line 340, in handle_request
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/testclient.py", line 337, in handle_request
+    |     portal.call(self.app, scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/from_thread.py", line 290, in call
+    |     return cast(T_Retval, self.start_task_soon(func, *args).result())
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 456, in result
+    |     return self.__get_result()
+    |            ^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    |     raise self._exception
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/from_thread.py", line 221, in _call_func
+    |     retval = await retval_or_awaitable
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/applications.py", line 1054, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/applications.py", line 112, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 187, in __call__
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 165, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 176, in __call__
+    |     with recv_stream, send_stream, collapse_excgroups():
+    |                                    ^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/contextlib.py", line 158, in __exit__
+    |     self.gen.throw(value)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py", line 82, in collapse_excgroups
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 178, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/app/middleware/logging.py", line 12, in dispatch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    |     raise app_exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    |     await route.handle(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    |     await self.app(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    |     raw_response = await run_endpoint_function(
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 214, in run_endpoint_function
+    |     return await run_in_threadpool(dependant.call, **values)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/concurrency.py", line 37, in run_in_threadpool
+    |     return await anyio.to_thread.run_sync(func)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/to_thread.py", line 56, in run_sync
+    |     return await get_async_backend().run_sync_in_worker_thread(
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2470, in run_sync_in_worker_thread
+    |     return await future
+    |            ^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 967, in run
+    |     result = context.run(func, *args)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/app/routers/company/company.py", line 118, in get_company_api
+    |     raise e
+    |   File "/home/sandile/projects/userverse/app/routers/company/company.py", line 101, in get_company_api
+    |     company = service.get_company(email=email)
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/app/logic/company/company.py", line 64, in get_company
+    |     CompanyUserService.check_if_user_is_in_company(
+    | TypeError: CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'
+    +------------------------------------
+
+During handling of the above exception, another exception occurred:
+
+client = <starlette.testclient.TestClient object at 0x7a6fb3d681a0>
+login_token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoxLCJmaXJzdF9uYW1lIjoiSm9obiIsImxhc3RfbmFtZSI6IkRvZSIsImVtYWls...ImlzX3N1cGVydXNlciI6ZmFsc2V9LCJ0eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU3NzcyODE2fQ.rulJbZTPImGcbV91jEeNYi1xpBauRk3Zx0mF3G7E1To'
+test_company_data = {'company_one': {'description': 'A leading company in the industry.', 'email': 'company.one@email.com', 'industry': 'F...eatures.', 'name': 'Client'}, 'user': {'description': 'Standard user role with limited access.', 'name': 'User'}}, ...}
+
+    def test_b_get_company_one_by_email_success(client, login_token, test_company_data):
+        """Test creating Company One using User One's token"""
+        headers = {"Authorization": f"Bearer {login_token}"}
+        company_email = test_company_data["company_one"]["email"]
+>       response = client.get(f"/company?email={company_email}", headers=headers)
+
+tests/http/b_company/test_b_get_company.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/starlette/testclient.py:465: in get
+    return super().get(
+.venv/lib/python3.12/site-packages/httpx/_client.py:1053: in get
+    return self.request(
+.venv/lib/python3.12/site-packages/starlette/testclient.py:437: in request
+    return super().request(
+.venv/lib/python3.12/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+.venv/lib/python3.12/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib/python3.12/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib/python3.12/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+.venv/lib/python3.12/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+.venv/lib/python3.12/site-packages/starlette/testclient.py:340: in handle_request
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/testclient.py:337: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib/python3.12/site-packages/anyio/from_thread.py:290: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib/python3.12/site-packages/anyio/from_thread.py:221: in _call_func
+    retval = await retval_or_awaitable
+.venv/lib/python3.12/site-packages/fastapi/applications.py:1054: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/applications.py:112: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/middleware/errors.py:187: in __call__
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/middleware/errors.py:165: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib/python3.12/site-packages/starlette/middleware/cors.py:85: in __call__
+    await self.app(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/middleware/base.py:176: in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+.venv/lib/python3.12/site-packages/starlette/_utils.py:82: in collapse_excgroups
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/middleware/base.py:178: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/middleware/logging.py:12: in dispatch
+    response = await call_next(request)
+.venv/lib/python3.12/site-packages/starlette/middleware/base.py:156: in call_next
+    raise app_exc
+.venv/lib/python3.12/site-packages/starlette/middleware/base.py:141: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py:62: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib/python3.12/site-packages/starlette/routing.py:714: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/routing.py:734: in app
+    await route.handle(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/routing.py:288: in handle
+    await self.app(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/routing.py:76: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib/python3.12/site-packages/starlette/routing.py:73: in app
+    response = await f(request)
+.venv/lib/python3.12/site-packages/fastapi/routing.py:301: in app
+    raw_response = await run_endpoint_function(
+.venv/lib/python3.12/site-packages/fastapi/routing.py:214: in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+.venv/lib/python3.12/site-packages/starlette/concurrency.py:37: in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+.venv/lib/python3.12/site-packages/anyio/to_thread.py:56: in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2470: in run_sync_in_worker_thread
+    return await future
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:967: in run
+    result = context.run(func, *args)
+app/routers/company/company.py:118: in get_company_api
+    raise e
+app/routers/company/company.py:101: in get_company_api
+    company = service.get_company(email=email)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <app.logic.company.company.CompanyService object at 0x7a6fb25b6720>
+company_id = None, email = 'company.one@email.com'
+
+    def get_company(
+        self, company_id: str = None, email: str = None
+    ) -> CompanyReadModel:
+        """
+        Get a company by its ID.
+        """
+        if not company_id and not email:
+            raise AppError(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                message=CompanyResponseMessages.COMPANY_ID_OR_EMAIL_REQUIRED.value,
+            )
+        company = None
+        if company_id:
+            company = self.company_repository.get_company_by_id(company_id)
+    
+        if email:
+            company = self.company_repository.get_company_by_email(email)
+    
+>       CompanyUserService.check_if_user_is_in_company(
+            user_id=self.context.user.id,
+            company_id=company.id,
+        )
+E       TypeError: CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'
+
+app/logic/company/company.py:64: TypeError
+---------------------------- Captured stderr setup -----------------------------
+{"timestamp": "2025-09-13T13:58:36.626678+00:00Z", "level": "INFO", "message": "Database initialized and tables created if not existing.", "logger": "app.database.session_manager", "filename": "session_manager.py", "function": "__init__", "line": 31, "process": 33904}
+INFO:app.database.session_manager:Database initialized and tables created if not existing.
+{"timestamp": "2025-09-13T13:58:36.837551+00:00Z", "level": "INFO", "message": "Loading configuration from pyproject.toml", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 57, "process": 33904}
+INFO:app:Loading configuration from pyproject.toml
+{"timestamp": "2025-09-13T13:58:36.838058+00:00Z", "level": "INFO", "message": "\ud83d\udce6 [project] section loaded from pyproject.toml:", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 73, "process": 33904}
+INFO:app:📦 [project] section loaded from pyproject.toml:
+{"timestamp": "2025-09-13T13:58:36.838119+00:00Z", "level": "INFO", "message": "  name = userverse", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  name = userverse
+{"timestamp": "2025-09-13T13:58:36.838160+00:00Z", "level": "INFO", "message": "  version = 0.6.8", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  version = 0.6.8
+{"timestamp": "2025-09-13T13:58:36.838194+00:00Z", "level": "INFO", "message": "  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+{"timestamp": "2025-09-13T13:58:36.838236+00:00Z", "level": "INFO", "message": "  readme = README.md", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  readme = README.md
+{"timestamp": "2025-09-13T13:58:36.838271+00:00Z", "level": "INFO", "message": "  requires-python = >=3.12", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  requires-python = >=3.12
+{"timestamp": "2025-09-13T13:58:36.838310+00:00Z", "level": "INFO", "message": "  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+{"timestamp": "2025-09-13T13:58:36.839076+00:00Z", "level": "INFO", "message": "Request handled", "logger": "app", "filename": "logging.py", "function": "dispatch", "line": 32, "process": 33904, "method": "PATCH", "url": "http://testserver/user/login", "client": "testclient", "user_agent": "testclient", "status_code": 202, "duration_ms": 215.18}
+INFO:app:Request handled
+INFO:httpx:HTTP Request: PATCH http://testserver/user/login "HTTP/1.1 202 Accepted"
+------------------------------ Captured log setup ------------------------------
+INFO     app.database.session_manager:session_manager.py:31 Database initialized and tables created if not existing.
+INFO     app:loader.py:57 Loading configuration from pyproject.toml
+INFO     app:loader.py:73 📦 [project] section loaded from pyproject.toml:
+INFO     app:loader.py:75   name = userverse
+INFO     app:loader.py:75   version = 0.6.8
+INFO     app:loader.py:75   description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+INFO     app:loader.py:75   readme = README.md
+INFO     app:loader.py:75   requires-python = >=3.12
+INFO     app:loader.py:75   dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+INFO     app:logging.py:32 Request handled
+INFO     httpx:_client.py:1025 HTTP Request: PATCH http://testserver/user/login "HTTP/1.1 202 Accepted"
+----------------------------- Captured stderr call -----------------------------
+{"timestamp": "2025-09-13T13:58:36.841120+00:00Z", "level": "INFO", "message": "Loading configuration from pyproject.toml", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 57, "process": 33904}
+INFO:app:Loading configuration from pyproject.toml
+{"timestamp": "2025-09-13T13:58:36.841563+00:00Z", "level": "INFO", "message": "\ud83d\udce6 [project] section loaded from pyproject.toml:", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 73, "process": 33904}
+INFO:app:📦 [project] section loaded from pyproject.toml:
+{"timestamp": "2025-09-13T13:58:36.841628+00:00Z", "level": "INFO", "message": "  name = userverse", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  name = userverse
+{"timestamp": "2025-09-13T13:58:36.841670+00:00Z", "level": "INFO", "message": "  version = 0.6.8", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  version = 0.6.8
+{"timestamp": "2025-09-13T13:58:36.841706+00:00Z", "level": "INFO", "message": "  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+{"timestamp": "2025-09-13T13:58:36.841741+00:00Z", "level": "INFO", "message": "  readme = README.md", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  readme = README.md
+{"timestamp": "2025-09-13T13:58:36.841773+00:00Z", "level": "INFO", "message": "  requires-python = >=3.12", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  requires-python = >=3.12
+{"timestamp": "2025-09-13T13:58:36.841806+00:00Z", "level": "INFO", "message": "  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+{"timestamp": "2025-09-13T13:58:36.843853+00:00Z", "level": "INFO", "message": "Database initialized and tables created if not existing.", "logger": "app.database.session_manager", "filename": "session_manager.py", "function": "__init__", "line": 31, "process": 33904}
+INFO:app.database.session_manager:Database initialized and tables created if not existing.
+{"timestamp": "2025-09-13T13:58:36.846692+00:00Z", "level": "ERROR", "message": "Request failed", "logger": "app", "filename": "logging.py", "function": "dispatch", "line": 15, "process": 33904, "method": "GET", "url": "http://testserver/company?email=company.one@email.com", "client": "testclient", "user_agent": "testclient", "duration_ms": 6.12, "status_code": 500, "error": "CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'"}
+ERROR:app:Request failed
+{"timestamp": "2025-09-13T13:58:36.848561+00:00Z", "level": "ERROR", "message": "Unhandled exception", "logger": "app", "filename": "main.py", "function": "app_error_handler", "line": 123, "process": 33904, "method": "GET", "url": "http://testserver/company?email=company.one@email.com", "error": "CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'", "trace": "  + Exception Group Traceback (most recent call last):\n  |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py\", line 76, in collapse_excgroups\n  |     yield\n  |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 177, in __call__\n  |     async with anyio.create_task_group() as task_group:\n  |                ^^^^^^^^^^^^^^^^^^^^^^^^^\n  |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 772, in __aexit__\n  |     raise BaseExceptionGroup(\n  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)\n  +-+---------------- 1 ----------------\n    | Traceback (most recent call last):\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 165, in __call__\n    |     await self.app(scope, receive, _send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/cors.py\", line 85, in __call__\n    |     await self.app(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 176, in __call__\n    |     with recv_stream, send_stream, collapse_excgroups():\n    |                                    ^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/contextlib.py\", line 158, in __exit__\n    |     self.gen.throw(value)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py\", line 82, in collapse_excgroups\n    |     raise exc\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 178, in __call__\n    |     response = await self.dispatch_func(request, call_next)\n    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/app/middleware/logging.py\", line 12, in dispatch\n    |     response = await call_next(request)\n    |                ^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 156, in call_next\n    |     raise app_exc\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 141, in coro\n    |     await self.app(scope, receive_or_disconnect, send_no_error)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 62, in __call__\n    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    |     raise exc\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    |     await app(scope, receive, sender)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 714, in __call__\n    |     await self.middleware_stack(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 734, in app\n    |     await route.handle(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 288, in handle\n    |     await self.app(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 76, in app\n    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    |     raise exc\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    |     await app(scope, receive, sender)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 73, in app\n    |     response = await f(request)\n    |                ^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 301, in app\n    |     raw_response = await run_endpoint_function(\n    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 214, in run_endpoint_function\n    |     return await run_in_threadpool(dependant.call, **values)\n    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 37, in run_in_threadpool\n    |     return await anyio.to_thread.run_sync(func)\n    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 56, in run_sync\n    |     return await get_async_backend().run_sync_in_worker_thread(\n    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2470, in run_sync_in_worker_thread\n    |     return await future\n    |            ^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 967, in run\n    |     result = context.run(func, *args)\n    |              ^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/app/routers/company/company.py\", line 118, in get_company_api\n    |     raise e\n    |   File \"/home/sandile/projects/userverse/app/routers/company/company.py\", line 101, in get_company_api\n    |     company = service.get_company(email=email)\n    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/app/logic/company/company.py\", line 64, in get_company\n    |     CompanyUserService.check_if_user_is_in_company(\n    | TypeError: CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'\n    +------------------------------------\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 165, in __call__\n    await self.app(scope, receive, _send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/cors.py\", line 85, in __call__\n    await self.app(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 176, in __call__\n    with recv_stream, send_stream, collapse_excgroups():\n                                   ^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/contextlib.py\", line 158, in __exit__\n    self.gen.throw(value)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py\", line 82, in collapse_excgroups\n    raise exc\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 178, in __call__\n    response = await self.dispatch_func(request, call_next)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/app/middleware/logging.py\", line 12, in dispatch\n    response = await call_next(request)\n               ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 156, in call_next\n    raise app_exc\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 141, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 62, in __call__\n    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 714, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 734, in app\n    await route.handle(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 288, in handle\n    await self.app(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 76, in app\n    await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 73, in app\n    response = await f(request)\n               ^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 301, in app\n    raw_response = await run_endpoint_function(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 214, in run_endpoint_function\n    return await run_in_threadpool(dependant.call, **values)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 37, in run_in_threadpool\n    return await anyio.to_thread.run_sync(func)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 56, in run_sync\n    return await get_async_backend().run_sync_in_worker_thread(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2470, in run_sync_in_worker_thread\n    return await future\n           ^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 967, in run\n    result = context.run(func, *args)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/app/routers/company/company.py\", line 118, in get_company_api\n    raise e\n  File \"/home/sandile/projects/userverse/app/routers/company/company.py\", line 101, in get_company_api\n    company = service.get_company(email=email)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/app/logic/company/company.py\", line 64, in get_company\n    CompanyUserService.check_if_user_is_in_company(\nTypeError: CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'\n"}
+ERROR:app:Unhandled exception
+------------------------------ Captured log call -------------------------------
+INFO     app:loader.py:57 Loading configuration from pyproject.toml
+INFO     app:loader.py:73 📦 [project] section loaded from pyproject.toml:
+INFO     app:loader.py:75   name = userverse
+INFO     app:loader.py:75   version = 0.6.8
+INFO     app:loader.py:75   description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+INFO     app:loader.py:75   readme = README.md
+INFO     app:loader.py:75   requires-python = >=3.12
+INFO     app:loader.py:75   dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+INFO     app.database.session_manager:session_manager.py:31 Database initialized and tables created if not existing.
+ERROR    app:logging.py:15 Request failed
+ERROR    app:main.py:123 Unhandled exception
+____________________ test_e_get_company_without_associated _____________________
+  + Exception Group Traceback (most recent call last):
+  |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py", line 76, in collapse_excgroups
+  |     yield
+  |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 177, in __call__
+  |     async with anyio.create_task_group() as task_group:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 341, in from_call
+    |     result: TResult | None = func()
+    |                              ^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 242, in <lambda>
+    |     lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 513, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     raise exception.with_traceback(exception.__traceback__)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/threadexception.py", line 92, in pytest_runtest_call
+    |     yield from thread_exception_runtest_hook()
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/threadexception.py", line 68, in thread_exception_runtest_hook
+    |     yield
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py", line 95, in pytest_runtest_call
+    |     yield from unraisable_exception_runtest_hook()
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py", line 70, in unraisable_exception_runtest_hook
+    |     yield
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/logging.py", line 846, in pytest_runtest_call
+    |     yield from self._runtest_for(item, "call")
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/logging.py", line 829, in _runtest_for
+    |     yield
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/capture.py", line 898, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 122, in _multicall
+    |     teardown.throw(exception)  # type: ignore[union-attr]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/skipping.py", line 257, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 103, in _multicall
+    |     res = hook_impl.function(*args)
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 174, in pytest_runtest_call
+    |     item.runtest()
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/python.py", line 1627, in runtest
+    |     self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 513, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     raise exception.with_traceback(exception.__traceback__)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 103, in _multicall
+    |     res = hook_impl.function(*args)
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/_pytest/python.py", line 159, in pytest_pyfunc_call
+    |     result = testfunction(**testargs)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/tests/http/b_company/test_b_get_company.py", line 63, in test_e_get_company_without_associated
+    |     response = client.get("/company?company_id=2", headers=headers)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/testclient.py", line 465, in get
+    |     return super().get(
+    |            ^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 1053, in get
+    |     return self.request(
+    |            ^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/testclient.py", line 437, in request
+    |     return super().request(
+    |            ^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 825, in request
+    |     return self.send(request, auth=auth, follow_redirects=follow_redirects)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 914, in send
+    |     response = self._send_handling_auth(
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    |     response = self._send_handling_redirects(
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    |     response = self._send_single_request(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    |     response = transport.handle_request(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/testclient.py", line 340, in handle_request
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/testclient.py", line 337, in handle_request
+    |     portal.call(self.app, scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/from_thread.py", line 290, in call
+    |     return cast(T_Retval, self.start_task_soon(func, *args).result())
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 456, in result
+    |     return self.__get_result()
+    |            ^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    |     raise self._exception
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/from_thread.py", line 221, in _call_func
+    |     retval = await retval_or_awaitable
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/applications.py", line 1054, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/applications.py", line 112, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 187, in __call__
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 165, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 176, in __call__
+    |     with recv_stream, send_stream, collapse_excgroups():
+    |                                    ^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/contextlib.py", line 158, in __exit__
+    |     self.gen.throw(value)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py", line 82, in collapse_excgroups
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 178, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/app/middleware/logging.py", line 12, in dispatch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 156, in call_next
+    |     raise app_exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 141, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 714, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 734, in app
+    |     await route.handle(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    |     await self.app(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    |     raw_response = await run_endpoint_function(
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 214, in run_endpoint_function
+    |     return await run_in_threadpool(dependant.call, **values)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/concurrency.py", line 37, in run_in_threadpool
+    |     return await anyio.to_thread.run_sync(func)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/to_thread.py", line 56, in run_sync
+    |     return await get_async_backend().run_sync_in_worker_thread(
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2470, in run_sync_in_worker_thread
+    |     return await future
+    |            ^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 967, in run
+    |     result = context.run(func, *args)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/app/routers/company/company.py", line 118, in get_company_api
+    |     raise e
+    |   File "/home/sandile/projects/userverse/app/routers/company/company.py", line 103, in get_company_api
+    |     company = service.get_company(company_id=company_id)
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/sandile/projects/userverse/app/logic/company/company.py", line 64, in get_company
+    |     CompanyUserService.check_if_user_is_in_company(
+    | TypeError: CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'
+    +------------------------------------
+
+During handling of the above exception, another exception occurred:
+
+client = <starlette.testclient.TestClient object at 0x7a6fb3d681a0>
+login_token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoxLCJmaXJzdF9uYW1lIjoiSm9obiIsImxhc3RfbmFtZSI6IkRvZSIsImVtYWls...ImlzX3N1cGVydXNlciI6ZmFsc2V9LCJ0eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU3NzcyODE3fQ.qj7MF0wy58IcQ-Jg_04nbDVk4_b8VSEQdkxjV94anTA'
+
+    def test_e_get_company_without_associated(client, login_token):
+        """Test getting a company that you are not associated with"""
+        headers = {"Authorization": f"Bearer {login_token}"}
+>       response = client.get("/company?company_id=2", headers=headers)
+
+tests/http/b_company/test_b_get_company.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/starlette/testclient.py:465: in get
+    return super().get(
+.venv/lib/python3.12/site-packages/httpx/_client.py:1053: in get
+    return self.request(
+.venv/lib/python3.12/site-packages/starlette/testclient.py:437: in request
+    return super().request(
+.venv/lib/python3.12/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+.venv/lib/python3.12/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib/python3.12/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib/python3.12/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+.venv/lib/python3.12/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+.venv/lib/python3.12/site-packages/starlette/testclient.py:340: in handle_request
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/testclient.py:337: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib/python3.12/site-packages/anyio/from_thread.py:290: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib/python3.12/site-packages/anyio/from_thread.py:221: in _call_func
+    retval = await retval_or_awaitable
+.venv/lib/python3.12/site-packages/fastapi/applications.py:1054: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/applications.py:112: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/middleware/errors.py:187: in __call__
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/middleware/errors.py:165: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib/python3.12/site-packages/starlette/middleware/cors.py:85: in __call__
+    await self.app(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/middleware/base.py:176: in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+.venv/lib/python3.12/site-packages/starlette/_utils.py:82: in collapse_excgroups
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/middleware/base.py:178: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/middleware/logging.py:12: in dispatch
+    response = await call_next(request)
+.venv/lib/python3.12/site-packages/starlette/middleware/base.py:156: in call_next
+    raise app_exc
+.venv/lib/python3.12/site-packages/starlette/middleware/base.py:141: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py:62: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib/python3.12/site-packages/starlette/routing.py:714: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/routing.py:734: in app
+    await route.handle(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/routing.py:288: in handle
+    await self.app(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/routing.py:76: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib/python3.12/site-packages/starlette/routing.py:73: in app
+    response = await f(request)
+.venv/lib/python3.12/site-packages/fastapi/routing.py:301: in app
+    raw_response = await run_endpoint_function(
+.venv/lib/python3.12/site-packages/fastapi/routing.py:214: in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+.venv/lib/python3.12/site-packages/starlette/concurrency.py:37: in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+.venv/lib/python3.12/site-packages/anyio/to_thread.py:56: in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2470: in run_sync_in_worker_thread
+    return await future
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:967: in run
+    result = context.run(func, *args)
+app/routers/company/company.py:118: in get_company_api
+    raise e
+app/routers/company/company.py:103: in get_company_api
+    company = service.get_company(company_id=company_id)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <app.logic.company.company.CompanyService object at 0x7a6fb1f2c890>
+company_id = 2, email = None
+
+    def get_company(
+        self, company_id: str = None, email: str = None
+    ) -> CompanyReadModel:
+        """
+        Get a company by its ID.
+        """
+        if not company_id and not email:
+            raise AppError(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                message=CompanyResponseMessages.COMPANY_ID_OR_EMAIL_REQUIRED.value,
+            )
+        company = None
+        if company_id:
+            company = self.company_repository.get_company_by_id(company_id)
+    
+        if email:
+            company = self.company_repository.get_company_by_email(email)
+    
+>       CompanyUserService.check_if_user_is_in_company(
+            user_id=self.context.user.id,
+            company_id=company.id,
+        )
+E       TypeError: CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'
+
+app/logic/company/company.py:64: TypeError
+---------------------------- Captured stderr setup -----------------------------
+{"timestamp": "2025-09-13T13:58:37.475986+00:00Z", "level": "INFO", "message": "Database initialized and tables created if not existing.", "logger": "app.database.session_manager", "filename": "session_manager.py", "function": "__init__", "line": 31, "process": 33904}
+INFO:app.database.session_manager:Database initialized and tables created if not existing.
+{"timestamp": "2025-09-13T13:58:37.688811+00:00Z", "level": "INFO", "message": "Loading configuration from pyproject.toml", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 57, "process": 33904}
+INFO:app:Loading configuration from pyproject.toml
+{"timestamp": "2025-09-13T13:58:37.689424+00:00Z", "level": "INFO", "message": "\ud83d\udce6 [project] section loaded from pyproject.toml:", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 73, "process": 33904}
+INFO:app:📦 [project] section loaded from pyproject.toml:
+{"timestamp": "2025-09-13T13:58:37.689533+00:00Z", "level": "INFO", "message": "  name = userverse", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  name = userverse
+{"timestamp": "2025-09-13T13:58:37.689579+00:00Z", "level": "INFO", "message": "  version = 0.6.8", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  version = 0.6.8
+{"timestamp": "2025-09-13T13:58:37.689616+00:00Z", "level": "INFO", "message": "  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+{"timestamp": "2025-09-13T13:58:37.689651+00:00Z", "level": "INFO", "message": "  readme = README.md", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  readme = README.md
+{"timestamp": "2025-09-13T13:58:37.689682+00:00Z", "level": "INFO", "message": "  requires-python = >=3.12", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  requires-python = >=3.12
+{"timestamp": "2025-09-13T13:58:37.689720+00:00Z", "level": "INFO", "message": "  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+{"timestamp": "2025-09-13T13:58:37.690498+00:00Z", "level": "INFO", "message": "Request handled", "logger": "app", "filename": "logging.py", "function": "dispatch", "line": 32, "process": 33904, "method": "PATCH", "url": "http://testserver/user/login", "client": "testclient", "user_agent": "testclient", "status_code": 202, "duration_ms": 216.78}
+INFO:app:Request handled
+INFO:httpx:HTTP Request: PATCH http://testserver/user/login "HTTP/1.1 202 Accepted"
+------------------------------ Captured log setup ------------------------------
+INFO     app.database.session_manager:session_manager.py:31 Database initialized and tables created if not existing.
+INFO     app:loader.py:57 Loading configuration from pyproject.toml
+INFO     app:loader.py:73 📦 [project] section loaded from pyproject.toml:
+INFO     app:loader.py:75   name = userverse
+INFO     app:loader.py:75   version = 0.6.8
+INFO     app:loader.py:75   description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+INFO     app:loader.py:75   readme = README.md
+INFO     app:loader.py:75   requires-python = >=3.12
+INFO     app:loader.py:75   dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+INFO     app:logging.py:32 Request handled
+INFO     httpx:_client.py:1025 HTTP Request: PATCH http://testserver/user/login "HTTP/1.1 202 Accepted"
+----------------------------- Captured stderr call -----------------------------
+{"timestamp": "2025-09-13T13:58:37.692525+00:00Z", "level": "INFO", "message": "Loading configuration from pyproject.toml", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 57, "process": 33904}
+INFO:app:Loading configuration from pyproject.toml
+{"timestamp": "2025-09-13T13:58:37.693004+00:00Z", "level": "INFO", "message": "\ud83d\udce6 [project] section loaded from pyproject.toml:", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 73, "process": 33904}
+INFO:app:📦 [project] section loaded from pyproject.toml:
+{"timestamp": "2025-09-13T13:58:37.693064+00:00Z", "level": "INFO", "message": "  name = userverse", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  name = userverse
+{"timestamp": "2025-09-13T13:58:37.693104+00:00Z", "level": "INFO", "message": "  version = 0.6.8", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  version = 0.6.8
+{"timestamp": "2025-09-13T13:58:37.693138+00:00Z", "level": "INFO", "message": "  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+{"timestamp": "2025-09-13T13:58:37.693173+00:00Z", "level": "INFO", "message": "  readme = README.md", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  readme = README.md
+{"timestamp": "2025-09-13T13:58:37.693204+00:00Z", "level": "INFO", "message": "  requires-python = >=3.12", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  requires-python = >=3.12
+{"timestamp": "2025-09-13T13:58:37.693238+00:00Z", "level": "INFO", "message": "  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']", "logger": "app", "filename": "loader.py", "function": "_load_from_toml", "line": 75, "process": 33904}
+INFO:app:  dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+{"timestamp": "2025-09-13T13:58:37.695299+00:00Z", "level": "INFO", "message": "Database initialized and tables created if not existing.", "logger": "app.database.session_manager", "filename": "session_manager.py", "function": "__init__", "line": 31, "process": 33904}
+INFO:app.database.session_manager:Database initialized and tables created if not existing.
+{"timestamp": "2025-09-13T13:58:37.697534+00:00Z", "level": "ERROR", "message": "Request failed", "logger": "app", "filename": "logging.py", "function": "dispatch", "line": 15, "process": 33904, "method": "GET", "url": "http://testserver/company?company_id=2", "client": "testclient", "user_agent": "testclient", "duration_ms": 5.55, "status_code": 500, "error": "CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'"}
+ERROR:app:Request failed
+{"timestamp": "2025-09-13T13:58:37.699170+00:00Z", "level": "ERROR", "message": "Unhandled exception", "logger": "app", "filename": "main.py", "function": "app_error_handler", "line": 123, "process": 33904, "method": "GET", "url": "http://testserver/company?company_id=2", "error": "CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'", "trace": "  + Exception Group Traceback (most recent call last):\n  |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py\", line 76, in collapse_excgroups\n  |     yield\n  |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 177, in __call__\n  |     async with anyio.create_task_group() as task_group:\n  |                ^^^^^^^^^^^^^^^^^^^^^^^^^\n  |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 772, in __aexit__\n  |     raise BaseExceptionGroup(\n  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)\n  +-+---------------- 1 ----------------\n    | Traceback (most recent call last):\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 165, in __call__\n    |     await self.app(scope, receive, _send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/cors.py\", line 85, in __call__\n    |     await self.app(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 176, in __call__\n    |     with recv_stream, send_stream, collapse_excgroups():\n    |                                    ^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/contextlib.py\", line 158, in __exit__\n    |     self.gen.throw(value)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py\", line 82, in collapse_excgroups\n    |     raise exc\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 178, in __call__\n    |     response = await self.dispatch_func(request, call_next)\n    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/app/middleware/logging.py\", line 12, in dispatch\n    |     response = await call_next(request)\n    |                ^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 156, in call_next\n    |     raise app_exc\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 141, in coro\n    |     await self.app(scope, receive_or_disconnect, send_no_error)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 62, in __call__\n    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    |     raise exc\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    |     await app(scope, receive, sender)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 714, in __call__\n    |     await self.middleware_stack(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 734, in app\n    |     await route.handle(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 288, in handle\n    |     await self.app(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 76, in app\n    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    |     raise exc\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    |     await app(scope, receive, sender)\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 73, in app\n    |     response = await f(request)\n    |                ^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 301, in app\n    |     raw_response = await run_endpoint_function(\n    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 214, in run_endpoint_function\n    |     return await run_in_threadpool(dependant.call, **values)\n    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 37, in run_in_threadpool\n    |     return await anyio.to_thread.run_sync(func)\n    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 56, in run_sync\n    |     return await get_async_backend().run_sync_in_worker_thread(\n    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2470, in run_sync_in_worker_thread\n    |     return await future\n    |            ^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 967, in run\n    |     result = context.run(func, *args)\n    |              ^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/app/routers/company/company.py\", line 118, in get_company_api\n    |     raise e\n    |   File \"/home/sandile/projects/userverse/app/routers/company/company.py\", line 103, in get_company_api\n    |     company = service.get_company(company_id=company_id)\n    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/home/sandile/projects/userverse/app/logic/company/company.py\", line 64, in get_company\n    |     CompanyUserService.check_if_user_is_in_company(\n    | TypeError: CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'\n    +------------------------------------\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 165, in __call__\n    await self.app(scope, receive, _send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/cors.py\", line 85, in __call__\n    await self.app(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 176, in __call__\n    with recv_stream, send_stream, collapse_excgroups():\n                                   ^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/contextlib.py\", line 158, in __exit__\n    self.gen.throw(value)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_utils.py\", line 82, in collapse_excgroups\n    raise exc\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 178, in __call__\n    response = await self.dispatch_func(request, call_next)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/app/middleware/logging.py\", line 12, in dispatch\n    response = await call_next(request)\n               ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 156, in call_next\n    raise app_exc\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/base.py\", line 141, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 62, in __call__\n    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 714, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 734, in app\n    await route.handle(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 288, in handle\n    await self.app(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 76, in app\n    await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 73, in app\n    response = await f(request)\n               ^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 301, in app\n    raw_response = await run_endpoint_function(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 214, in run_endpoint_function\n    return await run_in_threadpool(dependant.call, **values)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 37, in run_in_threadpool\n    return await anyio.to_thread.run_sync(func)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 56, in run_sync\n    return await get_async_backend().run_sync_in_worker_thread(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2470, in run_sync_in_worker_thread\n    return await future\n           ^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 967, in run\n    result = context.run(func, *args)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/app/routers/company/company.py\", line 118, in get_company_api\n    raise e\n  File \"/home/sandile/projects/userverse/app/routers/company/company.py\", line 103, in get_company_api\n    company = service.get_company(company_id=company_id)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sandile/projects/userverse/app/logic/company/company.py\", line 64, in get_company\n    CompanyUserService.check_if_user_is_in_company(\nTypeError: CompanyUserService.check_if_user_is_in_company() missing 1 required positional argument: 'self'\n"}
+ERROR:app:Unhandled exception
+------------------------------ Captured log call -------------------------------
+INFO     app:loader.py:57 Loading configuration from pyproject.toml
+INFO     app:loader.py:73 📦 [project] section loaded from pyproject.toml:
+INFO     app:loader.py:75   name = userverse
+INFO     app:loader.py:75   version = 0.6.8
+INFO     app:loader.py:75   description = Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient.
+INFO     app:loader.py:75   readme = README.md
+INFO     app:loader.py:75   requires-python = >=3.12
+INFO     app:loader.py:75   dependencies = ['alembic>=1.15.2', 'beautifulsoup4>=4.13.4', 'black>=25.1.0', 'fastapi[standard]>=0.115.12', 'httpx>=0.28.1', 'mkdocs>=1.6.1', 'opentelemetry-exporter-otlp>=1.32.1', 'opentelemetry-instrumentation-fastapi>=0.53b1', 'opentelemetry-instrumentation-requests>=0.53b1', 'opentelemetry-sdk>=1.32.1', 'passlib>=1.7.4', 'bcrypt>=4.2.0', 'prometheus-client>=0.22.1', 'psycopg2-binary==2.9.10', 'pydantic>=2.11.3', 'pyjwt>=2.10.1', 'pytest>=8.3.5', 'pytest-cov>=6.1.1', 'sqlalchemy>=2.0.40', 'sqlalchemy-utils>=0.41.2']
+INFO     app.database.session_manager:session_manager.py:31 Database initialized and tables created if not existing.
+ERROR    app:logging.py:15 Request failed
+ERROR    app:main.py:123 Unhandled exception
+--------------------------- Captured stderr teardown ---------------------------
+{"timestamp": "2025-09-13T13:58:37.967811+00:00Z", "level": "INFO", "message": "Userverse API shutting down", "logger": "app", "filename": "main.py", "function": "lifespan", "line": 45, "process": 33904}
+INFO:app:Userverse API shutting down
+---------------------------- Captured log teardown -----------------------------
+INFO     app:main.py:45 Userverse API shutting down
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/passlib/utils/__init__.py:854
+  /home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
+    from crypt import crypt as _crypt
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/http/b_company/test_b_get_company.py::test_a_get_company_one_by_id_success
+FAILED tests/http/b_company/test_b_get_company.py::test_b_get_company_one_by_email_success
+FAILED tests/http/b_company/test_b_get_company.py::test_e_get_company_without_associated
+==================== 3 failed, 2 passed, 1 warning in 1.89s ====================

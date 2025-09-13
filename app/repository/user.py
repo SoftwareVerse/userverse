@@ -11,7 +11,7 @@ from app.database.user import User
 from app.models.user.account_status import UserAccountStatus
 from app.models.user.user import UserReadModel
 from app.models.user.response_messages import UserResponseMessages
-from app.utils.hash_password import verify_password
+from app.utils.hash_password import verify_password, hash_password, UnknownHashError
 
 
 class UserRepository:
@@ -50,8 +50,18 @@ class UserRepository:
                 )
 
             if password is not None:
-                # True means match; False means bad password
-                if not verify_password(password, user.password):
+                # Validate password; gracefully handle legacy/plaintext values
+                try:
+                    is_valid = verify_password(password, user.password)
+                except UnknownHashError:
+                    # Stored password is not a recognized hash (likely plaintext)
+                    is_valid = password == user.password
+                    if is_valid:
+                        # Transparently upgrade to a secure hash
+                        user.password = hash_password(password)
+                        session.commit()
+
+                if not is_valid:
                     raise AppError(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         message=UserResponseMessages.INVALID_CREDENTIALS.value,
