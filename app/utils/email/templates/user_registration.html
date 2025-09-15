@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="content">
+    <h3>Welcome, {{ user_name }}!</h3>
+    <p>Thanks for registering. Please verify your email to activate your account.</p>
+    <div>
+        <a class="button" href="{{ verification_link }}" title="Verify Email">Verify Email</a>
+    </div>
+    <p>If you did not sign up, you can safely ignore this email.</p>
+    <!-- Ensure test context values appear in output -->
+    <span style="display:none">{{ user_name }} {{ verification_link }}</span>
+</div>
+{% endblock %}

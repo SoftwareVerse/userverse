@@ -68,7 +68,7 @@ class CompanyUserService:
             removed_by=self.context.user,
         )
 
-    def get_company_user(
+    def get_company_users(
         self,
         company_id: int,
         params: UserQueryParams,
@@ -83,7 +83,7 @@ class CompanyUserService:
         )
 
     def check_if_user_is_in_company(
-        self, user_id: str, company_id: str, role: str = None
+        self, user_id: int, company_id: int, role: str | None = None
     ) -> bool:
         """
         Check if the user is linked to the company.
@@ -93,8 +93,8 @@ class CompanyUserService:
             # Check if the user is linked to the company
             linked_company = AssociationUserCompany.is_user_linked_to_company(
                 session=session,
-                user_id=int(user_id),
-                company_id=int(company_id),
+                user_id=user_id,
+                company_id=company_id,
                 role_name=role,
             )
             if not linked_company:

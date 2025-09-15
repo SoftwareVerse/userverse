@@ -40,7 +40,7 @@ company_id_description = "The ID of the company"
 def get_company_users_api(
     company_id: int = Path(..., description=company_id_description),
     params: UserQueryParams = Depends(),
-    common_dependecies: CommonJWTRouteDependencies = Depends(),
+    common_dependencies: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Get a paginated list of users associated with a specific company.
@@ -48,26 +48,23 @@ def get_company_users_api(
     - **Requires**: Authenticated user
     - **Supports**: Query parameters for filtering, sorting, pagination
     """
-    try:
-        context = SharedContext(
-            user=common_dependecies.user,
-            db_session=common_dependecies.session,
-        )
-        service = CompanyUserService(context)
-        response = service.get_company_user(
-            company_id=company_id,
-            params=params,
-        )
+    context = SharedContext(
+        user=common_dependencies.user,
+        db_session=common_dependencies.session,
+    )
+    service = CompanyUserService(context)
+    response = service.get_company_users(
+        company_id=company_id,
+        params=params,
+    )
 
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content=GenericResponseModel(
-                message=CompanyUserResponseMessages.GET_COMPANY_USERS.value,
-                data=response.model_dump(),
-            ).model_dump(),
-        )
-    except (AppError, Exception) as e:
-        raise e
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=GenericResponseModel(
+            message=CompanyUserResponseMessages.GET_COMPANY_USERS.value,
+            data=response.model_dump(),
+        ).model_dump(),
+    )
 
 
 @router.post(
@@ -83,7 +80,7 @@ def get_company_users_api(
 def add_user_to_company_api(
     payload: CompanyUserAddModel,
     company_id: int = Path(..., description=company_id_description),
-    common_dependecies: CommonJWTRouteDependencies = Depends(),
+    common_dependencies: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Add a user to a company with a specified role.
@@ -91,25 +88,22 @@ def add_user_to_company_api(
     - **Requires**: Authenticated user
     - **Returns**: The updated company info or user assignment info
     """
-    try:
-        context = SharedContext(
-            user=common_dependecies.user,
-            db_session=common_dependecies.session,
-        )
-        response = CompanyUserService(context).add_user_to_company(
-            company_id=company_id,
-            payload=payload,
-        )
+    context = SharedContext(
+        user=common_dependencies.user,
+        db_session=common_dependencies.session,
+    )
+    response = CompanyUserService(context).add_user_to_company(
+        company_id=company_id,
+        payload=payload,
+    )
 
-        return JSONResponse(
-            status_code=status.HTTP_201_CREATED,
-            content=GenericResponseModel(
-                message=CompanyUserResponseMessages.ADD_USER_SUCCESS.value,
-                data=response.model_dump(),
-            ).model_dump(),
-        )
-    except (AppError, Exception) as e:
-        raise e
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content=GenericResponseModel(
+            message=CompanyUserResponseMessages.ADD_USER_SUCCESS.value,
+            data=response.model_dump(),
+        ).model_dump(),
+    )
 
 
 @router.delete(
@@ -117,7 +111,7 @@ def add_user_to_company_api(
     tags=[tag],
     status_code=status.HTTP_200_OK,
     responses={
-        201: {"model": GenericResponseModel[CompanyUserReadModel]},
+        200: {"model": GenericResponseModel[CompanyUserReadModel]},
         400: {"model": AppErrorResponseModel},
         500: {"model": AppErrorResponseModel},
     },
@@ -125,7 +119,7 @@ def add_user_to_company_api(
 def delete_user_from_company_api(
     company_id: int = Path(..., description=company_id_description),
     user_id: int = Path(..., description="The ID of the user to remove"),
-    common_dependecies: CommonJWTRouteDependencies = Depends(),
+    common_dependencies: CommonJWTRouteDependencies = Depends(),
 ):
     """
     Remove a specific user from a company.
@@ -133,22 +127,19 @@ def delete_user_from_company_api(
     - **Requires**: Authenticated user
     - **Returns**: The removed user's data
     """
-    try:
-        context = SharedContext(
-            user=common_dependecies.user,
-            db_session=common_dependecies.session,
-        )
-        response = CompanyUserService(context).remove_user_from_company(
-            company_id=company_id,
-            user_id=user_id,
-        )
+    context = SharedContext(
+        user=common_dependencies.user,
+        db_session=common_dependencies.session,
+    )
+    response = CompanyUserService(context).remove_user_from_company(
+        company_id=company_id,
+        user_id=user_id,
+    )
 
-        return JSONResponse(
-            status_code=status.HTTP_201_CREATED,
-            content=GenericResponseModel(
-                message=CompanyUserResponseMessages.REMOVE_USER_SUCCESS.value,
-                data=response.model_dump(),
-            ).model_dump(),
-        )
-    except (AppError, Exception) as e:
-        raise e
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=GenericResponseModel(
+            message=CompanyUserResponseMessages.REMOVE_USER_SUCCESS.value,
+            data=response.model_dump(),
+        ).model_dump(),
+    )

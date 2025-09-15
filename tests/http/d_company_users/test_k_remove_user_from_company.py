@@ -13,7 +13,7 @@ from app.models.company.response_messages import (
             "login_token",
             1,
             3,  # Assume user.one@email.com is the last admin
-            201,
+            200,
             CompanyUserResponseMessages.REMOVE_USER_SUCCESS.value,
         ),
         # ❌ Non-admin tries to remove a user from company 1
