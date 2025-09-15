@@ -1,6 +1,6 @@
 [project]
 name = "userverse"
-version = "0.6.11"
+version = "0.6.12"
 description = "Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient."
 readme = "README.md"
 requires-python = ">=3.12"
