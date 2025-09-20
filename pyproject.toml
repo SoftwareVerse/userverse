@@ -26,6 +26,7 @@ dependencies = [
     "pytest-cov>=6.1.1",
     "sqlalchemy>=2.0.40",
     "sqlalchemy-utils>=0.41.2",
+    "click>=8.2.1",
 ]
 
 [tool.pytest.ini_options]
