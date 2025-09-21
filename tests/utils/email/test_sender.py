@@ -94,6 +94,34 @@ def test_send_email_success():
             mock_server.send_message.assert_called_once()
 
 
+def test_send_email_dns_failure(capfd):
+    """Should show plain text when SMTP host cannot be resolved"""
+    fake_config = {
+        "environment": "prod",
+        "email": {
+            "USERNAME": "user@test.com",
+            "PASSWORD": "secure",
+            "HOST": "smtp.test.com",
+            "PORT": 465,
+        },
+    }
+
+    with patch(
+        "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+    ):
+        with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
+            mock_smtp_ssl.side_effect = socket.gaierror(
+                socket.EAI_NONAME, "Name or service not known"
+            )
+
+            send_email("to@example.com", "Subject", "<p>test</p>")
+
+            out, _ = capfd.readouterr()
+            assert "Unable to reach SMTP host smtp.test.com" in out
+            assert "Subject: Subject" in out
+            assert "test" in out
+
+
 def test_send_email_socket_timeout():
     """Should log and re-raise socket timeout exceptions"""
     fake_config = {
