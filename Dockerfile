@@ -13,6 +13,4 @@ COPY ./sample-config.json /code/sample-config.json
 
 EXPOSE 8500
 
-# Better CMD that directly runs your application
-CMD ["uv", "run", "-m", "app.main", "--port", "8500", "--host", "0.0.0.0", "--env", "production" \
-    , "--json_config_path", "/code/sample-config.json"]
+CMD ["uv", "run", "--no-sync", "-m", "app.main", "--port", "8500", "--host", "0.0.0.0", "--env", "production"]
