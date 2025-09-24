@@ -1,18 +1,56 @@
 import socket
 import smtplib
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
-from app.utils.email.sender import send_email
+
+from app.jobs.bus import JobType
+from app.utils.email.sender import deliver_email, send_email
 
 
-def test_send_email_in_test_environment(capfd):
-    """Should print email body in plain text when environment is test"""
+def test_send_email_enqueues_when_bus_available():
+    mock_bus = MagicMock()
+
+    with patch("app.utils.email.sender.get_bus", return_value=mock_bus):
+        send_email("to@example.com", "Subject", "<p>body</p>")
+
+    mock_bus.enqueue.assert_called_once()
+    job_type, payload = mock_bus.enqueue.call_args[0]
+    assert job_type is JobType.EMAIL_SEND
+    assert payload["to"] == "to@example.com"
+    assert payload["reason"] == "rendered"
+    assert payload["context"]["subject"] == "Subject"
+    assert payload["context"]["html_body"] == "<p>body</p>"
+
+
+def test_send_email_falls_back_when_bus_missing():
+    with patch("app.utils.email.sender.get_bus", return_value=None), patch(
+        "app.utils.email.sender.deliver_email"
+    ) as mock_deliver:
+        send_email("to@example.com", "Subject", "<p>body</p>")
+
+    mock_deliver.assert_called_once_with("to@example.com", "Subject", "<p>body</p>")
+
+
+def test_send_email_falls_back_on_enqueue_failure():
+    mock_bus = MagicMock()
+    mock_bus.enqueue.side_effect = RuntimeError("bus closed")
+
+    with patch("app.utils.email.sender.get_bus", return_value=mock_bus), patch(
+        "app.utils.email.sender.deliver_email"
+    ) as mock_deliver:
+        send_email("to@example.com", "Subject", "<p>body</p>")
+
+    mock_deliver.assert_called_once()
+
+
+def test_deliver_email_in_test_environment(capfd):
     fake_config = {"environment": "test_environment", "email": {}}
 
     with patch(
         "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
     ):
-        send_email(
+        deliver_email(
             "test@example.com", "Test Subject", "<h1>Hello</h1><p>This is a test</p>"
         )
         out, _ = capfd.readouterr()
@@ -20,8 +58,7 @@ def test_send_email_in_test_environment(capfd):
         assert "This is a test" in out
 
 
-def test_send_email_missing_username(capfd):
-    """Should print fallback text if username is missing"""
+def test_deliver_email_missing_username(capfd):
     fake_config = {
         "environment": "prod",
         "email": {"PASSWORD": "pass", "HOST": "smtp.test.com", "PORT": 465},
@@ -30,14 +67,13 @@ def test_send_email_missing_username(capfd):
     with patch(
         "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
     ):
-        send_email("to@example.com", "Subject", "<h1>Missing</h1><p>User field</p>")
+        deliver_email("to@example.com", "Subject", "<h1>Missing</h1><p>User field</p>")
         out, _ = capfd.readouterr()
         assert "Email config not available" in out
         assert "User field" in out
 
 
-def test_send_email_missing_password(capfd):
-    """Should print fallback text if password is missing"""
+def test_deliver_email_missing_password(capfd):
     fake_config = {
         "environment": "prod",
         "email": {"USERNAME": "user@test.com", "HOST": "smtp.test.com", "PORT": 465},
@@ -46,14 +82,13 @@ def test_send_email_missing_password(capfd):
     with patch(
         "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
     ):
-        send_email("to@example.com", "Subject", "<h1>Missing</h1><p>Password</p>")
+        deliver_email("to@example.com", "Subject", "<h1>Missing</h1><p>Password</p>")
         out, _ = capfd.readouterr()
         assert "Email config not available" in out
         assert "Password" in out
 
 
-def test_send_email_missing_host_or_port(capfd):
-    """Should print fallback text if host or port is missing"""
+def test_deliver_email_missing_host_or_port(capfd):
     fake_config = {
         "environment": "prod",
         "email": {"USERNAME": "user@test.com", "PASSWORD": "secure"},
@@ -62,21 +97,20 @@ def test_send_email_missing_host_or_port(capfd):
     with patch(
         "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
     ):
-        send_email("to@example.com", "Subject", "<h1>Missing</h1><p>SMTP config</p>")
+        deliver_email("to@example.com", "Subject", "<h1>Missing</h1><p>SMTP config</p>")
         out, _ = capfd.readouterr()
         assert "Email config not available" in out
         assert "SMTP config" in out
 
 
-def test_send_email_success():
-    """Should send email successfully with full config using SMTP_SSL"""
+def test_deliver_email_success():
     fake_config = {
         "environment": "prod",
         "email": {
             "USERNAME": "user@test.com",
             "PASSWORD": "secure",
             "HOST": "smtp.test.com",
-            "PORT": 465,  # Standard port for SMTP_SSL
+            "PORT": 465,
         },
     }
 
@@ -87,15 +121,13 @@ def test_send_email_success():
             mock_server = MagicMock()
             mock_smtp_ssl.return_value.__enter__.return_value = mock_server
 
-            send_email("to@example.com", "Subject", "<p>test</p>")
+            deliver_email("to@example.com", "Subject", "<p>test</p>")
 
-            # No starttls for SMTP_SSL
             mock_server.login.assert_called_once_with("user@test.com", "secure")
             mock_server.send_message.assert_called_once()
 
 
-def test_send_email_dns_failure(capfd):
-    """Should show plain text when SMTP host cannot be resolved"""
+def test_deliver_email_dns_failure(capfd):
     fake_config = {
         "environment": "prod",
         "email": {
@@ -114,7 +146,7 @@ def test_send_email_dns_failure(capfd):
                 socket.EAI_NONAME, "Name or service not known"
             )
 
-            send_email("to@example.com", "Subject", "<p>test</p>")
+            deliver_email("to@example.com", "Subject", "<p>test</p>")
 
             out, _ = capfd.readouterr()
             assert "Unable to reach SMTP host smtp.test.com" in out
@@ -122,8 +154,7 @@ def test_send_email_dns_failure(capfd):
             assert "test" in out
 
 
-def test_send_email_socket_timeout():
-    """Should log and re-raise socket timeout exceptions"""
+def test_deliver_email_socket_timeout():
     fake_config = {
         "environment": "prod",
         "email": {
@@ -141,11 +172,10 @@ def test_send_email_socket_timeout():
             mock_smtp_ssl.side_effect = socket.timeout("Connection timed out")
 
             with pytest.raises(socket.timeout):
-                send_email("to@example.com", "Subject", "<p>test</p>")
+                deliver_email("to@example.com", "Subject", "<p>test</p>")
 
 
-def test_send_email_smtp_server_disconnected():
-    """Should log and re-raise SMTP server disconnected exceptions"""
+def test_deliver_email_smtp_server_disconnected():
     fake_config = {
         "environment": "prod",
         "email": {
@@ -165,11 +195,10 @@ def test_send_email_smtp_server_disconnected():
             )
 
             with pytest.raises(smtplib.SMTPServerDisconnected):
-                send_email("to@example.com", "Subject", "<p>test</p>")
+                deliver_email("to@example.com", "Subject", "<p>test</p>")
 
 
-def test_send_email_smtp_exception():
-    """Should log and re-raise general SMTP exceptions"""
+def test_deliver_email_smtp_exception():
     fake_config = {
         "environment": "prod",
         "email": {
@@ -191,11 +220,10 @@ def test_send_email_smtp_exception():
             )
 
             with pytest.raises(smtplib.SMTPException):
-                send_email("to@example.com", "Subject", "<p>test</p>")
+                deliver_email("to@example.com", "Subject", "<p>test</p>")
 
 
-def test_send_email_general_exception():
-    """Should log and re-raise any other exceptions"""
+def test_deliver_email_general_exception():
     fake_config = {
         "environment": "prod",
         "email": {
@@ -215,4 +243,4 @@ def test_send_email_general_exception():
             mock_server.send_message.side_effect = Exception("Unexpected error")
 
             with pytest.raises(Exception):
-                send_email("to@example.com", "Subject", "<p>test</p>")
+                deliver_email("to@example.com", "Subject", "<p>test</p>")
