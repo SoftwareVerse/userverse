@@ -58,6 +58,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         lifespan=lifespan,
+        root_path="/userverse",
         title=configs.get("name"),
         version=configs.get("version"),
         description=configs.get("description"),
@@ -188,7 +189,6 @@ def main(
             port=port,
             workers=workers,
             use_colors=True,
-            log_config=logging_config,
         )
         server = Server(config)
         server.run()
