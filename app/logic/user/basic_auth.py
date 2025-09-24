@@ -1,11 +1,16 @@
 from datetime import timedelta
-from app.models.user.user import UserLoginModel, UserCreateModel, UserReadModel
-from app.models.user.response_messages import UserResponseMessages
-from app.utils.hash_password import hash_password
+from typing import Optional
+
+from fastapi import BackgroundTasks
+
 from app.logic.mailer import MailService
-from app.security.jwt import JWTManager
+from app.models.user.response_messages import UserResponseMessages
+from app.models.user.user import UserCreateModel, UserLoginModel, UserReadModel
 from app.repository.user import UserRepository
+from app.security.jwt import JWTManager
 from app.utils.app_error import AppError
+from app.utils.hash_password import hash_password
+from app.utils.logging import logger
 from app.utils.shared_context import SharedContext
 
 
@@ -26,20 +31,49 @@ class UserBasicAuthService:
         server_url = self.context.configs.get("server_url", "http://localhost:8000")
         return f"{server_url}/user/verify?token={token}"
 
-    def send_verification_email(self, mode: str = "create"):
+    def send_verification_email(
+        self,
+        mode: str = "create",
+        *,
+        background_tasks: Optional[BackgroundTasks] = None,
+    ) -> None:
         user = self.context.get_user()
         verification_link = self.generate_verification_link()
-        MailService.send_template_email(
-            to=user.email,
-            subject=self.ACCOUNT_REGISTRATION_SUBJECT,
-            template_name=self.ACCOUNT_NOTIFICATION_TEMPLATE,
-            context={
-                "template_name": self.ACCOUNT_REGISTRATION_SUBJECT,
-                "user_name": f"{user.first_name or ''} {user.last_name or ''}",
-                "verification_link": verification_link,
-                "mode": mode,
-            },
-        )
+        template_context = {
+            "template_name": self.ACCOUNT_REGISTRATION_SUBJECT,
+            "user_name": f"{user.first_name or ''} {user.last_name or ''}",
+            "verification_link": verification_link,
+            "mode": mode,
+        }
+
+        if background_tasks is not None:
+            background_tasks.add_task(
+                MailService.send_template_email,
+                to=user.email,
+                subject=self.ACCOUNT_REGISTRATION_SUBJECT,
+                template_name=self.ACCOUNT_NOTIFICATION_TEMPLATE,
+                context=template_context,
+            )
+            return
+
+        try:
+            MailService.send_template_email(
+                to=user.email,
+                subject=self.ACCOUNT_REGISTRATION_SUBJECT,
+                template_name=self.ACCOUNT_NOTIFICATION_TEMPLATE,
+                context=template_context,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error(
+                "Verification email dispatch failed",
+                extra={
+                    "extra": {
+                        "email": user.email,
+                        "mode": mode,
+                        "error": str(exc),
+                    }
+                },
+            )
 
     def user_login(self, user_credentials: UserLoginModel):
         user = self.user_repository.get_user_by_email(
@@ -53,7 +87,11 @@ class UserBasicAuthService:
         return JWTManager().sign_jwt(user)
 
     def create_user(
-        self, user_credentials: UserLoginModel, user_data: UserCreateModel
+        self,
+        user_credentials: UserLoginModel,
+        user_data: UserCreateModel,
+        *,
+        background_tasks: Optional[BackgroundTasks] = None,
     ) -> UserReadModel:
         data = {
             "first_name": user_data.first_name,
@@ -64,5 +102,7 @@ class UserBasicAuthService:
         }
         user = self.user_repository.create_user(data)
         self.context.user = user
-        self.send_verification_email(mode="create")
+        self.send_verification_email(
+            mode="create", background_tasks=background_tasks
+        )
         return user

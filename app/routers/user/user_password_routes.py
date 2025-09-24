@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import EmailStr
 
@@ -31,7 +31,10 @@ router = APIRouter(
     response_model=GenericResponseModel[None],
 )
 def password_reset_request_api(
-    email: EmailStr, session: Session = Depends(get_session)
+    email: EmailStr,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
 ):
     """
     Trigger a password reset request.
@@ -39,7 +42,12 @@ def password_reset_request_api(
     - **Sends**: OTP code to user's email
     - **Returns**: Success message
     """
-    response = UserPasswordService(session).request_password_reset(email)
+    client_host = request.client.host if request.client else None
+    response = UserPasswordService(session).request_password_reset(
+        email,
+        client_ip=client_host,
+        background_tasks=background_tasks,
+    )
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED,
         content=response.model_dump(),
