@@ -2,7 +2,9 @@ import click
 import logging
 import smtplib
 import socket
+import ssl
 import time
+from ssl import SSLError
 from email.message import EmailMessage
 from typing import Any, Dict, Optional
 
@@ -47,7 +49,7 @@ def send_email(
     reason: Optional[str] = None,
     context: Optional[Dict[str, Any]] = None,
 ) -> None:
-    """Enqueue an email job if the bus is available, fallback to sync send."""
+    """Enqueue an email job if the bus is available, else send synchronously."""
 
     job_context = dict(context or {})
     job_context.setdefault("subject", subject)
@@ -91,7 +93,16 @@ def deliver_email(
     timeout: float = 10.0,
     max_retries: int = 3,
 ) -> None:
-    """Send the email immediately using SMTP with retries and instrumentation."""
+    """
+    Send the email immediately using SMTP with retries and instrumentation.
+
+    Supports BOTH:
+      - Implicit SSL (SMTPS) on port 465
+      - STARTTLS (submission) on port 587 or 25
+    Decision order:
+      - If EmailConfig exposes boolean flags use_ssl/use_starttls, honor them.
+      - Otherwise infer from port: 465 => implicit SSL; 587/25 => STARTTLS.
+    """
 
     email_settings = EmailConfig.load()
 
@@ -121,6 +132,7 @@ def deliver_email(
     msg.set_content("This email requires an HTML-compatible client.")
     msg.add_alternative(html_body, subtype="html")
 
+    # Exceptions treated as transient (we'll retry)
     transient_reasons = {
         socket.timeout: "timeout",
         smtplib.SMTPServerDisconnected: "server_disconnected",
@@ -128,14 +140,28 @@ def deliver_email(
         smtplib.SMTPDataError: "data_error",
         smtplib.SMTPRecipientsRefused: "recipient_refused",
         smtplib.SMTPResponseException: "smtp_response",
+        smtplib.SMTPNotSupportedError: "tls_unsupported",
+        SSLError: "tls_error",
     }
     transient_classes = tuple(transient_reasons.keys())
+
+    # Decide TLS mode
+    use_implicit_ssl = bool(getattr(email_settings, "use_ssl", False))
+    use_starttls = bool(getattr(email_settings, "use_starttls", False))
+
+    if not (use_implicit_ssl or use_starttls):
+        # Infer from port if flags not provided
+        if email_settings.port == 465:
+            use_implicit_ssl = True
+        elif email_settings.port in (587, 25):
+            use_starttls = True
 
     last_error: Optional[BaseException] = None
 
     for attempt in range(1, max_retries + 1):
         EMAIL_SEND_ATTEMPTS.labels(reason=reason).inc()
         stage = "connect"
+
         try:
             logger.info(
                 "SMTP connect attempt",
@@ -147,55 +173,52 @@ def deliver_email(
                         "stage": stage,
                         "host": email_settings.host,
                         "port": email_settings.port,
+                        "mode": "implicit_ssl" if use_implicit_ssl else ("starttls" if use_starttls else "plain"),
                     }
                 },
             )
-            with smtplib.SMTP_SSL(
-                email_settings.host,
-                email_settings.port,
-                timeout=timeout,
-            ) as smtp:
+
+            tls_ctx = ssl.create_default_context()
+
+            if use_implicit_ssl:
+                # Implicit SSL (port 465)
+                with smtplib.SMTP_SSL(
+                    email_settings.host, email_settings.port, timeout=timeout, context=tls_ctx
+                ) as smtp:
+                    logger.info(
+                        "SMTP connected (implicit SSL)",
+                        extra={"extra": {"email_to": to, "reason": reason, "attempt": attempt, "stage": stage}},
+                    )
+                    stage = "auth"
+                    smtp.login(email_settings.username, email_settings.password)
+                    logger.info("SMTP authenticated", extra={"extra": {"attempt": attempt, "stage": stage}})
+                    stage = "send"
+                    smtp.send_message(msg)
+                    logger.info("SMTP send complete", extra={"extra": {"attempt": attempt, "stage": stage}})
+                    return
+
+            # Plain connect, then optionally STARTTLS
+            with smtplib.SMTP(email_settings.host, email_settings.port, timeout=timeout) as smtp:
                 logger.info(
-                    "SMTP connected",
-                    extra={
-                        "extra": {
-                            "email_to": to,
-                            "reason": reason,
-                            "attempt": attempt,
-                            "stage": stage,
-                        }
-                    },
+                    "SMTP connected (plain)",
+                    extra={"extra": {"email_to": to, "reason": reason, "attempt": attempt, "stage": stage}},
                 )
+                if use_starttls:
+                    stage = "starttls"
+                    smtp.ehlo()
+                    smtp.starttls(context=tls_ctx)
+                    smtp.ehlo()
+                    logger.info("STARTTLS negotiated", extra={"extra": {"attempt": attempt, "stage": stage}})
+
                 stage = "auth"
-                smtp.login(
-                    email_settings.username,
-                    email_settings.password,
-                )
-                logger.info(
-                    "SMTP authenticated",
-                    extra={
-                        "extra": {
-                            "email_to": to,
-                            "reason": reason,
-                            "attempt": attempt,
-                            "stage": stage,
-                        }
-                    },
-                )
+                smtp.login(email_settings.username, email_settings.password)
+                logger.info("SMTP authenticated", extra={"extra": {"attempt": attempt, "stage": stage}})
+
                 stage = "send"
                 smtp.send_message(msg)
-                logger.info(
-                    "SMTP send complete",
-                    extra={
-                        "extra": {
-                            "email_to": to,
-                            "reason": reason,
-                            "attempt": attempt,
-                            "stage": stage,
-                        }
-                    },
-                )
+                logger.info("SMTP send complete", extra={"extra": {"attempt": attempt, "stage": stage}})
                 return
+
         except socket.gaierror as exc:
             failure_reason = "dns_error"
             EMAIL_SEND_FAILURES.labels(reason=failure_reason, stage=stage).inc()
@@ -214,28 +237,21 @@ def deliver_email(
             )
             _render_plain_text(
                 html_body,
-                header=(
-                    f"Unable to reach SMTP host {email_settings.host}. Showing plain text:"
-                ),
+                header=f"Unable to reach SMTP host {email_settings.host}. Showing plain text:",
                 to=to,
                 subject=subject,
             )
             return
+
         except smtplib.SMTPAuthenticationError as exc:
             failure_reason = "auth"
             EMAIL_SEND_FAILURES.labels(reason=failure_reason, stage=stage).inc()
             logger.error(
                 "SMTP authentication failed",
-                extra={
-                    "extra": {
-                        "email_to": to,
-                        "reason": reason,
-                        "stage": stage,
-                        "error": str(exc),
-                    }
-                },
+                extra={"extra": {"email_to": to, "reason": reason, "stage": stage, "error": str(exc)}},
             )
             raise
+
         except transient_classes as exc:  # type: ignore[arg-type]
             failure_reason = next(
                 (label for cls, label in transient_reasons.items() if isinstance(exc, cls)),
@@ -255,6 +271,7 @@ def deliver_email(
                 },
             )
             last_error = exc
+
         except smtplib.SMTPException as exc:
             failure_reason = "smtp_error"
             EMAIL_SEND_FAILURES.labels(reason=failure_reason, stage=stage).inc()
@@ -271,7 +288,8 @@ def deliver_email(
                 },
             )
             last_error = exc
-        except Exception as exc:  # noqa: BLE001 - unexpected but logged
+
+        except Exception as exc:  # noqa: BLE001
             failure_reason = "unexpected"
             EMAIL_SEND_FAILURES.labels(reason=failure_reason, stage=stage).inc()
             logger.error(
@@ -288,6 +306,7 @@ def deliver_email(
             )
             raise
 
+        # Backoff & retry
         if attempt >= max_retries:
             if last_error is not None:
                 raise last_error

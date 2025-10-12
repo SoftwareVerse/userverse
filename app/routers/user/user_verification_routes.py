@@ -59,7 +59,7 @@ def resend_verification_email(
     - **Returns**: Success message on email resend
     """
     service = UserBasicAuthService(
-        SharedContext(configs={}, user=common.user, db_session=common.session)
+        SharedContext(user=common.user, db_session=common.session)
     )
     service.send_verification_email(
         mode="verify", background_tasks=background_tasks

@@ -28,7 +28,7 @@ class UserBasicAuthService:
             {"sub": self.context.get_user_email(), "type": "verification"},
             expires_delta=timedelta(minutes=self.VERIFICATION_TOKEN_EXPIRY_MINUTES),
         )
-        server_url = self.context.configs.get("server_url", "http://localhost:8000")
+        server_url = self.context.configs.get("server_url")
         return f"{server_url}/user/verify?token={token}"
 
     def send_verification_email(
