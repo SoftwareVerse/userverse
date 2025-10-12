@@ -1,5 +1,5 @@
 {
-    "server_url": "http://localhost:8501",
+    "server_url": "http://localhost:8500",
     "name": "Userverse",
     "cor_origins": {
         "allowed": [
@@ -19,6 +19,8 @@
         "HOST": "mail.example.com",
         "PORT": 587,
         "USERNAME": "your_email@example.com",
-        "PASSWORD": "your_email_password"
+        "PASSWORD": "your_email_password",
+        "EMAIL_TLS": true,
+        "EMAIL_SSL": false
     }
 }

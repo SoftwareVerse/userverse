@@ -75,6 +75,9 @@ This project uses **FastAPI**, **Uvicorn**, and a dynamic configuration system w
 Use `uvicorn` in **factory mode** to support reload and dynamic config loading via environment variables:
 
 ```bash
+# To generate JWT
+openssl rand -base64 64
+
 # Set environment variables and run the app
 export ENV=development 
 export JSON_CONFIG_PATH=/userverse/local_config.json 
@@ -106,10 +109,9 @@ Use the built-in CLI to run the app with full control over config, port, and wor
 
 uv run -m app.main --port 8500 \
   --env production \
-  --json_config_path sample-config.json \
+  --json_config_path local_config.json \
   --host 0.0.0.0 \
-  --port 8504 \
-  --workers 4
+  --workers 2
 ```
 
 ✅ This mode supports scaling with Uvicorn workers and does not enable reload.
