@@ -27,6 +27,7 @@ dependencies = [
     "sqlalchemy>=2.0.40",
     "sqlalchemy-utils>=0.41.2",
     "click>=8.2.1",
+    "phonenumbers>=9.0.19",
 ]
 
 [tool.pytest.ini_options]

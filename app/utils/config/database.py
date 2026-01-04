@@ -39,7 +39,7 @@ class DatabaseConfig:
             ]
             if missing_fields:
                 logger.warning(
-                    f"Missing database config fields: {missing_fields}. Falling back to SQLite."
+                    "Missing database config fields: %s. Falling back to SQLite.", missing_fields
                 )
                 return f"sqlite:///{environment}.db"
 
@@ -57,6 +57,6 @@ class DatabaseConfig:
             return f"sqlite:///{db_name or f'{environment}.db'}"
         else:
             logger.warning(
-                f"Unsupported database type: '{db_type}'. Falling back to SQLite."
+                "Unsupported database type: %s. Falling back to SQLite.", db_type
             )
             return f"sqlite:///{environment}.db"
