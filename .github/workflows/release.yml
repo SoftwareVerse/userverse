@@ -6,7 +6,7 @@ on:
       - main
 
 permissions:
-  contents: write  # Required to push tags and commits
+  contents: write  # push tags/commits & create releases
 
 jobs:
   release:
@@ -16,51 +16,73 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
+          # IMPORTANT: fetch full history & tags so we can diff and build notes
+          fetch-depth: 0
           persist-credentials: true
 
       - name: Get Latest Tag
         id: get_tag
         run: |
-          git fetch --tags
+          git fetch --tags --force
           latest_tag=$(git tag --sort=-v:refname | head -n 1)
-          echo "Latest tag: $latest_tag"
-          echo "tag=${latest_tag:-v0.1.0}" >> "$GITHUB_OUTPUT"
+          echo "Latest tag: ${latest_tag:-<none>}"
+          echo "tag=${latest_tag}" >> "$GITHUB_OUTPUT"
 
       - name: Determine Version Bump
         id: version
         run: |
           bump="patch"
           message=$(git log -1 --pretty=%B)
-
           if echo "$message" | grep -iqE '\[major\]'; then
             bump="major"
           elif echo "$message" | grep -iqE '\[minor\]'; then
             bump="minor"
           fi
-
           echo "bump=$bump" >> "$GITHUB_OUTPUT"
 
       - name: Calculate Next Version
         id: semver
         run: |
           current=${{ steps.get_tag.outputs.tag }}
-          IFS='.' read -r major minor patch <<<"${current#v}"
+          # default when no tag exists
+          if [ -z "$current" ]; then
+            current="v0.1.0"
+          fi
 
+          IFS='.' read -r major minor patch <<<"${current#v}"
           bump=${{ steps.version.outputs.bump }}
 
           case "$bump" in
-            major)
-              new_version="$((major + 1)).0.0"
-              ;;
-            minor)
-              new_version="$major.$((minor + 1)).0"
-              ;;
-            patch)
-              new_version="$major.$minor.$((patch + 1))"
-              ;;
+            major) new_version="$((major + 1)).0.0" ;;
+            minor) new_version="$major.$((minor + 1)).0" ;;
+            patch) new_version="$major.$minor.$((patch + 1))" ;;
           esac
 
+          echo "current=$current"
           echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Release Notes (commits since last tag)
+        id: notes
+        run: |
+          prev="${{ steps.get_tag.outputs.tag }}"
+          if [ -z "$prev" ]; then
+            # No previous tag; include all commits on main
+            range="--no-merges"
+            echo "# Release notes for v${{ steps.semver.outputs.new_version }}" > release_notes.md
+            git log --pretty=format:'- %s (%h) by %an' $range >> release_notes.md
+          else
+            echo "# Release notes for v${{ steps.semver.outputs.new_version }}" > release_notes.md
+            echo "" >> release_notes.md
+            echo "Changes since ${prev}:" >> release_notes.md
+            echo "" >> release_notes.md
+            git log "${prev}..HEAD" --no-merges --pretty=format:'- %s (%h) by %an' >> release_notes.md
+          fi
+
+          echo "---"
+          cat release_notes.md
+          # escape for multi-line output variable
+          notes=$(awk '{printf "%s\\n", $0}' release_notes.md)
+          echo "notes=$notes" >> "$GITHUB_OUTPUT"
 
       - name: Set up Git credentials
         run: |
@@ -72,13 +94,37 @@ jobs:
         run: |
           new_version=${{ steps.semver.outputs.new_version }}
           sed -i -E '/^\[project\]/,/^\[.*\]/ s/^version = ".*"/version = "'"$new_version"'"/' pyproject.toml
-
           git add pyproject.toml
-          git commit -m "chore: bump version to v${new_version}"
+          git commit -m "chore: bump version to v${new_version}" || echo "No changes to commit"
 
-      - name: Create and Push Tag
+      - name: Create Annotated Tag with Release Notes
         run: |
           new_tag="v${{ steps.semver.outputs.new_version }}"
-          git tag "$new_tag"
-          git push origin "$new_tag"
+          # annotated tag (-a) with message including release notes
+          # use a heredoc to preserve newlines
+          {
+            echo "Release ${new_tag}"
+            echo
+            cat release_notes.md
+          } > TAG_MSG.txt
+
+          # Recreate tag if it already exists locally to avoid failures
+          git tag -d "$new_tag" 2>/dev/null || true
+          git tag -a "$new_tag" -F TAG_MSG.txt
+
+      - name: Push Main and Tag
+        run: |
           git push origin main
+          git push origin "v${{ steps.semver.outputs.new_version }}"
+
+      - name: Create GitHub Release (with notes)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          new_tag="v${{ steps.semver.outputs.new_version }}"
+          # If release exists, update; else create
+          if gh release view "$new_tag" >/dev/null 2>&1; then
+            gh release edit "$new_tag" --notes-file release_notes.md
+          else
+            gh release create "$new_tag" --title "$new_tag" --notes-file release_notes.md
+          fi
