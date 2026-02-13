@@ -1,40 +1,37 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
-from app.utils.config.loader import ConfigLoader
+
+from app.configs import EmailSettings, get_settings
 from app.utils.logging import logger
-
-
-class EmailSettings(BaseModel):
-    host: str = Field(..., alias="HOST")
-    port: int = Field(..., alias="PORT")
-    username: EmailStr = Field(..., alias="USERNAME")
-    password: str = Field(..., alias="PASSWORD")
 
 
 class EmailConfig:
     REQUIRED_FIELDS = ["HOST", "PORT", "USERNAME", "PASSWORD"]
+    TEST_ENVIRONMENTS = {"test_environment", "testing", "test"}
 
     @classmethod
     def load(cls) -> Optional[EmailSettings]:
-        config_data = ConfigLoader().get_config()
-        environment = config_data.get("environment")
-
-        if environment == "test_environment":
+        settings = get_settings()
+        if settings.environment in cls.TEST_ENVIRONMENTS:
             logger.warning("Skipping email config in test environment.")
             return None
 
-        email_raw = config_data.get("email", {})
-        if not email_raw:
+        email_settings = settings.email
+        if not email_settings.model_dump(exclude_none=True):
             logger.warning("Email configuration section is missing.")
             return None
 
-        missing = [field for field in cls.REQUIRED_FIELDS if not email_raw.get(field)]
+        missing = [
+            field
+            for field, value in {
+                "HOST": email_settings.host,
+                "PORT": email_settings.port,
+                "USERNAME": email_settings.username,
+                "PASSWORD": email_settings.password,
+            }.items()
+            if not value
+        ]
         if missing:
-            logger.warning(f"Missing email config fields: {missing}")
+            logger.warning("Missing email config fields: %s", missing)
             return None
 
-        try:
-            return EmailSettings(**email_raw)
-        except Exception as e:
-            logger.error("Invalid email configuration: %s", e)
-            raise
+        return email_settings

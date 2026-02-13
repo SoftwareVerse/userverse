@@ -1,54 +1,67 @@
 import socket
 import smtplib
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.jobs.bus import JobType
+from app.configs import CorsSettings, EmailSettings, JwtSettings, RuntimeSettings
 from app.utils.email.sender import deliver_email, send_email
 
 
-def test_send_email_enqueues_when_bus_available():
-    mock_bus = MagicMock()
+def _runtime_settings(
+    environment: str = "prod", email: dict | None = None
+) -> RuntimeSettings:
+    email = email or {}
+    return RuntimeSettings(
+        environment=environment,
+        database_url="sqlite:///test.db",
+        server_url="http://localhost:8000",
+        cor_origins=CorsSettings(),
+        jwt=JwtSettings(),
+        email=EmailSettings(
+            host=email.get("HOST"),
+            port=email.get("PORT"),
+            username=email.get("USERNAME"),
+            password=email.get("PASSWORD"),
+            use_ssl=email.get("USE_SSL"),
+            use_starttls=email.get("USE_STARTTLS"),
+        ),
+        name="userverse",
+        version="0.1.0",
+        description="test",
+    )
 
-    with patch("app.utils.email.sender.get_bus", return_value=mock_bus):
+
+def test_send_email_calls_deliver_email():
+    with patch("app.utils.email.sender.deliver_email") as mock_deliver:
         send_email("to@example.com", "Subject", "<p>body</p>")
 
-    mock_bus.enqueue.assert_called_once()
-    job_type, payload = mock_bus.enqueue.call_args[0]
-    assert job_type is JobType.EMAIL_SEND
-    assert payload["to"] == "to@example.com"
-    assert payload["reason"] == "rendered"
-    assert payload["context"]["subject"] == "Subject"
-    assert payload["context"]["html_body"] == "<p>body</p>"
+    mock_deliver.assert_called_once_with(
+        "to@example.com", "Subject", "<p>body</p>", reason="rendered"
+    )
 
 
-def test_send_email_falls_back_when_bus_missing():
-    with patch("app.utils.email.sender.get_bus", return_value=None), patch(
-        "app.utils.email.sender.deliver_email"
-    ) as mock_deliver:
+def test_send_email_uses_custom_reason():
+    with patch("app.utils.email.sender.deliver_email") as mock_deliver:
+        send_email("to@example.com", "Subject", "<p>body</p>", reason="password_reset")
+
+    mock_deliver.assert_called_once_with(
+        "to@example.com", "Subject", "<p>body</p>", reason="password_reset"
+    )
+
+
+def test_send_email_default_reason_when_empty_string():
+    with patch("app.utils.email.sender.deliver_email") as mock_deliver:
         send_email("to@example.com", "Subject", "<p>body</p>")
 
-    mock_deliver.assert_called_once_with("to@example.com", "Subject", "<p>body</p>")
-
-
-def test_send_email_falls_back_on_enqueue_failure():
-    mock_bus = MagicMock()
-    mock_bus.enqueue.side_effect = RuntimeError("bus closed")
-
-    with patch("app.utils.email.sender.get_bus", return_value=mock_bus), patch(
-        "app.utils.email.sender.deliver_email"
-    ) as mock_deliver:
-        send_email("to@example.com", "Subject", "<p>body</p>")
-
-    mock_deliver.assert_called_once()
+    assert mock_deliver.call_args.kwargs["reason"] == "rendered"
 
 
 def test_deliver_email_in_test_environment(capfd):
-    fake_config = {"environment": "test_environment", "email": {}}
+    fake_settings = _runtime_settings(environment="test_environment")
 
     with patch(
-        "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        "app.utils.config.email_config.get_settings", return_value=fake_settings
     ):
         deliver_email(
             "test@example.com", "Test Subject", "<h1>Hello</h1><p>This is a test</p>"
@@ -59,13 +72,12 @@ def test_deliver_email_in_test_environment(capfd):
 
 
 def test_deliver_email_missing_username(capfd):
-    fake_config = {
-        "environment": "prod",
-        "email": {"PASSWORD": "pass", "HOST": "smtp.test.com", "PORT": 465},
-    }
+    fake_settings = _runtime_settings(
+        email={"PASSWORD": "pass", "HOST": "smtp.test.com", "PORT": 465}
+    )
 
     with patch(
-        "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        "app.utils.config.email_config.get_settings", return_value=fake_settings
     ):
         deliver_email("to@example.com", "Subject", "<h1>Missing</h1><p>User field</p>")
         out, _ = capfd.readouterr()
@@ -74,13 +86,12 @@ def test_deliver_email_missing_username(capfd):
 
 
 def test_deliver_email_missing_password(capfd):
-    fake_config = {
-        "environment": "prod",
-        "email": {"USERNAME": "user@test.com", "HOST": "smtp.test.com", "PORT": 465},
-    }
+    fake_settings = _runtime_settings(
+        email={"USERNAME": "user@test.com", "HOST": "smtp.test.com", "PORT": 465}
+    )
 
     with patch(
-        "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        "app.utils.config.email_config.get_settings", return_value=fake_settings
     ):
         deliver_email("to@example.com", "Subject", "<h1>Missing</h1><p>Password</p>")
         out, _ = capfd.readouterr()
@@ -89,13 +100,12 @@ def test_deliver_email_missing_password(capfd):
 
 
 def test_deliver_email_missing_host_or_port(capfd):
-    fake_config = {
-        "environment": "prod",
-        "email": {"USERNAME": "user@test.com", "PASSWORD": "secure"},
-    }
+    fake_settings = _runtime_settings(
+        email={"USERNAME": "user@test.com", "PASSWORD": "secure"}
+    )
 
     with patch(
-        "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        "app.utils.config.email_config.get_settings", return_value=fake_settings
     ):
         deliver_email("to@example.com", "Subject", "<h1>Missing</h1><p>SMTP config</p>")
         out, _ = capfd.readouterr()
@@ -104,18 +114,17 @@ def test_deliver_email_missing_host_or_port(capfd):
 
 
 def test_deliver_email_success():
-    fake_config = {
-        "environment": "prod",
-        "email": {
+    fake_settings = _runtime_settings(
+        email={
             "USERNAME": "user@test.com",
             "PASSWORD": "secure",
             "HOST": "smtp.test.com",
             "PORT": 465,
-        },
-    }
+        }
+    )
 
     with patch(
-        "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        "app.utils.config.email_config.get_settings", return_value=fake_settings
     ):
         with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
             mock_server = MagicMock()
@@ -128,18 +137,17 @@ def test_deliver_email_success():
 
 
 def test_deliver_email_dns_failure(capfd):
-    fake_config = {
-        "environment": "prod",
-        "email": {
+    fake_settings = _runtime_settings(
+        email={
             "USERNAME": "user@test.com",
             "PASSWORD": "secure",
             "HOST": "smtp.test.com",
             "PORT": 465,
-        },
-    }
+        }
+    )
 
     with patch(
-        "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        "app.utils.config.email_config.get_settings", return_value=fake_settings
     ):
         with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
             mock_smtp_ssl.side_effect = socket.gaierror(
@@ -155,18 +163,17 @@ def test_deliver_email_dns_failure(capfd):
 
 
 def test_deliver_email_socket_timeout():
-    fake_config = {
-        "environment": "prod",
-        "email": {
+    fake_settings = _runtime_settings(
+        email={
             "USERNAME": "user@test.com",
             "PASSWORD": "secure",
             "HOST": "smtp.test.com",
             "PORT": 465,
-        },
-    }
+        }
+    )
 
     with patch(
-        "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        "app.utils.config.email_config.get_settings", return_value=fake_settings
     ):
         with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
             mock_smtp_ssl.side_effect = socket.timeout("Connection timed out")
@@ -176,18 +183,17 @@ def test_deliver_email_socket_timeout():
 
 
 def test_deliver_email_smtp_server_disconnected():
-    fake_config = {
-        "environment": "prod",
-        "email": {
+    fake_settings = _runtime_settings(
+        email={
             "USERNAME": "user@test.com",
             "PASSWORD": "secure",
             "HOST": "smtp.test.com",
             "PORT": 465,
-        },
-    }
+        }
+    )
 
     with patch(
-        "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        "app.utils.config.email_config.get_settings", return_value=fake_settings
     ):
         with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
             mock_smtp_ssl.side_effect = smtplib.SMTPServerDisconnected(
@@ -199,18 +205,17 @@ def test_deliver_email_smtp_server_disconnected():
 
 
 def test_deliver_email_smtp_exception():
-    fake_config = {
-        "environment": "prod",
-        "email": {
+    fake_settings = _runtime_settings(
+        email={
             "USERNAME": "user@test.com",
             "PASSWORD": "secure",
             "HOST": "smtp.test.com",
             "PORT": 465,
-        },
-    }
+        }
+    )
 
     with patch(
-        "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        "app.utils.config.email_config.get_settings", return_value=fake_settings
     ):
         with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
             mock_server = MagicMock()
@@ -224,18 +229,17 @@ def test_deliver_email_smtp_exception():
 
 
 def test_deliver_email_general_exception():
-    fake_config = {
-        "environment": "prod",
-        "email": {
+    fake_settings = _runtime_settings(
+        email={
             "USERNAME": "user@test.com",
             "PASSWORD": "secure",
             "HOST": "smtp.test.com",
             "PORT": 465,
-        },
-    }
+        }
+    )
 
     with patch(
-        "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        "app.utils.config.email_config.get_settings", return_value=fake_settings
     ):
         with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
             mock_server = MagicMock()

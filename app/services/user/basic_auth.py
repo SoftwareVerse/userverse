@@ -3,7 +3,7 @@ from typing import Optional
 
 from fastapi import BackgroundTasks
 
-from app.logic.mailer import MailService
+from app.services.mailer import MailService
 from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import UserCreateModel, UserLoginModel, UserReadModel
 from app.repository.user import UserRepository
@@ -28,7 +28,7 @@ class UserBasicAuthService:
             {"sub": self.context.get_user_email(), "type": "verification"},
             expires_delta=timedelta(minutes=self.VERIFICATION_TOKEN_EXPIRY_MINUTES),
         )
-        server_url = self.context.configs.get("server_url")
+        server_url = self.context.configs.server_url
         return f"{server_url}/user/verify?token={token}"
 
     def send_verification_email(

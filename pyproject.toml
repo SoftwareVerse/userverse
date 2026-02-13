@@ -21,6 +21,7 @@ dependencies = [
     "prometheus-client>=0.22.1",
     "psycopg2-binary==2.9.10",
     "pydantic>=2.11.3",
+    "pydantic-settings>=2.10.1",
     "pyjwt>=2.10.1",
     "pytest>=8.3.5",
     "pytest-cov>=6.1.1",

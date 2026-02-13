@@ -8,8 +8,8 @@ from app.models.generic_response import GenericResponseModel
 from app.models.app_error import AppErrorResponseModel
 
 # Logic
-from app.logic.user.verification import UserVerificationService
-from app.logic.user.basic_auth import UserBasicAuthService
+from app.services.user.verification import UserVerificationService
+from app.services.user.basic_auth import UserBasicAuthService
 from app.utils.shared_context import SharedContext
 from app.dependencies.common import CommonJWTRouteDependencies
 from sqlalchemy.orm import Session

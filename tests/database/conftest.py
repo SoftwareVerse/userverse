@@ -52,3 +52,4 @@ def test_session():
     session = db_manager.session_object()
     yield session
     session.close()
+    engine.dispose()

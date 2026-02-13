@@ -1,0 +1,285 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/sandile/projects/userverse
+configfile: pyproject.toml
+plugins: anyio-4.10.0, cov-7.0.0
+collected 130 items
+
+tests/database/test_a_user.py ..........                                 [  7%]
+tests/database/test_b_company.py ....                                    [ 10%]
+tests/database/test_c_role.py .......                                    [ 16%]
+tests/database/test_e_association.py ....                                [ 19%]
+tests/http/a_user/test_a_create_user_api.py .....                        [ 23%]
+tests/http/a_user/test_b_user_login_api.py ..                            [ 24%]
+tests/http/a_user/test_c_get_user.py .                                   [ 25%]
+tests/http/a_user/test_d_update_user_api.py ..                           [ 26%]
+tests/http/a_user/test_e_password_reset_request.py ...                   [ 29%]
+tests/http/a_user/test_f_password_otp_verify.py ..                       [ 30%]
+tests/http/b_company/test_a_create_company.py ...                        [ 33%]
+tests/http/b_company/test_b_get_company.py .....                         [ 36%]
+tests/http/b_company/test_c_update_company.py ..                         [ 38%]
+tests/http/c_company_roles/test_d_create_role.py ....                    [ 41%]
+tests/http/c_company_roles/test_e_update_role.py ...                     [ 43%]
+tests/http/c_company_roles/test_f_delete_role.py ....                    [ 46%]
+tests/http/c_company_roles/test_g_get_roles.py .....                     [ 50%]
+tests/http/d_company_users/test_h_get_company_users.py .......           [ 56%]
+tests/http/d_company_users/test_i_get_user_companies.py ......           [ 60%]
+tests/http/d_company_users/test_j_add_user_to_company.py ....            [ 63%]
+tests/http/d_company_users/test_k_remove_user_from_company.py ...        [ 66%]
+tests/http/test_main.py .                                                [ 66%]
+tests/security/test_basic.py ....                                        [ 70%]
+tests/security/test_jwt.py .....                                         [ 73%]
+tests/utils/config/test_cors.py ......                                   [ 78%]
+tests/utils/config/test_database_config.py .......                       [ 83%]
+tests/utils/config/test_environment_manager.py ....                      [ 86%]
+tests/utils/email/test_renderer.py ....                                  [ 90%]
+tests/utils/email/test_sender.py .......FFFFFF                           [100%]
+
+=================================== FAILURES ===================================
+__________________________ test_deliver_email_success __________________________
+
+    def test_deliver_email_success():
+        fake_config = {
+            "environment": "prod",
+            "email": {
+                "USERNAME": "user@test.com",
+                "PASSWORD": "secure",
+                "HOST": "smtp.test.com",
+                "PORT": 465,
+            },
+        }
+    
+        with patch(
+            "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        ):
+            with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
+                mock_server = MagicMock()
+                mock_smtp_ssl.return_value.__enter__.return_value = mock_server
+    
+                deliver_email("to@example.com", "Subject", "<p>test</p>")
+    
+>               mock_server.login.assert_called_once_with("user@test.com", "secure")
+
+tests/utils/email/test_sender.py:114: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='SMTP_SSL().__enter__().login' id='128043791184912'>
+args = ('user@test.com', 'secure'), kwargs = {}
+msg = "Expected 'login' to be called once. Called 0 times."
+
+    def assert_called_once_with(self, /, *args, **kwargs):
+        """assert that the mock was called exactly once and that that call was
+        with the specified arguments."""
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to be called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'login' to be called once. Called 0 times.
+
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/unittest/mock.py:960: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Email config not available. Showing plain text:
+To: to@example.com
+Subject: Subject
+test
+----------------------------- Captured stderr call -----------------------------
+{"timestamp": "2026-02-12T21:06:38.259412+00:00Z", "level": "WARNING", "message": "Skipping email config in test environment.", "logger": "app", "filename": "email_config.py", "function": "load", "line": 14, "process": 25180}
+{"timestamp": "2026-02-12T21:06:38.259476+00:00Z", "level": "INFO", "message": "Email config unavailable; skipping SMTP delivery", "logger": "app.utils.email.sender", "filename": "sender.py", "function": "deliver_email", "line": 78, "process": 25180, "email_to": "to@example.com", "reason": "rendered", "stage": "config"}
+------------------------------ Captured log call -------------------------------
+WARNING  app:email_config.py:14 Skipping email config in test environment.
+INFO     app.utils.email.sender:sender.py:78 Email config unavailable; skipping SMTP delivery
+________________________ test_deliver_email_dns_failure ________________________
+
+capfd = <_pytest.capture.CaptureFixture object at 0x747484882ed0>
+
+    def test_deliver_email_dns_failure(capfd):
+        fake_config = {
+            "environment": "prod",
+            "email": {
+                "USERNAME": "user@test.com",
+                "PASSWORD": "secure",
+                "HOST": "smtp.test.com",
+                "PORT": 465,
+            },
+        }
+    
+        with patch(
+            "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        ):
+            with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
+                mock_smtp_ssl.side_effect = socket.gaierror(
+                    socket.EAI_NONAME, "Name or service not known"
+                )
+    
+                deliver_email("to@example.com", "Subject", "<p>test</p>")
+    
+                out, _ = capfd.readouterr()
+>               assert "Unable to reach SMTP host smtp.test.com" in out
+E               AssertionError: assert 'Unable to reach SMTP host smtp.test.com' in 'Email config not available. Showing plain text:\nTo: to@example.com\nSubject: Subject\ntest\n'
+
+tests/utils/email/test_sender.py:140: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  app:email_config.py:14 Skipping email config in test environment.
+INFO     app.utils.email.sender:sender.py:78 Email config unavailable; skipping SMTP delivery
+______________________ test_deliver_email_socket_timeout _______________________
+
+    def test_deliver_email_socket_timeout():
+        fake_config = {
+            "environment": "prod",
+            "email": {
+                "USERNAME": "user@test.com",
+                "PASSWORD": "secure",
+                "HOST": "smtp.test.com",
+                "PORT": 465,
+            },
+        }
+    
+        with patch(
+            "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        ):
+            with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
+                mock_smtp_ssl.side_effect = socket.timeout("Connection timed out")
+    
+>               with pytest.raises(socket.timeout):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               Failed: DID NOT RAISE <class 'TimeoutError'>
+
+tests/utils/email/test_sender.py:162: Failed
+----------------------------- Captured stdout call -----------------------------
+Email config not available. Showing plain text:
+To: to@example.com
+Subject: Subject
+test
+----------------------------- Captured stderr call -----------------------------
+{"timestamp": "2026-02-12T21:06:38.347048+00:00Z", "level": "WARNING", "message": "Skipping email config in test environment.", "logger": "app", "filename": "email_config.py", "function": "load", "line": 14, "process": 25180}
+{"timestamp": "2026-02-12T21:06:38.347118+00:00Z", "level": "INFO", "message": "Email config unavailable; skipping SMTP delivery", "logger": "app.utils.email.sender", "filename": "sender.py", "function": "deliver_email", "line": 78, "process": 25180, "email_to": "to@example.com", "reason": "rendered", "stage": "config"}
+------------------------------ Captured log call -------------------------------
+WARNING  app:email_config.py:14 Skipping email config in test environment.
+INFO     app.utils.email.sender:sender.py:78 Email config unavailable; skipping SMTP delivery
+_________________ test_deliver_email_smtp_server_disconnected __________________
+
+    def test_deliver_email_smtp_server_disconnected():
+        fake_config = {
+            "environment": "prod",
+            "email": {
+                "USERNAME": "user@test.com",
+                "PASSWORD": "secure",
+                "HOST": "smtp.test.com",
+                "PORT": 465,
+            },
+        }
+    
+        with patch(
+            "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        ):
+            with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
+                mock_smtp_ssl.side_effect = smtplib.SMTPServerDisconnected(
+                    "Server disconnected"
+                )
+    
+>               with pytest.raises(smtplib.SMTPServerDisconnected):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               Failed: DID NOT RAISE <class 'smtplib.SMTPServerDisconnected'>
+
+tests/utils/email/test_sender.py:185: Failed
+----------------------------- Captured stdout call -----------------------------
+Email config not available. Showing plain text:
+To: to@example.com
+Subject: Subject
+test
+----------------------------- Captured stderr call -----------------------------
+{"timestamp": "2026-02-12T21:06:38.350847+00:00Z", "level": "WARNING", "message": "Skipping email config in test environment.", "logger": "app", "filename": "email_config.py", "function": "load", "line": 14, "process": 25180}
+{"timestamp": "2026-02-12T21:06:38.350917+00:00Z", "level": "INFO", "message": "Email config unavailable; skipping SMTP delivery", "logger": "app.utils.email.sender", "filename": "sender.py", "function": "deliver_email", "line": 78, "process": 25180, "email_to": "to@example.com", "reason": "rendered", "stage": "config"}
+------------------------------ Captured log call -------------------------------
+WARNING  app:email_config.py:14 Skipping email config in test environment.
+INFO     app.utils.email.sender:sender.py:78 Email config unavailable; skipping SMTP delivery
+______________________ test_deliver_email_smtp_exception _______________________
+
+    def test_deliver_email_smtp_exception():
+        fake_config = {
+            "environment": "prod",
+            "email": {
+                "USERNAME": "user@test.com",
+                "PASSWORD": "secure",
+                "HOST": "smtp.test.com",
+                "PORT": 465,
+            },
+        }
+    
+        with patch(
+            "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        ):
+            with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
+                mock_server = MagicMock()
+                mock_smtp_ssl.return_value.__enter__.return_value = mock_server
+                mock_server.login.side_effect = smtplib.SMTPAuthenticationError(
+                    535, "Authentication failed"
+                )
+    
+>               with pytest.raises(smtplib.SMTPException):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               Failed: DID NOT RAISE <class 'smtplib.SMTPException'>
+
+tests/utils/email/test_sender.py:210: Failed
+----------------------------- Captured stdout call -----------------------------
+Email config not available. Showing plain text:
+To: to@example.com
+Subject: Subject
+test
+----------------------------- Captured stderr call -----------------------------
+{"timestamp": "2026-02-12T21:06:38.354620+00:00Z", "level": "WARNING", "message": "Skipping email config in test environment.", "logger": "app", "filename": "email_config.py", "function": "load", "line": 14, "process": 25180}
+{"timestamp": "2026-02-12T21:06:38.354691+00:00Z", "level": "INFO", "message": "Email config unavailable; skipping SMTP delivery", "logger": "app.utils.email.sender", "filename": "sender.py", "function": "deliver_email", "line": 78, "process": 25180, "email_to": "to@example.com", "reason": "rendered", "stage": "config"}
+------------------------------ Captured log call -------------------------------
+WARNING  app:email_config.py:14 Skipping email config in test environment.
+INFO     app.utils.email.sender:sender.py:78 Email config unavailable; skipping SMTP delivery
+_____________________ test_deliver_email_general_exception _____________________
+
+    def test_deliver_email_general_exception():
+        fake_config = {
+            "environment": "prod",
+            "email": {
+                "USERNAME": "user@test.com",
+                "PASSWORD": "secure",
+                "HOST": "smtp.test.com",
+                "PORT": 465,
+            },
+        }
+    
+        with patch(
+            "app.utils.config.loader.ConfigLoader.get_config", return_value=fake_config
+        ):
+            with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
+                mock_server = MagicMock()
+                mock_smtp_ssl.return_value.__enter__.return_value = mock_server
+                mock_server.send_message.side_effect = Exception("Unexpected error")
+    
+>               with pytest.raises(Exception):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^
+E               Failed: DID NOT RAISE <class 'Exception'>
+
+tests/utils/email/test_sender.py:233: Failed
+----------------------------- Captured stdout call -----------------------------
+Email config not available. Showing plain text:
+To: to@example.com
+Subject: Subject
+test
+----------------------------- Captured stderr call -----------------------------
+{"timestamp": "2026-02-12T21:06:38.358562+00:00Z", "level": "WARNING", "message": "Skipping email config in test environment.", "logger": "app", "filename": "email_config.py", "function": "load", "line": 14, "process": 25180}
+{"timestamp": "2026-02-12T21:06:38.358632+00:00Z", "level": "INFO", "message": "Email config unavailable; skipping SMTP delivery", "logger": "app.utils.email.sender", "filename": "sender.py", "function": "deliver_email", "line": 78, "process": 25180, "email_to": "to@example.com", "reason": "rendered", "stage": "config"}
+------------------------------ Captured log call -------------------------------
+WARNING  app:email_config.py:14 Skipping email config in test environment.
+INFO     app.utils.email.sender:sender.py:78 Email config unavailable; skipping SMTP delivery
+--------------------------- Captured stderr teardown ---------------------------
+{"timestamp": "2026-02-12T21:06:38.361883+00:00Z", "level": "INFO", "message": "Userverse API shutting down", "logger": "app", "filename": "main.py", "function": "lifespan", "line": 45, "process": 25180}
+---------------------------- Captured log teardown -----------------------------
+INFO     app:main.py:45 Userverse API shutting down
+=========================== short test summary info ============================
+FAILED tests/utils/email/test_sender.py::test_deliver_email_success - Asserti...
+FAILED tests/utils/email/test_sender.py::test_deliver_email_dns_failure - Ass...
+FAILED tests/utils/email/test_sender.py::test_deliver_email_socket_timeout - ...
+FAILED tests/utils/email/test_sender.py::test_deliver_email_smtp_server_disconnected
+FAILED tests/utils/email/test_sender.py::test_deliver_email_smtp_exception - ...
+FAILED tests/utils/email/test_sender.py::test_deliver_email_general_exception
+======================== 6 failed, 124 passed in 19.23s ========================

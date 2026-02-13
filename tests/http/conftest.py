@@ -1,12 +1,12 @@
 # tests/conftest.py
 import os
 import json
+import logging
 import pytest
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from app.main import create_app
-from app.utils.config.loader import ConfigLoader
 from app.database.session_manager import DatabaseSessionManager
 from app.database.user import User
 from tests.utils.basic_auth import get_basic_auth_header
@@ -16,19 +16,30 @@ from datetime import timedelta
 TEST_DATA_BASE_PATH = "tests/data/http/"
 
 
+@pytest.fixture(scope="session", autouse=True)
+def test_runtime_guards():
+    noisy_loggers = ("httpx", "httpcore", "urllib3", "asyncio")
+    previous_levels = {
+        logger_name: logging.getLogger(logger_name).level
+        for logger_name in noisy_loggers
+    }
+
+    for logger_name in noisy_loggers:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+    with patch("app.services.mailer.MailService.send_template_email", return_value=None):
+        yield
+
+    for logger_name, level in previous_levels.items():
+        logging.getLogger(logger_name).setLevel(level)
+
+
 @pytest.fixture(scope="session")
 def client():
     os.environ["ENV"] = "testing"
-    # os.environ["DATABASE_URL"] = "sqlite:///:memory:"  # Use a test database URL
-
-    # Load default test config from the loader (optional override)
-    default_config = ConfigLoader(environment="testing").get_config()
-
-    # Patch loader to always return the test config when app starts
-    with patch.object(ConfigLoader, "get_config", return_value=default_config):
-        app = create_app()
-        with TestClient(app) as test_client:
-            yield test_client
+    app = create_app()
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 @pytest.fixture(scope="session")
@@ -51,12 +62,15 @@ def get_user_two_otp(test_user_data):
     user = test_user_data["user_two"]
     db = DatabaseSessionManager()
     session = db.session_object()
-    user_row = session.query(User).filter_by(email=user["email"].lower()).first()
-    if user_row:
-        return user_row.primary_meta_data.get("password_reset", {}).get(
-            "password_reset_token"
-        )
-    return None
+    try:
+        user_row = session.query(User).filter_by(email=user["email"].lower()).first()
+        if user_row:
+            return user_row.primary_meta_data.get("password_reset", {}).get(
+                "password_reset_token"
+            )
+        return None
+    finally:
+        session.close()
 
 
 @pytest.fixture

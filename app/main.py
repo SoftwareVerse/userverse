@@ -1,23 +1,22 @@
 import logging
 import logging.config
 import os
-import traceback
 from contextlib import asynccontextmanager
 
 import click
 import uvicorn
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from uvicorn.config import Config
 from uvicorn.server import Server
 
 from app.database.session_manager import DatabaseSessionManager
+from app.exceptions import register_exception_handlers
 
 # user routers
 from app.middleware.logging import LogMiddleware
-from app.models.response_messages import ErrorResponseMessagesModel
 
 # from app.models.tags import UserverseApiTag
 from app.routers.user import (
@@ -33,7 +32,7 @@ from app.routers.company import (
 )
 
 # utils
-from app.utils.config.loader import ConfigLoader
+from app.configs import get_settings
 from app.utils.logging import get_uvicorn_log_config, logger
 
 
@@ -46,12 +45,9 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    loader = ConfigLoader()
-    configs = loader.get_config()
-
-    cor_origins = configs.get("cor_origins", {})
-    cor_origins_allowed = cor_origins.get("allowed", ["*"])
-    cor_origins_blocked = cor_origins.get("blocked", [])
+    settings = get_settings()
+    cor_origins_allowed = settings.cor_origins.allowed
+    cor_origins_blocked = settings.cor_origins.blocked
     origins = [
         origin for origin in cor_origins_allowed if origin not in cor_origins_blocked
     ]
@@ -59,9 +55,9 @@ def create_app() -> FastAPI:
     app = FastAPI(
         lifespan=lifespan,
         root_path="/userverse",
-        title=configs.get("name"),
-        version=configs.get("version"),
-        description=configs.get("description"),
+        title=settings.name,
+        version=settings.version,
+        description=settings.description,
         # openapi_tags=UserverseApiTag.list(),
     )
 
@@ -95,11 +91,11 @@ def create_app() -> FastAPI:
                 status_code=200,
                 content={
                     "status": "ok",
-                    "version": configs.get("version"),
-                    "name": configs.get("name"),
-                    "description": configs.get("description"),
-                    "repository": configs.get("repository"),
-                    "documentation": configs.get("documentation"),
+                    "version": settings.version,
+                    "name": settings.name,
+                    "description": settings.description,
+                    "repository": settings.repository,
+                    "documentation": settings.documentation,
                     "message": "Welcome to the Userverse backend API",
                 },
             )
@@ -109,38 +105,7 @@ def create_app() -> FastAPI:
     def metrics():
         return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
-    # Exception tracking
-    UNHANDLED_EXCEPTIONS = Counter(
-        "unhandled_exceptions_total",
-        "Total number of unhandled exceptions",
-        ["method", "endpoint"],
-    )
-
-    @app.exception_handler(Exception)
-    async def app_error_handler(request: Request, exc: Exception):
-        UNHANDLED_EXCEPTIONS.labels(
-            method=request.method, endpoint=request.url.path
-        ).inc()
-        logger.error(
-            "Unhandled exception",
-            extra={
-                "extra": {
-                    "method": request.method,
-                    "url": str(request.url),
-                    "error": str(exc),
-                    "trace": traceback.format_exc(),
-                }
-            },
-        )
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "detail": {
-                    "message": ErrorResponseMessagesModel.GENERIC_ERROR,
-                    "error": str(exc),
-                }
-            },
-        )
+    register_exception_handlers(app)
 
     return app
 

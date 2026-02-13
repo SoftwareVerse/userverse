@@ -1,4 +1,3 @@
-import os
 import logging
 from typing import Optional
 from sqlalchemy import create_engine
@@ -6,19 +5,21 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy_utils import database_exists, create_database
 
 from app.database import Base  # Ensure your Base = declarative_base()
+from app.configs import RuntimeSettings, get_settings
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 class DatabaseSessionManager:
-    def __init__(self, configs: Optional[dict] = None) -> None:
+    def __init__(self, configs: Optional[dict | RuntimeSettings] = None) -> None:
         self._base = Base
-        self.configs = configs or {}
-        self.database_url = self.configs.get("database_url") or os.getenv(
-            "DATABASE_URL", "sqlite:///./development.db"
-        )
+        self.configs = configs or get_settings()
+        if isinstance(self.configs, dict):
+            self.database_url = self.configs.get(
+                "database_url", "sqlite:///./development.db"
+            )
+        else:
+            self.database_url = self.configs.database_url
 
         # Configure engine
         self.engine = self._configure_engine(self.database_url)
@@ -46,8 +47,10 @@ class DatabaseSessionManager:
         Import all models that need to be registered with the Base metadata.
         Ensure this is called before create_all().
         """
-
-        # Add more models if needed
+        from app.database import association_user_company  # noqa: F401
+        from app.database import company  # noqa: F401
+        from app.database import role  # noqa: F401
+        from app.database import user  # noqa: F401
 
     def session_object(self) -> Session:
         """
@@ -72,10 +75,23 @@ class DatabaseSessionManager:
             db.close()
 
 
-# Default singleton instance
-default_db = DatabaseSessionManager()
+_default_db: Optional[DatabaseSessionManager] = None
 
-# Export common accessors for easy import
-get_engine = default_db.get_engine
-get_session = default_db.get_session
-session_local = default_db.session_object
+
+def _get_default_db() -> DatabaseSessionManager:
+    global _default_db
+    if _default_db is None:
+        _default_db = DatabaseSessionManager()
+    return _default_db
+
+
+def get_engine():
+    return _get_default_db().get_engine()
+
+
+def get_session():
+    yield from _get_default_db().get_session()
+
+
+def session_local():
+    return _get_default_db().session_object()

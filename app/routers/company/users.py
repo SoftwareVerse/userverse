@@ -15,7 +15,7 @@ from app.models.tags import UserverseApiTag
 from app.models.user.user import UserQueryParams
 
 # Logic layer
-from app.logic.company.user import CompanyUserService
+from app.services.company.user import CompanyUserService
 
 # Utilities
 from app.utils.app_error import AppError

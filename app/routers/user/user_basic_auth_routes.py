@@ -13,7 +13,7 @@ from app.models.generic_response import GenericResponseModel
 from app.models.app_error import AppErrorResponseModel
 
 # Logic
-from app.logic.user.basic_auth import UserBasicAuthService
+from app.services.user.basic_auth import UserBasicAuthService
 
 router = APIRouter(
     prefix="/user",

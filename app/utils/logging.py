@@ -30,6 +30,7 @@ handler.setFormatter(JsonFormatter())
 logger.handlers = []
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)  # or DEBUG for development
+logger.propagate = False
 
 
 def get_uvicorn_log_config(*, reload: bool = False, verbose: bool = False) -> dict:

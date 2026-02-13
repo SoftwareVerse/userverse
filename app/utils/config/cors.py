@@ -1,7 +1,8 @@
+from app.configs import CorsSettings
+
+
 class CorsConfig:
-    """
-    Database configuration class.
-    """
+    """Compatibility wrapper around app.configs.CorsSettings."""
 
     CORS_DEFAULT = {
         "allowed": ["*"],
@@ -9,22 +10,16 @@ class CorsConfig:
     }
 
     @classmethod
-    def get_cors(cls, configs: dict, environment="development") -> dict:
-        """
-        Returns the connection string for the database.
-        Args:
-            configs (dict): Configuration data.
-            environment (str): The current environment (e.g., 'development', 'production', 'testing').
-        Returns:
-            str: The connection string for the database.
-        """
+    def get_cors(cls, configs: dict, environment: str = "development") -> dict:
         if environment == "test_environment":
             return cls.CORS_DEFAULT
 
         cors_config = configs.get("cors") or configs.get("cor_origins") or {}
-        if cors_config:
-            allowed = cors_config.get("allowed", cls.CORS_DEFAULT["allowed"])
-            blocked = cors_config.get("blocked", cls.CORS_DEFAULT["blocked"])
-            return {"allowed": allowed, "blocked": blocked}
+        if not cors_config:
+            return cls.CORS_DEFAULT
 
-        return cls.CORS_DEFAULT
+        cors = CorsSettings(**cors_config)
+        return {
+            "allowed": cors.allowed,
+            "blocked": cors.blocked,
+        }

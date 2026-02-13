@@ -11,10 +11,4 @@ class MailService:
             subject=subject,
             html_body=html_body,
             reason=f"template:{template_name}",
-            context={
-                "subject": subject,
-                "template_name": template_name,
-                "template_context": context,
-                "html_body": html_body,
-            },
         )

@@ -43,8 +43,8 @@ class SlidingWindowRateLimiter:
     def hit(self, key: str) -> None:
         now = time.time()
         with self._lock:
-            dq = self._events[key]
             self._prune(key, now)
+            dq = self._events[key]
             if len(dq) >= self._config.limit:
                 retry_after = max(0.0, dq[0] + self._config.window_seconds - now)
                 raise RateLimitExceeded(retry_after=retry_after)

@@ -6,13 +6,12 @@ import ssl
 import time
 from ssl import SSLError
 from email.message import EmailMessage
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from bs4 import BeautifulSoup
 from prometheus_client import Counter
 
-from app.jobs import JobType, get_bus
-from app.utils.config.email_config import EmailConfig
+from app.configs import EmailSettings, get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +25,36 @@ EMAIL_SEND_FAILURES = Counter(
     "Total number of SMTP send failures",
     ["reason", "stage"],
 )
+
+TEST_ENVIRONMENTS = {"test_environment", "testing", "test"}
+
+
+def _load_email_settings() -> Optional[EmailSettings]:
+    settings = get_settings()
+    if settings.environment in TEST_ENVIRONMENTS:
+        logger.warning("Skipping email config in test environment.")
+        return None
+
+    email_settings = settings.email
+    if not email_settings.model_dump(exclude_none=True):
+        logger.warning("Email configuration section is missing.")
+        return None
+
+    missing = [
+        field
+        for field, value in {
+            "HOST": email_settings.host,
+            "PORT": email_settings.port,
+            "USERNAME": email_settings.username,
+            "PASSWORD": email_settings.password,
+        }.items()
+        if not value
+    ]
+    if missing:
+        logger.warning("Missing email config fields: %s", missing)
+        return None
+
+    return email_settings
 
 
 def _render_plain_text(
@@ -47,40 +76,9 @@ def send_email(
     html_body: str,
     *,
     reason: Optional[str] = None,
-    context: Optional[Dict[str, Any]] = None,
 ) -> None:
-    """Enqueue an email job if the bus is available, else send synchronously."""
-
-    job_context = dict(context or {})
-    job_context.setdefault("subject", subject)
-    job_context.setdefault("html_body", html_body)
-    email_reason = reason or job_context.get("reason") or "rendered"
-
-    bus = get_bus()
-    if bus:
-        try:
-            bus.enqueue(
-                JobType.EMAIL_SEND,
-                {
-                    "to": to,
-                    "reason": email_reason,
-                    "context": job_context,
-                },
-            )
-            logger.info(
-                "Email enqueued for background delivery",
-                extra={
-                    "extra": {
-                        "email_to": to,
-                        "reason": email_reason,
-                        "delivery_mode": "job_bus",
-                    }
-                },
-            )
-            return
-        except RuntimeError as exc:
-            logger.warning("Failed to enqueue email job (%s); sending synchronously", exc)
-
+    """Send an email immediately via SMTP."""
+    email_reason = reason or "rendered"
     deliver_email(to, subject, html_body, reason=email_reason)
 
 
@@ -100,11 +98,11 @@ def deliver_email(
       - Implicit SSL (SMTPS) on port 465
       - STARTTLS (submission) on port 587 or 25
     Decision order:
-      - If EmailConfig exposes boolean flags use_ssl/use_starttls, honor them.
+      - If email settings expose boolean flags use_ssl/use_starttls, honor them.
       - Otherwise infer from port: 465 => implicit SSL; 587/25 => STARTTLS.
     """
 
-    email_settings = EmailConfig.load()
+    email_settings = _load_email_settings()
 
     if not email_settings:
         logger.info(
@@ -117,6 +115,9 @@ def deliver_email(
                 }
             },
         )
+        # Avoid large stdout capture growth during test runs.
+        if get_settings().environment in TEST_ENVIRONMENTS:
+            return
         _render_plain_text(
             html_body,
             header="Email config not available. Showing plain text:",

@@ -22,8 +22,8 @@ from app.dependencies.common import CommonJWTRouteDependencies
 from app.models.user.user import UserQueryParams, UserReadModel
 
 # Logic
-from app.logic.company.company import CompanyService
-from app.logic.company.user import CompanyUserService
+from app.services.company.company import CompanyService
+from app.services.company.user import CompanyUserService
 
 # Utils
 from app.utils.app_error import AppError

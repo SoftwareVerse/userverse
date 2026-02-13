@@ -4,7 +4,7 @@ from fastapi import status
 from app.utils.app_error import AppError
 
 # service and repository
-from app.logic.company.user import CompanyUserService
+from app.services.company.user import CompanyUserService
 from app.repository.company import CompanyRepository
 
 # database

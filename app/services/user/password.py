@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import BackgroundTasks, status
 
 # models
-from app.logic.mailer import MailService
+from app.services.mailer import MailService
 from app.models.generic_response import GenericResponseModel
 
 # repository
