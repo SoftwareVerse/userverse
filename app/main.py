@@ -17,6 +17,7 @@ from app.exceptions import register_exception_handlers
 
 # user routers
 from app.middleware.logging import LogMiddleware
+from app.middleware.profiling import ProfilingMiddleware
 
 # from app.models.tags import UserverseApiTag
 from app.routers.user import (
@@ -63,6 +64,7 @@ def create_app() -> FastAPI:
 
     # setup_otel(app)
     app.add_middleware(LogMiddleware)
+    app.add_middleware(ProfilingMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
