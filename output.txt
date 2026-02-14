@@ -31,8 +31,1269 @@ tests/http/test_main.py .                                                [ 78%]
 tests/security/test_basic.py ....                                        [ 81%]
 tests/security/test_jwt.py .....                                         [ 85%]
 tests/utils/email/test_renderer.py ....                                  [ 89%]
-tests/utils/email/test_sender.py .............                           [100%]
+tests/utils/email/test_sender.py FFFFFFFFFFFFF                           [100%]
 
+=================================== FAILURES ===================================
+_____________________ test_send_email_calls_deliver_email ______________________
+
+    def test_send_email_calls_deliver_email():
+>       with patch("app.utils.email.sender.deliver_email") as mock_deliver:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/utils/email/test_sender.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/unittest/mock.py:1451: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'app.utils.email.sender'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+    
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+    
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+    
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+    
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+    
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+    
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+    
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'app.utils' has no attribute 'email'
+
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/pkgutil.py:528: AttributeError
+______________________ test_send_email_uses_custom_reason ______________________
+
+    def test_send_email_uses_custom_reason():
+>       with patch("app.utils.email.sender.deliver_email") as mock_deliver:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/utils/email/test_sender.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/unittest/mock.py:1451: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'app.utils.email.sender'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+    
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+    
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+    
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+    
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+    
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+    
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+    
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'app.utils' has no attribute 'email'
+
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/pkgutil.py:528: AttributeError
+_______________ test_send_email_default_reason_when_empty_string _______________
+
+    def test_send_email_default_reason_when_empty_string():
+>       with patch("app.utils.email.sender.deliver_email") as mock_deliver:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/utils/email/test_sender.py:54: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/unittest/mock.py:1451: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'app.utils.email.sender'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+    
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+    
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+    
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+    
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+    
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+    
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+    
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'app.utils' has no attribute 'email'
+
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/pkgutil.py:528: AttributeError
+____________________ test_deliver_email_in_test_environment ____________________
+
+capfd = <_pytest.capture.CaptureFixture object at 0x711c994ce360>
+
+    def test_deliver_email_in_test_environment(capfd):
+        fake_settings = _runtime_settings(environment="test_environment")
+    
+>       with patch(
+            "app.utils.email.sender.get_settings", return_value=fake_settings
+        ):
+
+tests/utils/email/test_sender.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/unittest/mock.py:1451: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'app.utils.email.sender'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+    
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+    
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+    
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+    
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+    
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+    
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+    
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'app.utils' has no attribute 'email'
+
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/pkgutil.py:528: AttributeError
+_____________________ test_deliver_email_missing_username ______________________
+
+capfd = <_pytest.capture.CaptureFixture object at 0x711c994cf320>
+
+    def test_deliver_email_missing_username(capfd):
+        fake_settings = _runtime_settings(
+            email={"PASSWORD": "pass", "HOST": "smtp.test.com", "PORT": 465}
+        )
+    
+>       with patch(
+            "app.utils.email.sender.get_settings", return_value=fake_settings
+        ):
+
+tests/utils/email/test_sender.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/unittest/mock.py:1451: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'app.utils.email.sender'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+    
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+    
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+    
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+    
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+    
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+    
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+    
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'app.utils' has no attribute 'email'
+
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/pkgutil.py:528: AttributeError
+_____________________ test_deliver_email_missing_password ______________________
+
+capfd = <_pytest.capture.CaptureFixture object at 0x711c994cfbc0>
+
+    def test_deliver_email_missing_password(capfd):
+        fake_settings = _runtime_settings(
+            email={"USERNAME": "user@test.com", "HOST": "smtp.test.com", "PORT": 465}
+        )
+    
+>       with patch(
+            "app.utils.email.sender.get_settings", return_value=fake_settings
+        ):
+
+tests/utils/email/test_sender.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/unittest/mock.py:1451: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'app.utils.email.sender'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+    
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+    
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+    
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+    
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+    
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+    
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+    
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'app.utils' has no attribute 'email'
+
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/pkgutil.py:528: AttributeError
+___________________ test_deliver_email_missing_host_or_port ____________________
+
+capfd = <_pytest.capture.CaptureFixture object at 0x711c994cd460>
+
+    def test_deliver_email_missing_host_or_port(capfd):
+        fake_settings = _runtime_settings(
+            email={"USERNAME": "user@test.com", "PASSWORD": "secure"}
+        )
+    
+>       with patch(
+            "app.utils.email.sender.get_settings", return_value=fake_settings
+        ):
+
+tests/utils/email/test_sender.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/unittest/mock.py:1451: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'app.utils.email.sender'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+    
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+    
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+    
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+    
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+    
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+    
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+    
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'app.utils' has no attribute 'email'
+
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/pkgutil.py:528: AttributeError
+__________________________ test_deliver_email_success __________________________
+
+    def test_deliver_email_success():
+        fake_settings = _runtime_settings(
+            email={
+                "USERNAME": "user@test.com",
+                "PASSWORD": "secure",
+                "HOST": "smtp.test.com",
+                "PORT": 465,
+            }
+        )
+    
+>       with patch(
+            "app.utils.email.sender.get_settings", return_value=fake_settings
+        ):
+
+tests/utils/email/test_sender.py:126: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/unittest/mock.py:1451: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'app.utils.email.sender'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+    
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+    
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+    
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+    
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+    
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+    
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+    
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'app.utils' has no attribute 'email'
+
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/pkgutil.py:528: AttributeError
+________________________ test_deliver_email_dns_failure ________________________
+
+capfd = <_pytest.capture.CaptureFixture object at 0x711c994ccd10>
+
+    def test_deliver_email_dns_failure(capfd):
+        fake_settings = _runtime_settings(
+            email={
+                "USERNAME": "user@test.com",
+                "PASSWORD": "secure",
+                "HOST": "smtp.test.com",
+                "PORT": 465,
+            }
+        )
+    
+>       with patch(
+            "app.utils.email.sender.get_settings", return_value=fake_settings
+        ):
+
+tests/utils/email/test_sender.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/unittest/mock.py:1451: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'app.utils.email.sender'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+    
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+    
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+    
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+    
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+    
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+    
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+    
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'app.utils' has no attribute 'email'
+
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/pkgutil.py:528: AttributeError
+______________________ test_deliver_email_socket_timeout _______________________
+
+    def test_deliver_email_socket_timeout():
+        fake_settings = _runtime_settings(
+            email={
+                "USERNAME": "user@test.com",
+                "PASSWORD": "secure",
+                "HOST": "smtp.test.com",
+                "PORT": 465,
+            }
+        )
+    
+>       with patch(
+            "app.utils.email.sender.get_settings", return_value=fake_settings
+        ):
+
+tests/utils/email/test_sender.py:175: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/unittest/mock.py:1451: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'app.utils.email.sender'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+    
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+    
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+    
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+    
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+    
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+    
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+    
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'app.utils' has no attribute 'email'
+
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/pkgutil.py:528: AttributeError
+_________________ test_deliver_email_smtp_server_disconnected __________________
+
+    def test_deliver_email_smtp_server_disconnected():
+        fake_settings = _runtime_settings(
+            email={
+                "USERNAME": "user@test.com",
+                "PASSWORD": "secure",
+                "HOST": "smtp.test.com",
+                "PORT": 465,
+            }
+        )
+    
+>       with patch(
+            "app.utils.email.sender.get_settings", return_value=fake_settings
+        ):
+
+tests/utils/email/test_sender.py:195: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/unittest/mock.py:1451: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'app.utils.email.sender'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+    
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+    
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+    
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+    
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+    
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+    
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+    
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'app.utils' has no attribute 'email'
+
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/pkgutil.py:528: AttributeError
+______________________ test_deliver_email_smtp_exception _______________________
+
+    def test_deliver_email_smtp_exception():
+        fake_settings = _runtime_settings(
+            email={
+                "USERNAME": "user@test.com",
+                "PASSWORD": "secure",
+                "HOST": "smtp.test.com",
+                "PORT": 465,
+            }
+        )
+    
+>       with patch(
+            "app.utils.email.sender.get_settings", return_value=fake_settings
+        ):
+
+tests/utils/email/test_sender.py:217: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/unittest/mock.py:1451: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'app.utils.email.sender'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+    
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+    
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+    
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+    
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+    
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+    
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+    
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'app.utils' has no attribute 'email'
+
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/pkgutil.py:528: AttributeError
+_____________________ test_deliver_email_general_exception _____________________
+
+    def test_deliver_email_general_exception():
+        fake_settings = _runtime_settings(
+            email={
+                "USERNAME": "user@test.com",
+                "PASSWORD": "secure",
+                "HOST": "smtp.test.com",
+                "PORT": 465,
+            }
+        )
+    
+>       with patch(
+            "app.utils.email.sender.get_settings", return_value=fake_settings
+        ):
+
+tests/utils/email/test_sender.py:241: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/unittest/mock.py:1451: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'app.utils.email.sender'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+    
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+    
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+    
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+    
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+    
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+    
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+    
+        m = _NAME_PATTERN.match(name)
+        if not m:
+            raise ValueError(f'invalid format: {name!r}')
+        gd = m.groupdict()
+        if gd.get('cln'):
+            # there is a colon - a one-step import is all that's needed
+            mod = importlib.import_module(gd['pkg'])
+            parts = gd.get('obj')
+            parts = parts.split('.') if parts else []
+        else:
+            # no colon - have to iterate to find the package boundary
+            parts = name.split('.')
+            modname = parts.pop(0)
+            # first part *must* be a module/package.
+            mod = importlib.import_module(modname)
+            while parts:
+                p = parts[0]
+                s = f'{modname}.{p}'
+                try:
+                    mod = importlib.import_module(s)
+                    parts.pop(0)
+                    modname = s
+                except ImportError:
+                    break
+        # if we reach this point, mod is the module, already imported, and
+        # parts is the list of parts in the object hierarchy to be traversed, or
+        # an empty list if just the module is wanted.
+        result = mod
+        for p in parts:
+>           result = getattr(result, p)
+                     ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'app.utils' has no attribute 'email'
+
+../../.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/pkgutil.py:528: AttributeError
+--------------------------- Captured stderr teardown ---------------------------
+{"timestamp": "2026-02-14T07:34:22.993213+00:00Z", "level": "INFO", "message": "Userverse API shutting down", "logger": "app", "filename": "main.py", "function": "lifespan", "line": 44, "process": 21795}
 =============================== warnings summary ===============================
 tests/http/a_user/test_a_create_user_api.py: 3 warnings
 tests/http/a_user/test_b_user_login_api.py: 1 warning
@@ -77,4 +1338,18 @@ tests/security/test_jwt.py: 3 warnings
     decoded = self.decode_complete(
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-====================== 120 passed, 111 warnings in 26.72s ======================
+=========================== short test summary info ============================
+FAILED tests/utils/email/test_sender.py::test_send_email_calls_deliver_email
+FAILED tests/utils/email/test_sender.py::test_send_email_uses_custom_reason
+FAILED tests/utils/email/test_sender.py::test_send_email_default_reason_when_empty_string
+FAILED tests/utils/email/test_sender.py::test_deliver_email_in_test_environment
+FAILED tests/utils/email/test_sender.py::test_deliver_email_missing_username
+FAILED tests/utils/email/test_sender.py::test_deliver_email_missing_password
+FAILED tests/utils/email/test_sender.py::test_deliver_email_missing_host_or_port
+FAILED tests/utils/email/test_sender.py::test_deliver_email_success - Attribu...
+FAILED tests/utils/email/test_sender.py::test_deliver_email_dns_failure - Att...
+FAILED tests/utils/email/test_sender.py::test_deliver_email_socket_timeout - ...
+FAILED tests/utils/email/test_sender.py::test_deliver_email_smtp_server_disconnected
+FAILED tests/utils/email/test_sender.py::test_deliver_email_smtp_exception - ...
+FAILED tests/utils/email/test_sender.py::test_deliver_email_general_exception
+================ 13 failed, 107 passed, 111 warnings in 21.30s =================

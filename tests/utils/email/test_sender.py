@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.configs import CorsSettings, EmailSettings, JwtSettings, RuntimeSettings
-from app.utils.email.sender import deliver_email, send_email
+from app.email.sender import deliver_email, send_email
 
 
 def _runtime_settings(

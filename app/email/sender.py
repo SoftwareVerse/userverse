@@ -11,7 +11,8 @@ from typing import Optional
 from bs4 import BeautifulSoup
 from prometheus_client import Counter
 
-from app.configs import EmailSettings, get_settings
+from app.configs import get_settings
+from app.models.configs import EmailSettings
 
 logger = logging.getLogger(__name__)
 

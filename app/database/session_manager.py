@@ -5,7 +5,8 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy_utils import database_exists, create_database
 
 from app.database import Base  # Ensure your Base = declarative_base()
-from app.configs import RuntimeSettings, get_settings
+from app.configs import get_settings
+from app.models.configs import RuntimeSettings
 
 logger = logging.getLogger(__name__)
 

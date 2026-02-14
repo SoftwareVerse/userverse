@@ -6,8 +6,9 @@ from typing import Any, Optional
 from sqlalchemy.orm import Session
 
 from app.models.user.account_status import UserAccountStatus
+from app.models.configs import RuntimeSettings
 from app.models.user.user import UserReadModel
-from app.configs import RuntimeSettings, get_settings
+from app.configs import get_settings
 from app.utils.logging import logger
 
 

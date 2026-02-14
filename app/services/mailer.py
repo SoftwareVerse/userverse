@@ -1,5 +1,5 @@
-from app.utils.email.renderer import render_email_template
-from app.utils.email.sender import send_email
+from app.email.renderer import render_email_template
+from app.email.sender import send_email
 
 
 class MailService:

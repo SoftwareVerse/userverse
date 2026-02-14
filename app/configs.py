@@ -5,8 +5,15 @@ from pathlib import Path
 from typing import Any, Optional
 import tomllib
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from app.models.configs import (
+    CorsSettings,
+    DatabaseSettings,
+    EmailSettings,
+    JwtSettings,
+    RuntimeSettings,
+)
 
 
 _SETTINGS_ENV_KEYS = (
@@ -72,65 +79,6 @@ def _project_defaults() -> dict[str, Optional[str]]:
 _PROJECT_DEFAULTS = _project_defaults()
 
 
-class DatabaseSettings(BaseModel):
-    database_url: Optional[str] = None
-    type: Optional[str] = None
-    user: Optional[str] = None
-    password: Optional[str] = None
-    name: Optional[str] = None
-    host: Optional[str] = None
-    port: int = 5432
-
-    def build_url(self, environment: str) -> str:
-        if self.database_url:
-            return self.database_url
-
-        db_type = (self.type or "").strip().lower()
-        if db_type == "sqlite":
-            return f"sqlite:///{self.name or f'{environment}.db'}"
-
-        if db_type in ("postgres", "postgresql"):
-            required = [self.user, self.password, self.name, self.host]
-            if all(required):
-                return (
-                    f"postgresql+psycopg2://{self.user}:{self.password}"
-                    f"@{self.host}:{self.port}/{self.name}"
-                )
-
-        if db_type == "mysql":
-            required = [self.user, self.password, self.name, self.host]
-            if all(required):
-                return (
-                    f"mysql://{self.user}:{self.password}"
-                    f"@{self.host}:{self.port}/{self.name}"
-                )
-
-        return f"sqlite:///{environment}.db"
-
-
-class CorsSettings(BaseModel):
-    allowed: list[str] = Field(default_factory=lambda: ["*"])
-    blocked: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
-
-
-class JwtSettings(BaseModel):
-    secret: str = "secret1234"
-    algorithm: str = "HS256"
-    timeout: int = 15
-    refresh_timeout: int = 60
-
-
-class EmailSettings(BaseModel):
-    host: Optional[str] = None
-    port: Optional[int] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-
-    # Match your JSON keys (EMAIL_TLS / EMAIL_SSL)
-    email_tls: Optional[bool] = None
-    email_ssl: Optional[bool] = None
-
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -164,21 +112,6 @@ class Settings(BaseSettings):
     cor_origins: CorsSettings = Field(default_factory=CorsSettings)
     jwt: JwtSettings = Field(default_factory=JwtSettings)
     email: EmailSettings = Field(default_factory=EmailSettings)
-
-
-class RuntimeSettings(BaseModel):
-    environment: str
-    database_url: str
-    server_url: str
-    cor_origins: CorsSettings
-    jwt: JwtSettings
-    email: EmailSettings
-    name: str
-    version: str
-    description: str
-    repository: Optional[str] = None
-    documentation: Optional[str] = None
-
 
 def _settings_env_snapshot() -> tuple[tuple[str, Optional[str]], ...]:
     import os
