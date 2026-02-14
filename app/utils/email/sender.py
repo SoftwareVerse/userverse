@@ -115,9 +115,6 @@ def deliver_email(
                 }
             },
         )
-        # Avoid large stdout capture growth during test runs.
-        if get_settings().environment in TEST_ENVIRONMENTS:
-            return
         _render_plain_text(
             html_body,
             header="Email config not available. Showing plain text:",

@@ -10,7 +10,7 @@ def render_email_template(template_name: str, context: dict) -> str:
     """
     Render a Jinja2 HTML template for email.
     """
-    dummy_request = Request(scope={"type": "http"})
+    email_request = Request(scope={"type": "http"})
     return templates.get_template(template_name).render(
-        {"request": dummy_request, **context}
+        {"request": email_request, **context}
     )

@@ -3,6 +3,7 @@ import uuid
 from typing import Any, Dict, Optional, Tuple
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, PlainTextResponse
 from prometheus_client import Counter, REGISTRY
@@ -54,6 +55,12 @@ def json_error(
     }
     if extra:
         payload["detail"]["extra"] = extra
+        # Keep legacy fields for compatibility with existing HTTP tests/clients.
+        if isinstance(extra, dict):
+            if "error" in extra:
+                payload["detail"]["error"] = extra["error"]
+            if "errors" in extra:
+                payload["detail"]["errors"] = extra["errors"]
     return JSONResponse(status_code=status_code, content=payload)
 
 
@@ -127,6 +134,10 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         correlation_id = get_correlation_id(request)
+        serialized_errors = jsonable_encoder(
+            exc.errors(),
+            custom_encoder={BaseException: str},
+        )
         logger.info(
             "Validation error",
             extra={
@@ -140,7 +151,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             correlation_id=correlation_id,
             message="Validation failed",
             code="validation_error",
-            extra={"errors": exc.errors()},
+            extra={"errors": serialized_errors},
         )
 
     @app.exception_handler(AppError)

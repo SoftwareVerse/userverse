@@ -1,0 +1,80 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.11, pytest-9.0.2, pluggy-1.6.0
+rootdir: /home/sandile/projects/userverse
+configfile: pyproject.toml
+plugins: repeat-0.9.4, anyio-4.12.1, cov-7.0.0
+collected 120 items
+
+tests/database/test_a_user.py ..........                                 [  8%]
+tests/database/test_b_company.py ....                                    [ 11%]
+tests/database/test_c_role.py .......                                    [ 17%]
+tests/database/test_e_association.py ....                                [ 20%]
+tests/http/a_user/test_a_create_user_api.py .....                        [ 25%]
+tests/http/a_user/test_b_user_login_api.py ..                            [ 26%]
+tests/http/a_user/test_c_get_user.py .                                   [ 27%]
+tests/http/a_user/test_d_update_user_api.py ..                           [ 29%]
+tests/http/a_user/test_e_password_reset_request.py ...                   [ 31%]
+tests/http/a_user/test_f_password_otp_verify.py ..                       [ 33%]
+tests/http/b_company/test_a_create_company.py ...                        [ 35%]
+tests/http/b_company/test_b_get_company.py .....                         [ 40%]
+tests/http/b_company/test_c_update_company.py ..                         [ 41%]
+tests/http/c_company_roles/test_d_create_role.py ....                    [ 45%]
+tests/http/c_company_roles/test_e_update_role.py ...                     [ 47%]
+tests/http/c_company_roles/test_f_delete_role.py ....                    [ 50%]
+tests/http/c_company_roles/test_g_get_roles.py .....                     [ 55%]
+tests/http/d_company_users/test_h_get_company_users.py .......           [ 60%]
+tests/http/d_company_users/test_i_get_user_companies.py ......           [ 65%]
+tests/http/d_company_users/test_j_add_user_to_company.py ....            [ 69%]
+tests/http/d_company_users/test_k_remove_user_from_company.py ...        [ 71%]
+tests/http/test_exceptions.py .......                                    [ 77%]
+tests/http/test_main.py .                                                [ 78%]
+tests/security/test_basic.py ....                                        [ 81%]
+tests/security/test_jwt.py .....                                         [ 85%]
+tests/utils/email/test_renderer.py ....                                  [ 89%]
+tests/utils/email/test_sender.py .............                           [100%]
+
+=============================== warnings summary ===============================
+tests/http/a_user/test_a_create_user_api.py: 3 warnings
+tests/http/a_user/test_b_user_login_api.py: 1 warning
+tests/http/a_user/test_c_get_user.py: 1 warning
+tests/http/a_user/test_d_update_user_api.py: 1 warning
+tests/http/b_company/test_a_create_company.py: 3 warnings
+tests/http/b_company/test_b_get_company.py: 5 warnings
+tests/http/b_company/test_c_update_company.py: 2 warnings
+tests/http/c_company_roles/test_d_create_role.py: 4 warnings
+tests/http/c_company_roles/test_e_update_role.py: 3 warnings
+tests/http/c_company_roles/test_f_delete_role.py: 4 warnings
+tests/http/c_company_roles/test_g_get_roles.py: 5 warnings
+tests/http/d_company_users/test_h_get_company_users.py: 7 warnings
+tests/http/d_company_users/test_i_get_user_companies.py: 6 warnings
+tests/http/d_company_users/test_j_add_user_to_company.py: 4 warnings
+tests/http/d_company_users/test_k_remove_user_from_company.py: 3 warnings
+tests/security/test_jwt.py: 5 warnings
+  /home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/jwt/api_jwt.py:153: InsecureKeyLengthWarning: The HMAC key is 10 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    return self._jws.encode(
+
+tests/http/a_user/test_a_create_user_api.py::test_d_create_user_invalid_phone_should_fail
+tests/http/c_company_roles/test_f_delete_role.py::test_b_delete_default_role_forbidden
+tests/http/test_exceptions.py::test_request_validation_error_handler
+  /home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:59: DeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    response = await handler(conn, exc)
+
+tests/http/a_user/test_c_get_user.py: 1 warning
+tests/http/a_user/test_d_update_user_api.py: 1 warning
+tests/http/b_company/test_a_create_company.py: 3 warnings
+tests/http/b_company/test_b_get_company.py: 5 warnings
+tests/http/b_company/test_c_update_company.py: 2 warnings
+tests/http/c_company_roles/test_d_create_role.py: 4 warnings
+tests/http/c_company_roles/test_e_update_role.py: 3 warnings
+tests/http/c_company_roles/test_f_delete_role.py: 4 warnings
+tests/http/c_company_roles/test_g_get_roles.py: 5 warnings
+tests/http/d_company_users/test_h_get_company_users.py: 7 warnings
+tests/http/d_company_users/test_i_get_user_companies.py: 6 warnings
+tests/http/d_company_users/test_j_add_user_to_company.py: 4 warnings
+tests/http/d_company_users/test_k_remove_user_from_company.py: 3 warnings
+tests/security/test_jwt.py: 3 warnings
+  /home/sandile/projects/userverse/.venv/lib/python3.12/site-packages/jwt/api_jwt.py:371: InsecureKeyLengthWarning: The HMAC key is 10 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    decoded = self.decode_complete(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+====================== 120 passed, 111 warnings in 26.72s ======================

@@ -1,17 +1,23 @@
-from pathlib import Path
+from __future__ import annotations
+
 from functools import lru_cache
+from pathlib import Path
 from typing import Any, Optional
+import tomllib
 
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.utils.logging import logger
-
 
 _SETTINGS_ENV_KEYS = (
     "ENV",
-    "TEST_ENVIRONMENT",
-    "JSON_CONFIG_PATH",
+    "SERVER_URL",
+    "APP_NAME",
+    "APP_DESCRIPTION",
+    "APP_VERSION",
+    "REPOSITORY",
+    "DOCUMENTATION",
+    # DB flat envs (optional)
     "DATABASE_URL",
     "DB_TYPE",
     "DB_USER",
@@ -19,7 +25,51 @@ _SETTINGS_ENV_KEYS = (
     "DB_NAME",
     "DB_HOST",
     "DB_PORT",
+    # Nested settings
+    "COR_ORIGINS__ALLOWED",
+    "COR_ORIGINS__BLOCKED",
+    "JWT__SECRET",
+    "JWT__ALGORITHM",
+    "JWT__TIMEOUT",
+    "JWT__REFRESH_TIMEOUT",
+    "EMAIL__HOST",
+    "EMAIL__PORT",
+    "EMAIL__USERNAME",
+    "EMAIL__PASSWORD",
+    "EMAIL__EMAIL_TLS",
+    "EMAIL__EMAIL_SSL",
 )
+
+
+@lru_cache(maxsize=1)
+def _project_defaults() -> dict[str, Optional[str]]:
+    defaults = {
+        "name": "Userverse",
+        "version": "0.1.0",
+        "description": "Userverse backend API",
+        "repository": None,
+        "documentation": None,
+    }
+    pyproject_path = Path(__file__).resolve().parent.parent / "pyproject.toml"
+    try:
+        with pyproject_path.open("rb") as file:
+            project = tomllib.load(file).get("project", {})
+    except (FileNotFoundError, OSError, tomllib.TOMLDecodeError):
+        return defaults
+
+    project_urls = project.get("urls") or {}
+    normalized_urls = {str(k).lower(): str(v) for k, v in project_urls.items()}
+
+    return {
+        "name": str(project.get("name") or defaults["name"]),
+        "version": str(project.get("version") or defaults["version"]),
+        "description": str(project.get("description") or defaults["description"]),
+        "repository": normalized_urls.get("repository", defaults["repository"]),
+        "documentation": normalized_urls.get("documentation", defaults["documentation"]),
+    }
+
+
+_PROJECT_DEFAULTS = _project_defaults()
 
 
 class DatabaseSettings(BaseModel):
@@ -75,8 +125,10 @@ class EmailSettings(BaseModel):
     port: Optional[int] = None
     username: Optional[str] = None
     password: Optional[str] = None
-    use_ssl: Optional[bool] = None
-    use_starttls: Optional[bool] = None
+
+    # Match your JSON keys (EMAIL_TLS / EMAIL_SSL)
+    email_tls: Optional[bool] = None
+    email_ssl: Optional[bool] = None
 
 
 class Settings(BaseSettings):
@@ -86,11 +138,19 @@ class Settings(BaseSettings):
         env_nested_delimiter="__",
         extra="ignore",
         case_sensitive=True,
+        validate_default=False,
     )
 
-    env: Optional[str] = Field(default=None, alias="ENV")
-    test_environment: bool = Field(default=False, alias="TEST_ENVIRONMENT")
-    json_config_path: Optional[Path] = Field(default=None, alias="JSON_CONFIG_PATH")
+    # Base
+    env: str = Field(default="development", alias="ENV")
+    server_url: str = Field(default="http://localhost:8500", alias="SERVER_URL")
+    name: str = Field(default=_PROJECT_DEFAULTS["name"], alias="APP_NAME")
+    description: str = Field(default=_PROJECT_DEFAULTS["description"], alias="APP_DESCRIPTION")
+    version: str = Field(default=_PROJECT_DEFAULTS["version"], alias="APP_VERSION")
+    repository: Optional[str] = Field(default=_PROJECT_DEFAULTS["repository"], alias="REPOSITORY")
+    documentation: Optional[str] = Field(default=_PROJECT_DEFAULTS["documentation"], alias="DOCUMENTATION")
+
+    # DB (flat env aliases)
     database_url: Optional[str] = Field(default=None, alias="DATABASE_URL")
     db_type: Optional[str] = Field(default=None, alias="DB_TYPE")
     db_user: Optional[str] = Field(default=None, alias="DB_USER")
@@ -99,13 +159,7 @@ class Settings(BaseSettings):
     db_host: Optional[str] = Field(default=None, alias="DB_HOST")
     db_port: Optional[int] = Field(default=None, alias="DB_PORT")
 
-    name: Optional[str] = None
-    version: Optional[str] = None
-    description: Optional[str] = None
-    server_url: Optional[str] = None
-    repository: Optional[str] = None
-    documentation: Optional[str] = None
-
+    # Nested blocks
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     cor_origins: CorsSettings = Field(default_factory=CorsSettings)
     jwt: JwtSettings = Field(default_factory=JwtSettings)
@@ -126,67 +180,6 @@ class RuntimeSettings(BaseModel):
     documentation: Optional[str] = None
 
 
-@lru_cache(maxsize=1)
-def _read_pyproject() -> dict[str, Any]:
-    pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
-    if not pyproject_path.exists():
-        return {}
-
-    try:
-        with pyproject_path.open("rb") as file_obj:
-            import tomllib
-
-            return tomllib.load(file_obj)
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("Unable to read pyproject.toml: %s", exc)
-        return {}
-
-
-def _lower_keys(raw: Optional[dict[str, Any]]) -> dict[str, Any]:
-    if not raw:
-        return {}
-    return {str(key).lower(): value for key, value in raw.items()}
-
-
-def _pyproject_defaults() -> dict[str, Any]:
-    pyproject_data = _read_pyproject()
-    project = pyproject_data.get("project", {})
-    urls = project.get("urls", {})
-    config = pyproject_data.get("tool", {}).get("userverse", {}).get("config", {})
-
-    return {
-        "env": config.get("environment") or config.get("env") or "development",
-        "name": project.get("name") or config.get("name") or "Userverse",
-        "version": project.get("version") or config.get("version") or "0.1.0",
-        "description": project.get("description")
-        or config.get("description")
-        or "Userverse backend API",
-        "server_url": config.get("server_url") or "http://localhost:8000/userverse",
-        "repository": urls.get("Repository") or urls.get("repository"),
-        "documentation": urls.get("Documentation") or urls.get("documentation"),
-        "database": _lower_keys(config.get("database", {})),
-        "cor_origins": _lower_keys(config.get("cor_origins", {})),
-        "jwt": _lower_keys(config.get("jwt", {})),
-        "email": _lower_keys(config.get("email", {})),
-    }
-
-
-def _merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
-    merged = dict(base)
-    for key, value in override.items():
-        if value is None:
-            continue
-        if isinstance(value, dict) and isinstance(merged.get(key), dict):
-            nested = dict(merged[key])
-            for nested_key, nested_value in value.items():
-                if nested_value is not None:
-                    nested[nested_key] = nested_value
-            merged[key] = nested
-            continue
-        merged[key] = value
-    return merged
-
-
 def _settings_env_snapshot() -> tuple[tuple[str, Optional[str]], ...]:
     import os
 
@@ -198,47 +191,44 @@ def _resolve_settings(
     environment: Optional[str],
     env_snapshot: tuple[tuple[str, Optional[str]], ...],
 ) -> RuntimeSettings:
-    defaults = _pyproject_defaults()
-    env_settings = Settings().model_dump(mode="python")
-    merged = _merge(defaults, env_settings)
+    _ = env_snapshot  # used for cache key stability
 
-    resolved_env = environment or merged.get("env") or "development"
-    resolved_env = resolved_env.strip().lower()
-    if merged.get("test_environment"):
-        resolved_env = "test_environment"
+    settings = Settings()
 
-    db_defaults = merged.get("database") or {}
+    resolved_env = (environment or settings.env or "development").strip().lower()
+
+    # Build DB settings:
     db_from_env = {
-        "database_url": merged.get("database_url"),
-        "type": merged.get("db_type"),
-        "user": merged.get("db_user"),
-        "password": merged.get("db_password"),
-        "name": merged.get("db_name"),
-        "host": merged.get("db_host"),
-        "port": merged.get("db_port"),
+        "database_url": settings.database_url,
+        "type": settings.db_type,
+        "user": settings.db_user,
+        "password": settings.db_password,
+        "name": settings.db_name,
+        "host": settings.db_host,
+        "port": settings.db_port,
     }
-    db = DatabaseSettings(**_merge(db_defaults, db_from_env))
-    cors = CorsSettings(**(merged.get("cor_origins") or {}))
-    jwt = JwtSettings(**(merged.get("jwt") or {}))
-    email = EmailSettings(**(merged.get("email") or {}))
+    db = DatabaseSettings(**{k: v for k, v in db_from_env.items() if v is not None})
+
+    # Allow nested "database" block to fill anything missing
+    # (env_nested_delimiter enables DATABASE__TYPE etc if you ever add them)
+    merged_db = DatabaseSettings(**{**settings.database.model_dump(exclude_none=True), **db.model_dump(exclude_none=True)})
 
     return RuntimeSettings(
         environment=resolved_env,
-        database_url=db.build_url(resolved_env),
-        server_url=merged.get("server_url") or "http://localhost:8000",
-        cor_origins=cors,
-        jwt=jwt,
-        email=email,
-        name=merged.get("name") or "Userverse",
-        version=merged.get("version") or "0.1.0",
-        description=merged.get("description") or "Userverse backend API",
-        repository=merged.get("repository"),
-        documentation=merged.get("documentation"),
+        database_url=merged_db.build_url(resolved_env),
+        server_url=settings.server_url,
+        cor_origins=settings.cor_origins,
+        jwt=settings.jwt,
+        email=settings.email,
+        name=settings.name,
+        version=settings.version,
+        description=settings.description,
+        repository=settings.repository,
+        documentation=settings.documentation,
     )
 
 
 def get_settings(environment: Optional[str] = None) -> RuntimeSettings:
-    # Return a copy so callers can mutate safely without affecting cache.
     return _resolve_settings(environment, _settings_env_snapshot()).model_copy(deep=True)
 
 
@@ -263,8 +253,8 @@ def get_config(environment: Optional[str] = None) -> dict[str, Any]:
             "PORT": runtime_settings.email.port,
             "USERNAME": runtime_settings.email.username,
             "PASSWORD": runtime_settings.email.password,
-            "USE_SSL": runtime_settings.email.use_ssl,
-            "USE_STARTTLS": runtime_settings.email.use_starttls,
+            "EMAIL_TLS": runtime_settings.email.email_tls,
+            "EMAIL_SSL": runtime_settings.email.email_ssl,
         },
         "name": runtime_settings.name,
         "version": runtime_settings.version,

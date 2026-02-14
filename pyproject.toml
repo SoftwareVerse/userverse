@@ -32,39 +32,21 @@ dependencies = [
     "yappi>=1.6.0",
 ]
 
+[project.urls]
+Repository = "https://github.com/SoftwareVerse/userverse.git"
+
 [tool.pytest.ini_options]
 # Silence DeprecationWarning from passlib importing Python's 'crypt' (Py3.13 removal)
 filterwarnings = [
     "ignore::DeprecationWarning:passlib.utils",
 ]
 
-[tool.userverse.config]
 
-# General metadata
-name = "Userverse"
-version = "0.1.0"
-description = "Userverse backend API"
-server_url = "http://localhost:8501"
 
-# [tool.userverse.config.database]
-# HOST = "localhost"
-# PORT = 5432
-# USERNAME = "sandile"
-# PASSWORD = "Password123"
-# NAME = "userverse"
-# TYPE = "postgresql"
-
-[tool.userverse.config.cor_origins]
-allowed = ["*"]
-
-# [tool.userverse.config.email]
-# USERNAME = "your_email@example.com"
-# PASSWORD = "your_email_password"
-# HOST = "smtp.example.com"
-# PORT = 587
-
-[tool.userverse.config.jwt]
-SECRET = "your_jwt_secret"
-ALGORITHM = "HS256"
-TIMEOUT = 30
-REFRESH_TIMEOUT = 60
+[dependency-groups]
+dev = [
+    "memory-profiler>=0.61.0",
+    "memray>=1.19.1",
+    "pytest>=9.0.2",
+    "pytest-repeat>=0.9.4",
+]
