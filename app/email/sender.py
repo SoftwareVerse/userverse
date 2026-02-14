@@ -144,9 +144,19 @@ def deliver_email(
     }
     transient_classes = tuple(transient_reasons.keys())
 
-    # Decide TLS mode
-    use_implicit_ssl = bool(getattr(email_settings, "use_ssl", False))
-    use_starttls = bool(getattr(email_settings, "use_starttls", False))
+    # Decide TLS mode.
+    # Prefer configured flags from settings (`email_ssl` / `email_tls`) and keep
+    # legacy fallbacks (`use_ssl` / `use_starttls`) for compatibility.
+    use_implicit_ssl = bool(
+        getattr(email_settings, "email_ssl", getattr(email_settings, "use_ssl", False))
+    )
+    use_starttls = bool(
+        getattr(
+            email_settings,
+            "email_tls",
+            getattr(email_settings, "use_starttls", False),
+        )
+    )
 
     if not (use_implicit_ssl or use_starttls):
         # Infer from port if flags not provided

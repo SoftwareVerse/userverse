@@ -34,6 +34,8 @@ dependencies = [
 
 [project.urls]
 Repository = "https://github.com/SoftwareVerse/userverse.git"
+Documentation = "https://userverse.softwareverse.co.za/docs"
+
 
 [tool.pytest.ini_options]
 # Silence DeprecationWarning from passlib importing Python's 'crypt' (Py3.13 removal)

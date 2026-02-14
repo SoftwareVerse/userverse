@@ -85,7 +85,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         env_nested_delimiter="__",
         extra="ignore",
-        case_sensitive=True,
+        case_sensitive=False,
         validate_default=False,
     )
 
@@ -167,7 +167,7 @@ def get_settings(environment: Optional[str] = None) -> RuntimeSettings:
 
 def get_config(environment: Optional[str] = None) -> dict[str, Any]:
     runtime_settings = get_settings(environment=environment)
-    return {
+    dict_config = {
         "environment": runtime_settings.environment,
         "database_url": runtime_settings.database_url,
         "server_url": runtime_settings.server_url,
@@ -195,3 +195,5 @@ def get_config(environment: Optional[str] = None) -> dict[str, Any]:
         "repository": runtime_settings.repository,
         "documentation": runtime_settings.documentation,
     }
+    print(f"\n Current environment: {dict_config} \n")
+    return dict_config
