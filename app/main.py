@@ -93,6 +93,7 @@ def create_app() -> FastAPI:
                 status_code=200,
                 content={
                     "status": "ok",
+                    "environment": settings.environment,
                     "version": settings.version,
                     "name": settings.name,
                     "description": settings.description,
