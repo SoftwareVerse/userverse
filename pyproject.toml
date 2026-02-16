@@ -30,6 +30,8 @@ dependencies = [
     "click>=8.2.1",
     "phonenumbers>=9.0.19",
     "yappi>=1.6.0",
+    "pymysql>=1.1.2",
+    "mysqlclient>=2.2.8",
 ]
 
 [project.urls]
