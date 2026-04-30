@@ -203,16 +203,16 @@ class BaseModel(Base):
 
             json_field = getattr(record, column_name)
 
-            # MutableDict takes care of tracking, no need to reassign:
             if json_field is None:
-                json_field = {}
-                setattr(record, column_name, json_field)
+                setattr(record, column_name, {})
+                json_field = getattr(record, column_name)
 
             if not isinstance(json_field, dict):
                 raise ValueError(f"Column {column_name} is not a JSON field.")
 
-            json_field[key] = value  # Automatic change tracking by MutableDict
+            json_field[key] = value
             session.commit()
+            session.refresh(record)
             logger.info(
                 f"Updated JSON field '{column_name}' for {cls.__name__} with id={record_id}"
             )
@@ -249,17 +249,17 @@ class BaseModel(Base):
             json_field = getattr(record, column_name)
 
             if json_field is None:
-                json_field = {}
-                setattr(record, column_name, json_field)
+                setattr(record, column_name, {})
+                json_field = getattr(record, column_name)
 
             if not isinstance(json_field, dict):
                 raise ValueError(f"Column '{column_name}' is not a JSON/dict field.")
 
             for key, value in updates.items():
-                json_field[key] = value  # MutableDict handles change tracking
+                json_field[key] = value
 
             session.commit()
-            session.refresh(record)  # Ensure we return fresh state after commit
+            session.refresh(record)
 
             logger.info(
                 f"Bulk updated JSON field '{column_name}' for {cls.__name__} with id={record_id}: {updates}"

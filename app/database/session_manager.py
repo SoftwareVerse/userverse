@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class DatabaseSessionManager:
     def __init__(self, configs: Optional[dict | RuntimeSettings] = None) -> None:
         self._base = Base
-        self.configs = configs or get_settings()
+        self.configs = get_settings() if configs is None else configs
         if isinstance(self.configs, dict):
             self.database_url = self.configs.get(
                 "database_url", "sqlite:///./development.db"

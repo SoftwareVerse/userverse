@@ -149,7 +149,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             },
         )
         return json_error(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             correlation_id=correlation_id,
             message="Validation failed",
             code="validation_error",
