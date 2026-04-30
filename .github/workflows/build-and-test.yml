@@ -17,6 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
           persist-credentials: true
 
       - name: Install uv (latest release)
@@ -41,14 +43,16 @@ jobs:
           black .
 
       - name: Set up Git credentials
+        if: github.event_name == 'push'
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
       - name: Commit and Push formatting changes
+        if: github.event_name == 'push'
         run: |
-          git pull
+          git pull --ff-only origin "${{ github.ref_name }}"
           git add .
           git diff --quiet && git diff --staged --quiet || git commit -m "style: auto-format code with Black"
           git push origin HEAD:${{ github.ref_name }}
