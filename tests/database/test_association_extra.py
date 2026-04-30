@@ -33,15 +33,24 @@ def test_is_user_linked_to_company_supports_role_filter(
         description=test_role_data["admin_role"]["description"],
     )
     AssociationUserCompany.create(
-        test_session, user_id=user["id"], company_id=company["id"], role_name=role["name"]
+        test_session,
+        user_id=user["id"],
+        company_id=company["id"],
+        role_name=role["name"],
     )
 
-    assert AssociationUserCompany.is_user_linked_to_company(
-        test_session, user["id"], company["id"], role["name"]
-    ) is True
-    assert AssociationUserCompany.is_user_linked_to_company(
-        test_session, user["id"], company["id"], "Viewer"
-    ) is False
+    assert (
+        AssociationUserCompany.is_user_linked_to_company(
+            test_session, user["id"], company["id"], role["name"]
+        )
+        is True
+    )
+    assert (
+        AssociationUserCompany.is_user_linked_to_company(
+            test_session, user["id"], company["id"], "Viewer"
+        )
+        is False
+    )
 
 
 def test_link_user_rejects_duplicate_active_link(
@@ -66,9 +75,7 @@ def test_link_user_rejects_duplicate_active_link(
         )
 
 
-def test_unlink_user_rejects_missing_link(
-    test_session, test_company_data
-):
+def test_unlink_user_rejects_missing_link(test_session, test_company_data):
     company = Company.create(test_session, **test_company_data["company_one"])
 
     with pytest.raises(AppError, match="User has already been removed"):

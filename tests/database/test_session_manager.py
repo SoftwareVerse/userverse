@@ -5,9 +5,17 @@ from app.database.session_manager import DatabaseSessionManager
 
 def test_session_manager_uses_default_sqlite_url_for_dict_configs(monkeypatch):
     create_engine_calls = []
-    monkeypatch.setattr("app.database.session_manager.create_engine", lambda url, **kwargs: create_engine_calls.append((url, kwargs)) or "engine")
-    monkeypatch.setattr("app.database.session_manager.Base.metadata.create_all", lambda bind: None)
-    monkeypatch.setattr("app.database.session_manager.DatabaseSessionManager._import_models", lambda self: None)
+    monkeypatch.setattr(
+        "app.database.session_manager.create_engine",
+        lambda url, **kwargs: create_engine_calls.append((url, kwargs)) or "engine",
+    )
+    monkeypatch.setattr(
+        "app.database.session_manager.Base.metadata.create_all", lambda bind: None
+    )
+    monkeypatch.setattr(
+        "app.database.session_manager.DatabaseSessionManager._import_models",
+        lambda self: None,
+    )
 
     manager = DatabaseSessionManager(configs={})
 
@@ -18,11 +26,23 @@ def test_session_manager_uses_default_sqlite_url_for_dict_configs(monkeypatch):
 def test_session_manager_creates_non_sqlite_database_when_missing(monkeypatch):
     create_engine_calls = []
     created = []
-    monkeypatch.setattr("app.database.session_manager.create_engine", lambda url, **kwargs: create_engine_calls.append((url, kwargs)) or "engine")
-    monkeypatch.setattr("app.database.session_manager.database_exists", lambda url: False)
-    monkeypatch.setattr("app.database.session_manager.create_database", lambda url: created.append(url))
-    monkeypatch.setattr("app.database.session_manager.Base.metadata.create_all", lambda bind: None)
-    monkeypatch.setattr("app.database.session_manager.DatabaseSessionManager._import_models", lambda self: None)
+    monkeypatch.setattr(
+        "app.database.session_manager.create_engine",
+        lambda url, **kwargs: create_engine_calls.append((url, kwargs)) or "engine",
+    )
+    monkeypatch.setattr(
+        "app.database.session_manager.database_exists", lambda url: False
+    )
+    monkeypatch.setattr(
+        "app.database.session_manager.create_database", lambda url: created.append(url)
+    )
+    monkeypatch.setattr(
+        "app.database.session_manager.Base.metadata.create_all", lambda bind: None
+    )
+    monkeypatch.setattr(
+        "app.database.session_manager.DatabaseSessionManager._import_models",
+        lambda self: None,
+    )
 
     manager = DatabaseSessionManager(
         configs=SimpleNamespace(database_url="postgresql://db.example/test")

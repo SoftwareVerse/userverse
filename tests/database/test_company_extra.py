@@ -12,5 +12,7 @@ def test_get_company_by_email_returns_company(test_session, test_company_data):
 
 
 def test_get_company_by_email_raises_for_missing_company(test_session):
-    with pytest.raises(ValueError, match="Company with email:missing@example.com, not found."):
+    with pytest.raises(
+        ValueError, match="Company with email:missing@example.com, not found."
+    ):
         Company.get_company_by_email(test_session, "missing@example.com")

@@ -40,8 +40,12 @@ def test_shared_context_user_helpers_and_log_context():
 def test_shared_context_logging_helpers(monkeypatch):
     info_calls = []
     error_calls = []
-    monkeypatch.setattr("app.utils.shared_context.logger.info", lambda *args: info_calls.append(args))
-    monkeypatch.setattr("app.utils.shared_context.logger.error", lambda *args: error_calls.append(args))
+    monkeypatch.setattr(
+        "app.utils.shared_context.logger.info", lambda *args: info_calls.append(args)
+    )
+    monkeypatch.setattr(
+        "app.utils.shared_context.logger.error", lambda *args: error_calls.append(args)
+    )
 
     context = SharedContext(db_session=object(), user=_build_user())
     context.log_info("created")

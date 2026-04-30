@@ -20,7 +20,9 @@ def _deleted_by_user() -> UserReadModel:
     )
 
 
-def test_role_belongs_to_company_returns_role_dict(test_session, test_company_data, test_role_data):
+def test_role_belongs_to_company_returns_role_dict(
+    test_session, test_company_data, test_role_data
+):
     company = Company.create(test_session, **test_company_data["company_one"])
     role = Role.create(
         test_session,
@@ -34,7 +36,9 @@ def test_role_belongs_to_company_returns_role_dict(test_session, test_company_da
     assert result["name"] == role["name"]
 
 
-def test_role_belongs_to_company_raises_when_role_missing(test_session, test_company_data):
+def test_role_belongs_to_company_raises_when_role_missing(
+    test_session, test_company_data
+):
     company = Company.create(test_session, **test_company_data["company_one"])
 
     with pytest.raises(AppError, match="Role: Missing is not linked to the company"):
@@ -42,16 +46,24 @@ def test_role_belongs_to_company_raises_when_role_missing(test_session, test_com
 
 
 def test_update_role_raises_when_role_missing(test_session):
-    with pytest.raises(ValueError, match="Role with company_id=1 and name='Missing' not found."):
+    with pytest.raises(
+        ValueError, match="Role with company_id=1 and name='Missing' not found."
+    ):
         Role.update_role(test_session, 1, "Missing", new_name="Renamed")
 
 
 def test_update_role_json_field_rejects_missing_role(test_session):
-    with pytest.raises(ValueError, match="Role with company_id=1 and name='Missing' not found."):
-        Role.update_json_field(test_session, 1, "Missing", "primary_meta_data", "key", "value")
+    with pytest.raises(
+        ValueError, match="Role with company_id=1 and name='Missing' not found."
+    ):
+        Role.update_json_field(
+            test_session, 1, "Missing", "primary_meta_data", "key", "value"
+        )
 
 
-def test_update_role_json_field_rejects_missing_column(test_session, test_company_data, test_role_data):
+def test_update_role_json_field_rejects_missing_column(
+    test_session, test_company_data, test_role_data
+):
     company = Company.create(test_session, **test_company_data["company_one"])
     role = Role.create(
         test_session,
@@ -61,10 +73,14 @@ def test_update_role_json_field_rejects_missing_column(test_session, test_compan
     )
 
     with pytest.raises(ValueError, match="Column 'missing' does not exist on Role."):
-        Role.update_json_field(test_session, company["id"], role["name"], "missing", "key", "value")
+        Role.update_json_field(
+            test_session, company["id"], role["name"], "missing", "key", "value"
+        )
 
 
-def test_update_role_json_field_rejects_non_dict_column(test_session, test_company_data, test_role_data):
+def test_update_role_json_field_rejects_non_dict_column(
+    test_session, test_company_data, test_role_data
+):
     company = Company.create(test_session, **test_company_data["company_one"])
     role = Role.create(
         test_session,
@@ -74,7 +90,9 @@ def test_update_role_json_field_rejects_non_dict_column(test_session, test_compa
     )
 
     with pytest.raises(ValueError, match="Column 'description' is not a JSON field."):
-        Role.update_json_field(test_session, company["id"], role["name"], "description", "key", "value")
+        Role.update_json_field(
+            test_session, company["id"], role["name"], "description", "key", "value"
+        )
 
 
 def test_delete_role_and_reassign_users_rejects_same_replacement_name(test_session):
@@ -84,7 +102,9 @@ def test_delete_role_and_reassign_users_rejects_same_replacement_name(test_sessi
         )
 
 
-def test_delete_role_and_reassign_users_rejects_missing_target_role(test_session, test_company_data):
+def test_delete_role_and_reassign_users_rejects_missing_target_role(
+    test_session, test_company_data
+):
     company = Company.create(test_session, **test_company_data["company_one"])
 
     with pytest.raises(ValueError, match="Role 'Admin' not found."):
@@ -93,7 +113,9 @@ def test_delete_role_and_reassign_users_rejects_missing_target_role(test_session
         )
 
 
-def test_delete_role_and_reassign_users_rejects_missing_replacement_role(test_session, test_company_data, test_role_data):
+def test_delete_role_and_reassign_users_rejects_missing_replacement_role(
+    test_session, test_company_data, test_role_data
+):
     company = Company.create(test_session, **test_company_data["company_one"])
     Role.create(
         test_session,
@@ -133,11 +155,19 @@ def test_delete_role_and_reassign_users_soft_deletes_and_reassigns_users(
     )
 
     result = Role.delete_role_and_reassign_users(
-        test_session, company["id"], admin_role["name"], viewer_role["name"], _deleted_by_user()
+        test_session,
+        company["id"],
+        admin_role["name"],
+        viewer_role["name"],
+        _deleted_by_user(),
     )
 
     updated_link = test_session.query(AssociationUserCompany).one()
-    deleted_role = test_session.query(Role).filter_by(company_id=company["id"], name=admin_role["name"]).one()
+    deleted_role = (
+        test_session.query(Role)
+        .filter_by(company_id=company["id"], name=admin_role["name"])
+        .one()
+    )
     assert result["users_reassigned"] == 1
     assert updated_link.role_name == viewer_role["name"]
     assert deleted_role.primary_meta_data["deleted_by"]["email"] == "admin@example.com"

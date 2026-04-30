@@ -32,7 +32,9 @@ def test_update_missing_record_raises_record_not_found(test_session):
 
 def test_update_by_filters_missing_record_raises_value_error(test_session):
     with pytest.raises(ValueError, match="User with filters"):
-        User.update_by_filters(test_session, filters={"email": "missing@example.com"}, first_name="missing")
+        User.update_by_filters(
+            test_session, filters={"email": "missing@example.com"}, first_name="missing"
+        )
 
 
 def test_delete_missing_record_raises_record_not_found(test_session):
@@ -96,7 +98,9 @@ def test_bulk_update_json_field_updates_multiple_keys(test_session, test_user_da
     assert updated["primary_meta_data"]["source"] == "tests"
 
 
-def test_bulk_update_json_field_initializes_none_json_column(test_session, test_user_data):
+def test_bulk_update_json_field_initializes_none_json_column(
+    test_session, test_user_data
+):
     created = User.create(test_session, **test_user_data["create_user"])
     user = test_session.query(User).filter_by(id=created["id"]).one()
     user.secondary_meta_data = None
@@ -115,7 +119,9 @@ def test_bulk_update_json_field_initializes_none_json_column(test_session, test_
 def test_bulk_update_json_field_rejects_invalid_column(test_session, test_user_data):
     created = User.create(test_session, **test_user_data["create_user"])
 
-    with pytest.raises(ValueError, match="Column 'missing_column' does not exist on the model."):
+    with pytest.raises(
+        ValueError, match="Column 'missing_column' does not exist on the model."
+    ):
         User.bulk_update_json_field(
             test_session,
             created["id"],
