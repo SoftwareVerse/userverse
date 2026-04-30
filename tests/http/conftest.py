@@ -4,16 +4,46 @@ import json
 import pytest
 from unittest.mock import patch
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import sessionmaker
 
 from app.main import create_app
 from app.utils.config.loader import ConfigLoader
-from app.database.session_manager import DatabaseSessionManager
+from app.database.session_manager import DatabaseSessionManager, default_db
 from app.database.user import User
 from tests.utils.basic_auth import get_basic_auth_header
 from app.security.jwt import JWTManager
 from datetime import timedelta
 
 TEST_DATA_BASE_PATH = "tests/data/http/"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_database():
+    """
+    Setup a clean database for the test session.
+    Forces the application to use a test-specific database file.
+    """
+    db_path = "./test.db"
+    if os.path.exists(db_path):
+        os.remove(db_path)
+
+    # Set env var so that any new DatabaseSessionManager instances use this DB
+    os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
+
+    # Reconfigure the singleton default_db used by the app
+    default_db.database_url = f"sqlite:///{db_path}"
+    default_db.engine = default_db._configure_engine(default_db.database_url)
+    default_db._base.metadata.create_all(bind=default_db.engine)
+    default_db._session_factory = sessionmaker(
+        bind=default_db.engine, autocommit=False, autoflush=False
+    )
+
+    yield
+
+    # Teardown
+    default_db.engine.dispose()
+    if os.path.exists(db_path):
+        os.remove(db_path)
 
 
 @pytest.fixture(scope="session")
