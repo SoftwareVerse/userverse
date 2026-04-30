@@ -3,7 +3,6 @@ from typing import Generic, List, TypeVar
 from pydantic import BaseModel, Field
 from enum import Enum
 
-
 T = TypeVar("T")
 
 

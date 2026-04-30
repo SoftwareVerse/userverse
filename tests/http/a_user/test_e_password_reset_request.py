@@ -63,8 +63,5 @@ def test_password_reset_rate_limited(client, test_user_data):
 
     assert rate_limited_response.status_code == 429
     detail = rate_limited_response.json()["detail"]
-    assert (
-        detail["message"]
-        == PasswordResetResponseMessages.RATE_LIMITED.value
-    )
+    assert detail["message"] == PasswordResetResponseMessages.RATE_LIMITED.value
     assert detail["error"] == "password_reset_rate_limited"

@@ -102,7 +102,5 @@ class UserBasicAuthService:
         }
         user = self.user_repository.create_user(data)
         self.context.user = user
-        self.send_verification_email(
-            mode="create", background_tasks=background_tasks
-        )
+        self.send_verification_email(mode="create", background_tasks=background_tasks)
         return user

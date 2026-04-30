@@ -3,6 +3,7 @@ import shutil
 import glob
 import pytest
 
+
 def test_profiling_enabled(client):
     # Ensure clean state
     if os.path.exists("profiles"):
@@ -18,6 +19,7 @@ def test_profiling_enabled(client):
 
     # Cleanup
     shutil.rmtree("profiles")
+
 
 def test_profiling_disabled_by_default(client):
     # Ensure clean state

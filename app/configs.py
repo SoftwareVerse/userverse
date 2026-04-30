@@ -15,7 +15,6 @@ from app.models.configs import (
     RuntimeSettings,
 )
 
-
 _SETTINGS_ENV_KEYS = (
     "ENV",
     "SERVER_URL",
@@ -72,7 +71,9 @@ def _project_defaults() -> dict[str, Optional[str]]:
         "version": str(project.get("version") or defaults["version"]),
         "description": str(project.get("description") or defaults["description"]),
         "repository": normalized_urls.get("repository", defaults["repository"]),
-        "documentation": normalized_urls.get("documentation", defaults["documentation"]),
+        "documentation": normalized_urls.get(
+            "documentation", defaults["documentation"]
+        ),
     }
 
 
@@ -93,10 +94,16 @@ class Settings(BaseSettings):
     env: str = Field(default="development", alias="ENV")
     server_url: str = Field(default="http://localhost:8500", alias="SERVER_URL")
     name: str = Field(default=_PROJECT_DEFAULTS["name"], alias="APP_NAME")
-    description: str = Field(default=_PROJECT_DEFAULTS["description"], alias="APP_DESCRIPTION")
+    description: str = Field(
+        default=_PROJECT_DEFAULTS["description"], alias="APP_DESCRIPTION"
+    )
     version: str = Field(default=_PROJECT_DEFAULTS["version"], alias="APP_VERSION")
-    repository: Optional[str] = Field(default=_PROJECT_DEFAULTS["repository"], alias="REPOSITORY")
-    documentation: Optional[str] = Field(default=_PROJECT_DEFAULTS["documentation"], alias="DOCUMENTATION")
+    repository: Optional[str] = Field(
+        default=_PROJECT_DEFAULTS["repository"], alias="REPOSITORY"
+    )
+    documentation: Optional[str] = Field(
+        default=_PROJECT_DEFAULTS["documentation"], alias="DOCUMENTATION"
+    )
 
     # DB (flat env aliases)
     database_url: Optional[str] = Field(default=None, alias="DATABASE_URL")
@@ -112,6 +119,7 @@ class Settings(BaseSettings):
     cor_origins: CorsSettings = Field(default_factory=CorsSettings)
     jwt: JwtSettings = Field(default_factory=JwtSettings)
     email: EmailSettings = Field(default_factory=EmailSettings)
+
 
 def _settings_env_snapshot() -> tuple[tuple[str, Optional[str]], ...]:
     import os
@@ -144,7 +152,12 @@ def _resolve_settings(
 
     # Allow nested "database" block to fill anything missing
     # (env_nested_delimiter enables DATABASE__TYPE etc if you ever add them)
-    merged_db = DatabaseSettings(**{**settings.database.model_dump(exclude_none=True), **db.model_dump(exclude_none=True)})
+    merged_db = DatabaseSettings(
+        **{
+            **settings.database.model_dump(exclude_none=True),
+            **db.model_dump(exclude_none=True),
+        }
+    )
 
     return RuntimeSettings(
         environment=resolved_env,
@@ -162,7 +175,9 @@ def _resolve_settings(
 
 
 def get_settings(environment: Optional[str] = None) -> RuntimeSettings:
-    return _resolve_settings(environment, _settings_env_snapshot()).model_copy(deep=True)
+    return _resolve_settings(environment, _settings_env_snapshot()).model_copy(
+        deep=True
+    )
 
 
 def get_config(environment: Optional[str] = None) -> dict[str, Any]:
