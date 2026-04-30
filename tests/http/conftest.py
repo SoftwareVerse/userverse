@@ -28,7 +28,9 @@ def test_runtime_guards():
     for logger_name in noisy_loggers:
         logging.getLogger(logger_name).setLevel(logging.WARNING)
 
-    with patch("app.services.mailer.MailService.send_template_email", return_value=None):
+    with patch(
+        "app.services.mailer.MailService.send_template_email", return_value=None
+    ):
         yield
 
     for logger_name, level in previous_levels.items():

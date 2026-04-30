@@ -13,7 +13,6 @@ from app.services.user.password import UserPasswordService
 from app.database.session_manager import get_session
 from sqlalchemy.orm import Session
 
-
 router = APIRouter(
     prefix="/password-reset",
     tags=[UserverseApiTag.USER_PASSWORD_MANAGEMENT.name],

@@ -72,9 +72,7 @@ class UserPasswordService:
             ) from exc
 
         # check if user exists without leaking enumeration through HTTP response
-        session_user = (
-            self.session.query(User).filter(User.email == user_email).first()
-        )
+        session_user = self.session.query(User).filter(User.email == user_email).first()
         if not session_user:
             logger.info(
                 "Password reset requested for unknown email",

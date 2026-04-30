@@ -132,7 +132,9 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    async def validation_exception_handler(
+        request: Request, exc: RequestValidationError
+    ):
         correlation_id = get_correlation_id(request)
         serialized_errors = jsonable_encoder(
             exc.errors(),
@@ -183,7 +185,9 @@ def register_exception_handlers(app: FastAPI) -> None:
         correlation_id = get_correlation_id(request)
         root_exc, trail = unwrap_exception(exc)
 
-        UNHANDLED_EXCEPTIONS.labels(method=request.method, endpoint=request.url.path).inc()
+        UNHANDLED_EXCEPTIONS.labels(
+            method=request.method, endpoint=request.url.path
+        ).inc()
 
         logger.exception(
             "Unhandled exception",

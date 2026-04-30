@@ -22,9 +22,14 @@ def test_setup_otel_instruments_app(monkeypatch):
     monkeypatch.setattr(
         "app.middleware.otel.BatchSpanProcessor", span_processor_factory
     )
-    monkeypatch.setattr("app.middleware.otel.trace.set_tracer_provider", set_tracer_provider)
+    monkeypatch.setattr(
+        "app.middleware.otel.trace.set_tracer_provider", set_tracer_provider
+    )
     monkeypatch.setattr("app.middleware.otel.FastAPIInstrumentor", fastapi_instrumentor)
-    monkeypatch.setattr("app.middleware.otel.RequestsInstrumentor", MagicMock(return_value=requests_instrumentor))
+    monkeypatch.setattr(
+        "app.middleware.otel.RequestsInstrumentor",
+        MagicMock(return_value=requests_instrumentor),
+    )
 
     app = object()
     setup_otel(app, service_name="userverse-api", collector_endpoint="http://collector")

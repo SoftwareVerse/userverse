@@ -182,7 +182,11 @@ def deliver_email(
                         "stage": stage,
                         "host": email_settings.host,
                         "port": email_settings.port,
-                        "mode": "implicit_ssl" if use_implicit_ssl else ("starttls" if use_starttls else "plain"),
+                        "mode": (
+                            "implicit_ssl"
+                            if use_implicit_ssl
+                            else ("starttls" if use_starttls else "plain")
+                        ),
                     }
                 },
             )
@@ -192,40 +196,74 @@ def deliver_email(
             if use_implicit_ssl:
                 # Implicit SSL (port 465)
                 with smtplib.SMTP_SSL(
-                    email_settings.host, email_settings.port, timeout=timeout, context=tls_ctx
+                    email_settings.host,
+                    email_settings.port,
+                    timeout=timeout,
+                    context=tls_ctx,
                 ) as smtp:
                     logger.info(
                         "SMTP connected (implicit SSL)",
-                        extra={"extra": {"email_to": to, "reason": reason, "attempt": attempt, "stage": stage}},
+                        extra={
+                            "extra": {
+                                "email_to": to,
+                                "reason": reason,
+                                "attempt": attempt,
+                                "stage": stage,
+                            }
+                        },
                     )
                     stage = "auth"
                     smtp.login(email_settings.username, email_settings.password)
-                    logger.info("SMTP authenticated", extra={"extra": {"attempt": attempt, "stage": stage}})
+                    logger.info(
+                        "SMTP authenticated",
+                        extra={"extra": {"attempt": attempt, "stage": stage}},
+                    )
                     stage = "send"
                     smtp.send_message(msg)
-                    logger.info("SMTP send complete", extra={"extra": {"attempt": attempt, "stage": stage}})
+                    logger.info(
+                        "SMTP send complete",
+                        extra={"extra": {"attempt": attempt, "stage": stage}},
+                    )
                     return
 
             # Plain connect, then optionally STARTTLS
-            with smtplib.SMTP(email_settings.host, email_settings.port, timeout=timeout) as smtp:
+            with smtplib.SMTP(
+                email_settings.host, email_settings.port, timeout=timeout
+            ) as smtp:
                 logger.info(
                     "SMTP connected (plain)",
-                    extra={"extra": {"email_to": to, "reason": reason, "attempt": attempt, "stage": stage}},
+                    extra={
+                        "extra": {
+                            "email_to": to,
+                            "reason": reason,
+                            "attempt": attempt,
+                            "stage": stage,
+                        }
+                    },
                 )
                 if use_starttls:
                     stage = "starttls"
                     smtp.ehlo()
                     smtp.starttls(context=tls_ctx)
                     smtp.ehlo()
-                    logger.info("STARTTLS negotiated", extra={"extra": {"attempt": attempt, "stage": stage}})
+                    logger.info(
+                        "STARTTLS negotiated",
+                        extra={"extra": {"attempt": attempt, "stage": stage}},
+                    )
 
                 stage = "auth"
                 smtp.login(email_settings.username, email_settings.password)
-                logger.info("SMTP authenticated", extra={"extra": {"attempt": attempt, "stage": stage}})
+                logger.info(
+                    "SMTP authenticated",
+                    extra={"extra": {"attempt": attempt, "stage": stage}},
+                )
 
                 stage = "send"
                 smtp.send_message(msg)
-                logger.info("SMTP send complete", extra={"extra": {"attempt": attempt, "stage": stage}})
+                logger.info(
+                    "SMTP send complete",
+                    extra={"extra": {"attempt": attempt, "stage": stage}},
+                )
                 return
 
         except socket.gaierror as exc:
@@ -257,13 +295,24 @@ def deliver_email(
             EMAIL_SEND_FAILURES.labels(reason=failure_reason, stage=stage).inc()
             logger.error(
                 "SMTP authentication failed",
-                extra={"extra": {"email_to": to, "reason": reason, "stage": stage, "error": str(exc)}},
+                extra={
+                    "extra": {
+                        "email_to": to,
+                        "reason": reason,
+                        "stage": stage,
+                        "error": str(exc),
+                    }
+                },
             )
             raise
 
         except transient_classes as exc:  # type: ignore[arg-type]
             failure_reason = next(
-                (label for cls, label in transient_reasons.items() if isinstance(exc, cls)),
+                (
+                    label
+                    for cls, label in transient_reasons.items()
+                    if isinstance(exc, cls)
+                ),
                 "transient_error",
             )
             EMAIL_SEND_FAILURES.labels(reason=failure_reason, stage=stage).inc()
