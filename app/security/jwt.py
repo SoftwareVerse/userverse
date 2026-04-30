@@ -1,14 +1,17 @@
 import jwt
 import traceback
 from datetime import datetime, timedelta, timezone
-from fastapi import status, Security
+from fastapi import status, Security, Depends
 from fastapi.security import APIKeyHeader
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 # app imports
-from app.utils.config.loader import ConfigLoader
+from app.configs import get_settings
 from app.models.security_messages import SecurityResponseMessages
 from app.models.user.user import TokenResponseModel, UserReadModel
 from app.utils.app_error import AppError
+
+http_bearer = HTTPBearer()
 
 
 class JWTManager:
@@ -18,14 +21,11 @@ class JWTManager:
     """
 
     def __init__(self):
-        # load configs
-        loader = ConfigLoader()
-        configs = loader.get_config()
-        jwt_config = configs.get("jwt", {})
-        self.JWT_SECRET = jwt_config.get("SECRET", "secret1234")
-        self.JWT_ALGORITHM = jwt_config.get("ALGORITHM", "HS256")
-        self.SESSION_TIMEOUT = int(jwt_config.get("IMEOUT", 15))
-        self.REFRESH_TIMEOUT = int(jwt_config.get("REFRESH_TIMEOUT", 60))
+        settings = get_settings()
+        self.JWT_SECRET = settings.jwt.secret
+        self.JWT_ALGORITHM = settings.jwt.algorithm
+        self.SESSION_TIMEOUT = int(settings.jwt.timeout)
+        self.REFRESH_TIMEOUT = int(settings.jwt.refresh_timeout)
 
     def sign_jwt(self, user: UserReadModel) -> TokenResponseModel:
         """Sign a JWT token with user data and return the token response model."""
@@ -167,12 +167,13 @@ class JWTManager:
 
 
 async def get_current_user_from_jwt_token(
-    authorization: str = Security(APIKeyHeader(name="Authorization")),
+    credentials: HTTPAuthorizationCredentials = Depends(http_bearer),
 ) -> UserReadModel:
     """
     Get the current user from the JWT token in the Authorization header.
     Raises AppError if the token is missing or invalid.
     """
+    authorization = credentials.credentials if credentials else None
 
     if authorization is None:
         raise AppError(
@@ -182,20 +183,14 @@ async def get_current_user_from_jwt_token(
         )
 
     try:
-        auth_type, TOKEN = authorization.split(" ")
-        if auth_type.strip().lower() != "bearer":
-            raise AppError(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                message=SecurityResponseMessages.INVALID_REQUEST.value,
-                error=SecurityResponseMessages.MISSING_AUTHORIZATION_HEADER.value,
-            )
+        current_user = JWTManager().decode_token(authorization)
+    except AppError:
+        raise
     except Exception as e:
         raise AppError(
             status_code=status.HTTP_401_UNAUTHORIZED,
             message=SecurityResponseMessages.INVALID_REQUEST.value,
             error=str(e),
         ) from e
-
-    current_user = JWTManager().decode_token(TOKEN)
 
     return current_user

@@ -1,13 +1,14 @@
 # app/utils/shared_context.py
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from sqlalchemy.orm import Session
 
 from app.models.user.account_status import UserAccountStatus
+from app.models.configs import RuntimeSettings
 from app.models.user.user import UserReadModel
-from app.utils.config.loader import ConfigLoader
+from app.configs import get_settings
 from app.utils.logging import logger
 
 
@@ -15,11 +16,11 @@ class SharedContext:
     def __init__(
         self,
         db_session: Session,
-        configs: Dict[str, Any] = ConfigLoader().get_config(),
+        configs: Optional[RuntimeSettings] = None,
         user: Optional[UserReadModel] = None,
         enforce_status_check: bool = False,  # <-- optional control
     ):
-        self.configs: dict = configs
+        self.configs: RuntimeSettings = configs or get_settings()
         if user:
             self.user: UserReadModel = user
         self.db_session = db_session
@@ -45,7 +46,7 @@ class SharedContext:
         """
         return self.user
 
-    def log_context(self) -> Dict[str, Any]:
+    def log_context(self) -> dict[str, Any]:
         """
         -  Returns a dictionary containing the user email for logging purposes.
         """

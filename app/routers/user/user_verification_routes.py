@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 from fastapi.responses import JSONResponse
 
 # Tags & Models
@@ -8,8 +8,8 @@ from app.models.generic_response import GenericResponseModel
 from app.models.app_error import AppErrorResponseModel
 
 # Logic
-from app.logic.user.verification import UserVerificationService
-from app.logic.user.basic_auth import UserBasicAuthService
+from app.services.user.verification import UserVerificationService
+from app.services.user.basic_auth import UserBasicAuthService
 from app.utils.shared_context import SharedContext
 from app.dependencies.common import CommonJWTRouteDependencies
 from sqlalchemy.orm import Session
@@ -50,6 +50,7 @@ def verify_user_account(token: str, session: Session = Depends(get_session)):
     response_model=GenericResponseModel[None],
 )
 def resend_verification_email(
+    background_tasks: BackgroundTasks,
     common: CommonJWTRouteDependencies = Depends(),
 ):
     """
@@ -58,9 +59,11 @@ def resend_verification_email(
     - **Returns**: Success message on email resend
     """
     service = UserBasicAuthService(
-        SharedContext(configs={}, user=common.user, db_session=common.session)
+        SharedContext(user=common.user, db_session=common.session)
     )
-    service.send_verification_email(mode="verify")
+    service.send_verification_email(
+        mode="verify", background_tasks=background_tasks
+    )
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content=GenericResponseModel(

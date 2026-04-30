@@ -1,5 +1,5 @@
 import pytest
-from app.utils.email.renderer import render_email_template
+from app.email.renderer import render_email_template
 
 
 @pytest.mark.parametrize(

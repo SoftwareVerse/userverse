@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 from fastapi.responses import JSONResponse
 
 # Dependencies
@@ -13,7 +13,7 @@ from app.models.generic_response import GenericResponseModel
 from app.models.app_error import AppErrorResponseModel
 
 # Logic
-from app.logic.user.basic_auth import UserBasicAuthService
+from app.services.user.basic_auth import UserBasicAuthService
 
 router = APIRouter(
     prefix="/user",
@@ -59,6 +59,7 @@ def user_login_api(
 )
 def create_user_api(
     user: UserCreateModel,
+    background_tasks: BackgroundTasks,
     common: CommonBasicAuthRouteDependencies = Depends(),
 ):
     """
@@ -70,6 +71,7 @@ def create_user_api(
     response = service.create_user(
         user_credentials=common.user,
         user_data=user,
+        background_tasks=background_tasks,
     )
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,

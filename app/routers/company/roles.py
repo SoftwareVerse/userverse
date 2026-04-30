@@ -21,7 +21,7 @@ from app.models.tags import UserverseApiTag
 from app.dependencies.common import CommonJWTRouteDependencies
 
 # Business Logic
-from app.logic.company.role import RoleService
+from app.services.company.role import RoleService
 from app.utils.shared_context import SharedContext
 
 # Utilities

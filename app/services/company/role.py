@@ -1,7 +1,7 @@
 from fastapi import status
 
 # utils
-from app.logic.company.user import CompanyUserService
+from app.services.company.user import CompanyUserService
 from app.models.generic_pagination import PaginatedResponse, PaginationMeta
 from app.utils.app_error import AppError
 

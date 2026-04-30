@@ -16,7 +16,7 @@ from app.models.generic_pagination import PaginatedResponse
 from app.models.app_error import AppErrorResponseModel
 
 # Logic
-from app.logic.user.profile import UserProfileService
+from app.services.user.profile import UserProfileService
 
 router = APIRouter(
     prefix="/user",

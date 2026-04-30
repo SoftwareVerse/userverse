@@ -56,8 +56,11 @@ def test_b_delete_default_role_forbidden(client, login_token):
     assert response.status_code == 422  # triggered by Pydantic field validator
     json_data = response.json()
     assert "detail" in json_data
+    assert "extra" in json_data["detail"]
+    assert "errors" in json_data["detail"]["extra"]
     assert any(
-        "Cannot delete default system role" in err["msg"] for err in json_data["detail"]
+        "Cannot delete default system role" in err["msg"]
+        for err in json_data["detail"]["extra"]["errors"]
     )
 
 

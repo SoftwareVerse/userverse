@@ -75,14 +75,24 @@ This project uses **FastAPI**, **Uvicorn**, and a dynamic configuration system w
 Use `uvicorn` in **factory mode** to support reload and dynamic config loading via environment variables:
 
 ```bash
+# To generate JWT
+openssl rand -base64 64
+
 # Set environment variables and run the app
 export ENV=development 
-export JSON_CONFIG_PATH=config-dev.json 
-# run with python
--  python -m app.main --reload --port 8501
+export JSON_CONFIG_PATH=/userverse/local_config.json 
+# run with python - NOTE: I prefer this since all my logs are json
+-  python -m app.main --reload --host 0.0.0.0 --port 8500
+
+# run with uv
+uv run --no-sync uvicorn app.main:create_app \
+  --factory \
+  --reload \
+  --host 0.0.0.0 \
+  --port 8500
 
 # run with uvicorn
-- uvicorn app.main:create_app --factory --reload --host 0.0.0.0 --port 8501
+- uvicorn app.main:create_app --factory --reload --host 0.0.0.0 --port 8500
 
 ```
 
@@ -96,14 +106,23 @@ Use the built-in CLI to run the app with full control over config, port, and wor
 
 ```bash
 
+
 uv run -m app.main --port 8500 \
   --env production \
-  --json_config_path sample-config.json \
+  --json_config_path local_config.json \
   --host 0.0.0.0 \
-  --port 8504 \
-  --workers 4
+  --workers 2
 ```
 
 ✅ This mode supports scaling with Uvicorn workers and does not enable reload.
 
 ---
+
+-  docker build --pull --rm -f 'Dockerfile' -t 'userverse:latest' '.'
+
+docker run -d \
+  --name userverse \
+  --restart unless-stopped \
+  -p 8500:8500 \
+  -e JSON_CONFIG_PATH=/code/sample-config.json \
+  userverse:latest
