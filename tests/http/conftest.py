@@ -1,18 +1,38 @@
 # tests/conftest.py
 import os
 import json
+import logging
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import sessionmaker
+from unittest.mock import patch
 
 from app.main import create_app
-from app.database.session_manager import DatabaseSessionManager, default_db
+import app.database.session_manager as session_manager
+from app.database.session_manager import DatabaseSessionManager
 from app.database.user import User
 from tests.utils.basic_auth import get_basic_auth_header
 from app.security.jwt import JWTManager
 from datetime import timedelta
 
 TEST_DATA_BASE_PATH = "tests/data/http/"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def test_runtime_guards():
+    noisy_loggers = ("httpx", "httpcore", "urllib3", "asyncio")
+    previous_levels = {
+        logger_name: logging.getLogger(logger_name).level
+        for logger_name in noisy_loggers
+    }
+
+    for logger_name in noisy_loggers:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+    with patch("app.services.mailer.MailService.send_template_email", return_value=None):
+        yield
+
+    for logger_name, level in previous_levels.items():
+        logging.getLogger(logger_name).setLevel(level)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -25,28 +45,24 @@ def setup_database():
     if os.path.exists(db_path):
         os.remove(db_path)
 
-    # Set env var so that any new DatabaseSessionManager instances use this DB
+    # Ensure any new DatabaseSessionManager instances use this DB.
     os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
+    os.environ["ENV"] = "testing"
 
-    # Reconfigure the singleton default_db used by the app
-    default_db.database_url = f"sqlite:///{db_path}"
-    default_db.engine = default_db._configure_engine(default_db.database_url)
-    default_db._base.metadata.create_all(bind=default_db.engine)
-    default_db._session_factory = sessionmaker(
-        bind=default_db.engine, autocommit=False, autoflush=False
-    )
+    default_db = DatabaseSessionManager()
+    session_manager._default_db = default_db
 
     yield
 
     # Teardown
     default_db.engine.dispose()
+    session_manager._default_db = None
     if os.path.exists(db_path):
         os.remove(db_path)
 
 
 @pytest.fixture(scope="session")
 def client():
-    os.environ["ENV"] = "testing"
     app = create_app()
     with TestClient(app) as test_client:
         yield test_client

@@ -12,7 +12,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from uvicorn.config import Config
 from uvicorn.server import Server
 
-from app.database.session_manager import DatabaseSessionManager
+from app.database.session_manager import get_engine
 from app.exceptions import register_exception_handlers
 
 # user routers
@@ -40,7 +40,7 @@ from app.utils.logging import get_uvicorn_log_config, logger
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Userverse API starting up")
-    DatabaseSessionManager()
+    get_engine()
     yield
     logger.info("Userverse API shutting down")
 

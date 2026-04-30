@@ -38,10 +38,15 @@ class DatabaseSessionManager:
         )
 
     def _configure_engine(self, url: str):
+        engine_kwargs = {"pool_pre_ping": True, "echo": False}
+        if url.startswith("sqlite:"):
+            engine_kwargs["connect_args"] = {"check_same_thread": False}
+            return create_engine(url, **engine_kwargs)
+
         if not database_exists(url):
             logger.info(f"Database does not exist at {url}. Creating...")
             create_database(url)
-        return create_engine(url, pool_pre_ping=True, echo=False)
+        return create_engine(url, **engine_kwargs)
 
     def _import_models(self):
         """
@@ -96,3 +101,7 @@ def get_session():
 
 def session_local():
     return _get_default_db().session_object()
+
+
+# Backwards-compatible singleton export used by the existing test fixtures.
+default_db = _get_default_db()
