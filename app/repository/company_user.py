@@ -2,7 +2,11 @@ from fastapi import status
 
 # utils
 from app.models.company.user import CompanyUserAddModel, CompanyUserReadModel
-from app.models.generic_pagination import PaginatedResponse, PaginationMeta
+from app.models.generic_pagination import (
+    PaginatedResponse,
+    apply_pagination,
+    build_pagination_meta,
+)
 from app.utils.app_error import AppError
 
 # database
@@ -86,12 +90,13 @@ class CompanyUserRepository:
 
         total = query.count()
 
-        results = (
-            query.options(joinedload(AssociationUserCompany.user))
-            .offset(params.offset)
-            .limit(params.limit)
-            .all()
+        results = apply_pagination(
+            query.options(joinedload(AssociationUserCompany.user)),
+            page=params.page,
+            limit=params.limit,
+            order_by=[User.id.asc()],
         )
+        results = results.all()
 
         users = [
             CompanyUserReadModel(**User.to_dict(assoc.user), role_name=assoc.role_name)
@@ -100,10 +105,9 @@ class CompanyUserRepository:
 
         return PaginatedResponse[CompanyUserReadModel](
             records=users,
-            pagination=PaginationMeta(
+            pagination=build_pagination_meta(
                 total_records=total,
                 limit=params.limit,
-                current_page=params.page,
-                total_pages=(total + params.limit - 1) // params.limit,
+                page=params.page,
             ),
         )

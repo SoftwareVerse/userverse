@@ -43,6 +43,7 @@ def test_get_users_for_company(
     client,
     login_token,
     login_token_user_two,
+    seed_companies,
     verify_both_users,
     login_token_key,
     company_id,

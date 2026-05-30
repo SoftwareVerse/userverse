@@ -5,13 +5,18 @@ from app.models.company.response_messages import CompanyRoleResponseMessages
 @pytest.mark.parametrize(
     "query_params,expected_names",
     [
-        ("limit=10&page=1", {"Administrator", "User Updated", "Viewer"}),
+        ("limit=10&page=1", {"Administrator", "Client", "User", "Viewer"}),
         ("limit=10&page=1&name=Ad", {"Administrator"}),
-        ("limit=10&page=1&name=er&description=access", {"User Updated", "Viewer"}),
+        ("limit=10&page=1&name=er&description=access", {"User", "Viewer"}),
     ],
 )
 def test_get_company_roles(
-    client, login_token, test_company_data, query_params, expected_names
+    client,
+    login_token,
+    seed_company_roles,
+    test_company_data,
+    query_params,
+    expected_names,
 ):
     """
     Test getting company roles with optional filters.
@@ -44,7 +49,9 @@ def test_get_company_roles(
     assert pagination["total_records"] == len(expected_names)
 
 
-def test_get_roles_with_invalid_filter(client, login_token, test_company_data):
+def test_get_roles_with_invalid_filter(
+    client, login_token, seed_company_roles, test_company_data
+):
     """
     Test getting company roles with a filter that returns no results.
     """
@@ -62,7 +69,9 @@ def test_get_roles_with_invalid_filter(client, login_token, test_company_data):
     assert json_data["data"]["pagination"]["total_records"] == 0
 
 
-def test_get_roles_with_pagination(client, login_token, test_company_data):
+def test_get_roles_with_pagination(
+    client, login_token, seed_company_roles, test_company_data
+):
     """
     Test pagination with limit=1 and page=2.
     """
@@ -77,7 +86,9 @@ def test_get_roles_with_pagination(client, login_token, test_company_data):
     json_data = response.json()
     assert json_data["message"] == CompanyRoleResponseMessages.ROLE_GET_SUCCESS.value
     assert len(json_data["data"]["records"]) == 1
+    assert json_data["data"]["records"][0]["name"] == "Client"
 
     pagination = json_data["data"]["pagination"]
     assert pagination["limit"] == 1
     assert pagination["current_page"] == 2
+    assert pagination["total_pages"] == 4

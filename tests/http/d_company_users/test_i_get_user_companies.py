@@ -24,6 +24,7 @@ def test_get_user_companies(
     client,
     login_token,
     login_token_user_two,
+    seed_companies,
     verify_both_users,
     login_token_key,
     query_params,
