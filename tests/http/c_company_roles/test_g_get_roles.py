@@ -48,9 +48,7 @@ def test_get_company_roles(
     assert pagination["total_records"] == len(expected_names)
 
 
-def test_get_roles_with_invalid_filter(
-    client, seed_pagination_state
-):
+def test_get_roles_with_invalid_filter(client, seed_pagination_state):
     """
     Test getting company roles with a filter that returns no results.
     """
@@ -69,9 +67,7 @@ def test_get_roles_with_invalid_filter(
     assert json_data["data"]["pagination"]["total_records"] == 0
 
 
-def test_get_roles_with_pagination(
-    client, seed_pagination_state
-):
+def test_get_roles_with_pagination(client, seed_pagination_state):
     """
     Test pagination with limit=1 and page=2.
     """

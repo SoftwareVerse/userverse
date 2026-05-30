@@ -54,6 +54,8 @@ def build_pagination_meta(
 
 
 def apply_pagination(query: Any, *, page: int, limit: int, order_by: Iterable[Any]):
-    return query.order_by(*order_by).offset(get_page_offset(page=page, limit=limit)).limit(
-        limit
+    return (
+        query.order_by(*order_by)
+        .offset(get_page_offset(page=page, limit=limit))
+        .limit(limit)
     )

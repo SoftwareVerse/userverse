@@ -350,7 +350,10 @@ def seed_pagination_state(client):
 
     for role_payload in (
         {"name": "User", "description": "Standard user role with limited access."},
-        {"name": "Client", "description": "Client role with access to client features."},
+        {
+            "name": "Client",
+            "description": "Client role with access to client features.",
+        },
     ):
         _create_role_if_missing(
             client,

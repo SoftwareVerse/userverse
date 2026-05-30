@@ -40,9 +40,7 @@ def test_get_company_users_page_two_is_stable(client, seed_pagination_state):
 
     assert response.status_code == 200
     json_data = response.json()
-    assert (
-        json_data["message"] == CompanyUserResponseMessages.GET_COMPANY_USERS.value
-    )
+    assert json_data["message"] == CompanyUserResponseMessages.GET_COMPANY_USERS.value
 
     records = json_data["data"]["records"]
     assert [user["email"] for user in records] == [
@@ -69,9 +67,7 @@ def test_get_user_companies_page_two_is_stable(client, seed_pagination_state):
 
     assert response.status_code == 200
     json_data = response.json()
-    assert (
-        json_data["message"] == CompanyUserResponseMessages.GET_COMPANY_USERS.value
-    )
+    assert json_data["message"] == CompanyUserResponseMessages.GET_COMPANY_USERS.value
 
     records = json_data["data"]["records"]
     assert [company["id"] for company in records] == seed_pagination_state[
