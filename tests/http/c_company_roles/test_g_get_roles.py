@@ -5,24 +5,28 @@ from app.models.company.response_messages import CompanyRoleResponseMessages
 @pytest.mark.parametrize(
     "query_params,expected_names",
     [
-        ("limit=10&page=1", {"Administrator", "User Updated", "Viewer"}),
+        ("limit=10&page=1", {"Administrator", "Client", "User", "Viewer"}),
         ("limit=10&page=1&name=Ad", {"Administrator"}),
-        ("limit=10&page=1&name=er&description=access", {"User Updated", "Viewer"}),
+        ("limit=10&page=1&name=er&description=access", {"User", "Viewer"}),
     ],
 )
 def test_get_company_roles(
-    client, login_token, test_company_data, query_params, expected_names
+    client,
+    seed_pagination_state,
+    query_params,
+    expected_names,
 ):
     """
     Test getting company roles with optional filters.
     """
+    company_id = seed_pagination_state["role_company_id"]
     headers = {
-        "Authorization": f"Bearer {login_token}",
+        "Authorization": f"Bearer {seed_pagination_state['owner_token']}",
         "accept": "application/json",
     }
 
     response = client.get(
-        f"/company/1/roles?{query_params}",
+        f"/company/{company_id}/roles?{query_params}",
         headers=headers,
     )
 
@@ -44,16 +48,19 @@ def test_get_company_roles(
     assert pagination["total_records"] == len(expected_names)
 
 
-def test_get_roles_with_invalid_filter(client, login_token, test_company_data):
+def test_get_roles_with_invalid_filter(
+    client, seed_pagination_state
+):
     """
     Test getting company roles with a filter that returns no results.
     """
+    company_id = seed_pagination_state["role_company_id"]
     headers = {
-        "Authorization": f"Bearer {login_token}",
+        "Authorization": f"Bearer {seed_pagination_state['owner_token']}",
         "accept": "application/json",
     }
 
-    response = client.get("/company/1/roles?name=xyz", headers=headers)
+    response = client.get(f"/company/{company_id}/roles?name=xyz", headers=headers)
     assert response.status_code == 200
 
     json_data = response.json()
@@ -62,22 +69,30 @@ def test_get_roles_with_invalid_filter(client, login_token, test_company_data):
     assert json_data["data"]["pagination"]["total_records"] == 0
 
 
-def test_get_roles_with_pagination(client, login_token, test_company_data):
+def test_get_roles_with_pagination(
+    client, seed_pagination_state
+):
     """
     Test pagination with limit=1 and page=2.
     """
+    company_id = seed_pagination_state["role_company_id"]
     headers = {
-        "Authorization": f"Bearer {login_token}",
+        "Authorization": f"Bearer {seed_pagination_state['owner_token']}",
         "accept": "application/json",
     }
 
-    response = client.get("/company/1/roles?limit=1&page=2", headers=headers)
+    response = client.get(
+        f"/company/{company_id}/roles?limit=1&page=2",
+        headers=headers,
+    )
     assert response.status_code == 200
 
     json_data = response.json()
     assert json_data["message"] == CompanyRoleResponseMessages.ROLE_GET_SUCCESS.value
     assert len(json_data["data"]["records"]) == 1
+    assert json_data["data"]["records"][0]["name"] == "Client"
 
     pagination = json_data["data"]["pagination"]
     assert pagination["limit"] == 1
     assert pagination["current_page"] == 2
+    assert pagination["total_pages"] == 4

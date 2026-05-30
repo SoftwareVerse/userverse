@@ -13,6 +13,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.mutable import MutableDict
 
 from app.utils.date_converter import convert_datetime
+from app.models.generic_pagination import (
+    apply_pagination,
+    build_pagination_meta,
+)
 
 
 from app.utils.logging import logger
@@ -55,7 +59,8 @@ class BaseModel(Base):
         session: Session,
         filters: Optional[Dict[str, Any]] = None,
         limit: int = 10,
-        offset: int = 0,
+        page: int = 1,
+        order_by: Optional[List[Any]] = None,
     ) -> Dict[str, Any]:
         """
         Retrieve all records of a model with optional filters and pagination.
@@ -71,11 +76,17 @@ class BaseModel(Base):
         total_records = query.count()
 
         # Apply pagination
-        records = query.offset(offset).limit(limit).all()
+        ordering = order_by or list(cls.__table__.primary_key.columns)
+        records = apply_pagination(
+            query,
+            page=page,
+            limit=limit,
+            order_by=ordering,
+        ).all()
 
         return {
             "records": [cls.to_dict(record) for record in records],
-            "pagination": cls._get_pagination_metadata(total_records, limit, offset),
+            "pagination": cls._get_pagination_metadata(total_records, limit, page),
         }
 
     @classmethod
@@ -271,14 +282,13 @@ class BaseModel(Base):
 
     @staticmethod
     def _get_pagination_metadata(
-        total_records: int, limit: int, offset: int
+        total_records: int, limit: int, page: int
     ) -> Dict[str, int]:
         """
         Generate pagination metadata.
         """
-        return {
-            "total_records": total_records,
-            "limit": limit,
-            "current_page": offset // limit + 1,
-            "total_pages": (total_records + limit - 1) // limit,  # Ceiling division
-        }
+        return build_pagination_meta(
+            total_records=total_records,
+            limit=limit,
+            page=page,
+        ).model_dump()

@@ -52,7 +52,7 @@ class RoleRepository:
                 session=session,
                 filters=filters,
                 limit=payload.limit,
-                offset=payload.offset,
+                page=payload.page,
             )
         except Exception as e:
             raise AppError(

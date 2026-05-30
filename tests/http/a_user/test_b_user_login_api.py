@@ -2,7 +2,7 @@ from app.models.user.response_messages import UserResponseMessages
 from tests.utils.basic_auth import get_basic_auth_header
 
 
-def test_user_login_success(client, test_user_data):
+def test_user_login_success(client, test_user_data, seed_users):
     """Test user login with valid credentials"""
     user_one = test_user_data["user_one"]
     response = client.patch(
@@ -28,7 +28,7 @@ def test_user_login_success(client, test_user_data):
     assert token_data["token_type"] == "bearer"
 
 
-def test_user_login_invalid_credentials(client, test_user_data):
+def test_user_login_invalid_credentials(client, test_user_data, seed_users):
     """Test user login with invalid credentials"""
     user_one = test_user_data["user_one"]
 

@@ -19,7 +19,11 @@ from app.models.company.company import (
 )
 from app.models.company.roles import CompanyDefaultRoles
 from app.models.company.response_messages import CompanyResponseMessages
-from app.models.generic_pagination import PaginatedResponse, PaginationMeta
+from app.models.generic_pagination import (
+    PaginatedResponse,
+    apply_pagination,
+    build_pagination_meta,
+)
 
 
 class CompanyRepository:
@@ -119,12 +123,13 @@ class CompanyRepository:
 
         total = query.count()
 
-        results = (
-            query.options(joinedload(AssociationUserCompany.company))
-            .offset(params.offset)
-            .limit(params.limit)
-            .all()
+        results = apply_pagination(
+            query.options(joinedload(AssociationUserCompany.company)),
+            page=params.page,
+            limit=params.limit,
+            order_by=[Company.id.asc()],
         )
+        results = results.all()
 
         companies = []
         for assoc in results:
@@ -139,11 +144,10 @@ class CompanyRepository:
 
         return PaginatedResponse[CompanyReadModel](
             records=companies,
-            pagination=PaginationMeta(
+            pagination=build_pagination_meta(
                 total_records=total,
                 limit=params.limit,
-                current_page=(params.offset // params.limit) + 1,
-                total_pages=(total + params.limit - 1) // params.limit,
+                page=params.page,
             ),
         )
 
