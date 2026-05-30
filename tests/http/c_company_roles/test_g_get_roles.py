@@ -12,22 +12,21 @@ from app.models.company.response_messages import CompanyRoleResponseMessages
 )
 def test_get_company_roles(
     client,
-    login_token,
-    seed_company_roles,
-    test_company_data,
+    seed_pagination_state,
     query_params,
     expected_names,
 ):
     """
     Test getting company roles with optional filters.
     """
+    company_id = seed_pagination_state["role_company_id"]
     headers = {
-        "Authorization": f"Bearer {login_token}",
+        "Authorization": f"Bearer {seed_pagination_state['owner_token']}",
         "accept": "application/json",
     }
 
     response = client.get(
-        f"/company/1/roles?{query_params}",
+        f"/company/{company_id}/roles?{query_params}",
         headers=headers,
     )
 
@@ -50,17 +49,18 @@ def test_get_company_roles(
 
 
 def test_get_roles_with_invalid_filter(
-    client, login_token, seed_company_roles, test_company_data
+    client, seed_pagination_state
 ):
     """
     Test getting company roles with a filter that returns no results.
     """
+    company_id = seed_pagination_state["role_company_id"]
     headers = {
-        "Authorization": f"Bearer {login_token}",
+        "Authorization": f"Bearer {seed_pagination_state['owner_token']}",
         "accept": "application/json",
     }
 
-    response = client.get("/company/1/roles?name=xyz", headers=headers)
+    response = client.get(f"/company/{company_id}/roles?name=xyz", headers=headers)
     assert response.status_code == 200
 
     json_data = response.json()
@@ -70,17 +70,21 @@ def test_get_roles_with_invalid_filter(
 
 
 def test_get_roles_with_pagination(
-    client, login_token, seed_company_roles, test_company_data
+    client, seed_pagination_state
 ):
     """
     Test pagination with limit=1 and page=2.
     """
+    company_id = seed_pagination_state["role_company_id"]
     headers = {
-        "Authorization": f"Bearer {login_token}",
+        "Authorization": f"Bearer {seed_pagination_state['owner_token']}",
         "accept": "application/json",
     }
 
-    response = client.get("/company/1/roles?limit=1&page=2", headers=headers)
+    response = client.get(
+        f"/company/{company_id}/roles?limit=1&page=2",
+        headers=headers,
+    )
     assert response.status_code == 200
 
     json_data = response.json()
