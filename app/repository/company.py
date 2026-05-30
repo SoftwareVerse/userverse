@@ -142,7 +142,7 @@ class CompanyRepository:
             pagination=PaginationMeta(
                 total_records=total,
                 limit=params.limit,
-                current_page=(params.offset // params.limit) + 1,
+                current_page=params.page,
                 total_pages=(total + params.limit - 1) // params.limit,
             ),
         )

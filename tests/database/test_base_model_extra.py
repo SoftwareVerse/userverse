@@ -60,6 +60,23 @@ def test_bulk_create_creates_multiple_companies(test_session):
     assert test_session.query(Company).count() == 2
 
 
+def test_get_all_uses_page_based_pagination(test_session):
+    Company.create(test_session, email="page-one@example.com", name="Page One")
+    Company.create(test_session, email="page-two@example.com", name="Page Two")
+    Company.create(test_session, email="page-three@example.com", name="Page Three")
+
+    result = Company.get_all(test_session, limit=2, page=2)
+
+    assert result["pagination"] == {
+        "total_records": 3,
+        "limit": 2,
+        "current_page": 2,
+        "total_pages": 2,
+    }
+    assert len(result["records"]) == 1
+    assert result["records"][0]["email"] == "page-three@example.com"
+
+
 def test_update_json_field_initializes_none_json_column(test_session, test_user_data):
     created = User.create(test_session, **test_user_data["create_user"])
     user = test_session.query(User).filter_by(id=created["id"]).one()

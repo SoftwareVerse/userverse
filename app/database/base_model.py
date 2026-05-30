@@ -55,7 +55,7 @@ class BaseModel(Base):
         session: Session,
         filters: Optional[Dict[str, Any]] = None,
         limit: int = 10,
-        offset: int = 0,
+        page: int = 1,
     ) -> Dict[str, Any]:
         """
         Retrieve all records of a model with optional filters and pagination.
@@ -71,11 +71,12 @@ class BaseModel(Base):
         total_records = query.count()
 
         # Apply pagination
+        offset = (page - 1) * limit
         records = query.offset(offset).limit(limit).all()
 
         return {
             "records": [cls.to_dict(record) for record in records],
-            "pagination": cls._get_pagination_metadata(total_records, limit, offset),
+            "pagination": cls._get_pagination_metadata(total_records, limit, page),
         }
 
     @classmethod
@@ -271,7 +272,7 @@ class BaseModel(Base):
 
     @staticmethod
     def _get_pagination_metadata(
-        total_records: int, limit: int, offset: int
+        total_records: int, limit: int, page: int
     ) -> Dict[str, int]:
         """
         Generate pagination metadata.
@@ -279,6 +280,6 @@ class BaseModel(Base):
         return {
             "total_records": total_records,
             "limit": limit,
-            "current_page": offset // limit + 1,
+            "current_page": page,
             "total_pages": (total_records + limit - 1) // limit,  # Ceiling division
         }
