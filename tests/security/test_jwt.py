@@ -37,6 +37,15 @@ def test_decode_valid_access_token():
     assert user.email == sample_user.email
 
 
+def test_decode_valid_refresh_token():
+    jwt_manager = JWTManager()
+    tokens = jwt_manager.sign_jwt(sample_user, refresh_token_version=3)
+    user, refresh_token_version = jwt_manager.decode_refresh_token(tokens.refresh_token)
+
+    assert user.email == sample_user.email
+    assert refresh_token_version == 3
+
+
 def test_decode_token_missing_user_data():
     jwt_manager = JWTManager()
     token = jwt.encode(
@@ -71,6 +80,53 @@ def test_decode_invalid_token_signature():
     tampered_token = tokens.access_token + "tamper"
     with pytest.raises(AppError) as e:
         jwt_manager.decode_token(tampered_token)
+    assert e.value.status_code == status.HTTP_401_UNAUTHORIZED
+    assert e.value.detail["message"] == SecurityResponseMessages.INVALID_TOKEN.value
+
+
+def test_decode_refresh_token_rejects_access_token():
+    jwt_manager = JWTManager()
+    tokens = jwt_manager.sign_jwt(sample_user)
+
+    with pytest.raises(AppError) as e:
+        jwt_manager.decode_refresh_token(tokens.access_token)
+
+    assert e.value.status_code == status.HTTP_403_FORBIDDEN
+    assert (
+        e.value.detail["message"]
+        == SecurityResponseMessages.INVALID_TOKEN.value + " for refresh token"
+    )
+
+
+def test_refresh_token_returns_rotated_tokens():
+    jwt_manager = JWTManager()
+    tokens = jwt_manager.sign_jwt(sample_user, refresh_token_version=2)
+
+    refreshed_tokens = jwt_manager.refresh_token(
+        tokens.refresh_token,
+        user=sample_user,
+        refresh_token_version=2,
+    )
+    _, refresh_token_version = jwt_manager.decode_refresh_token(
+        refreshed_tokens.refresh_token
+    )
+
+    assert refreshed_tokens.access_token
+    assert refreshed_tokens.refresh_token
+    assert refresh_token_version == 2
+
+
+def test_refresh_token_rejects_revoked_version():
+    jwt_manager = JWTManager()
+    tokens = jwt_manager.sign_jwt(sample_user, refresh_token_version=1)
+
+    with pytest.raises(AppError) as e:
+        jwt_manager.refresh_token(
+            tokens.refresh_token,
+            user=sample_user,
+            refresh_token_version=2,
+        )
+
     assert e.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert e.value.detail["message"] == SecurityResponseMessages.INVALID_TOKEN.value
 
