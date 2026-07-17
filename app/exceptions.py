@@ -177,7 +177,9 @@ def register_exception_handlers(app: FastAPI) -> None:
             correlation_id=correlation_id,
             message=message,
             code="app_error",
-            extra={"error": error} if error is not None else None,
+            # Preserve the legacy detail.error field for existing tests/clients,
+            # even when the originating AppError did not include a specific code.
+            extra={"error": error},
         )
 
     @app.exception_handler(Exception)
