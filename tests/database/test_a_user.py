@@ -1,6 +1,9 @@
 import pytest
 from app.database.user import User
 from app.database.base_model import RecordNotFoundError
+from app.models.user.response_messages import UserResponseMessages
+from app.repository.user import UserRepository
+from app.utils.app_error import AppError
 
 
 def test_create_user(test_session, test_user_data):
@@ -101,3 +104,63 @@ def test_update_json_field_record_not_found(test_session, test_user_data):
             json_update["key"],
             json_update["value"],
         )
+
+
+def test_create_user_rejects_duplicate_email(test_session, test_user_data):
+    user_data = test_user_data["create_user"]
+    User.create(test_session, **user_data)
+
+    with pytest.raises(AppError) as exc_info:
+        UserRepository(test_session).create_user(user_data)
+
+    assert exc_info.value.status_code == 409
+    assert (
+        exc_info.value.detail["message"]
+        == UserResponseMessages.USER_ALREADY_EXISTS.value
+    )
+
+
+def test_get_refresh_token_version_raises_when_user_missing(test_session):
+    with pytest.raises(AppError) as exc_info:
+        UserRepository(test_session).get_refresh_token_version(999)
+
+    assert exc_info.value.status_code == 404
+    assert (
+        exc_info.value.detail["message"]
+        == UserResponseMessages.USER_NOT_FOUND.value
+    )
+
+
+def test_get_refresh_token_version_defaults_to_zero_for_invalid_metadata(
+    test_session, test_user_data
+):
+    user_data = test_user_data["create_user"] | {"email": "refresh-invalid@example.com"}
+    created_user = User.create(test_session, **user_data)
+    User.update_json_field(
+        test_session,
+        created_user["id"],
+        "primary_meta_data",
+        UserRepository.REFRESH_TOKEN_VERSION_KEY,
+        "not-a-number",
+    )
+
+    version = UserRepository(test_session).get_refresh_token_version(created_user["id"])
+
+    assert version == 0
+
+
+def test_increment_refresh_token_version_updates_metadata(
+    test_session, test_user_data
+):
+    user_data = test_user_data["create_user"] | {"email": "refresh-increment@example.com"}
+    created_user = User.create(test_session, **user_data)
+    repository = UserRepository(test_session)
+
+    version = repository.increment_refresh_token_version(created_user["id"])
+
+    assert version == 1
+    updated_user = User.get_by_id(test_session, created_user["id"])
+    assert (
+        updated_user["primary_meta_data"][UserRepository.REFRESH_TOKEN_VERSION_KEY]
+        == 1
+    )

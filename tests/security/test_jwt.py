@@ -46,6 +46,25 @@ def test_decode_valid_refresh_token():
     assert refresh_token_version == 3
 
 
+def test_decode_refresh_token_invalid_version_defaults_to_zero():
+    jwt_manager = JWTManager()
+    token = jwt.encode(
+        {
+            "user": sample_user.model_dump(),
+            "type": "refresh",
+            "refresh_token_version": "invalid",
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+        },
+        jwt_manager.JWT_SECRET,
+        algorithm=jwt_manager.JWT_ALGORITHM,
+    )
+
+    user, refresh_token_version = jwt_manager.decode_refresh_token(token)
+
+    assert user.email == sample_user.email
+    assert refresh_token_version == 0
+
+
 def test_decode_token_missing_user_data():
     jwt_manager = JWTManager()
     token = jwt.encode(
@@ -82,6 +101,18 @@ def test_decode_invalid_token_signature():
         jwt_manager.decode_token(tampered_token)
     assert e.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert e.value.detail["message"] == SecurityResponseMessages.INVALID_TOKEN.value
+
+
+def test_decode_token_wraps_unexpected_decode_error(monkeypatch):
+    monkeypatch.setattr("app.security.jwt.jwt.decode", lambda *args, **kwargs: 1 / 0)
+    jwt_manager = JWTManager()
+
+    with pytest.raises(AppError) as e:
+        jwt_manager.decode_token("signed-token")
+
+    assert e.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    assert e.value.detail["message"] == SecurityResponseMessages.ERROR_DECODING.value
+    assert "division by zero" in e.value.detail["error"]
 
 
 def test_decode_refresh_token_rejects_access_token():
@@ -201,6 +232,27 @@ def test_get_current_user_from_jwt_token_returns_decoded_user(monkeypatch):
     current_user = asyncio.run(get_current_user_from_jwt_token(credentials))
 
     assert current_user.email == sample_user.email
+
+
+def test_get_current_user_from_jwt_token_reraises_app_error(monkeypatch):
+    expected_error = AppError(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        message=SecurityResponseMessages.INVALID_TOKEN.value,
+        log_error=False,
+    )
+
+    def _raise(self, token):
+        raise expected_error
+
+    monkeypatch.setattr("app.security.jwt.JWTManager.decode_token", _raise)
+    credentials = HTTPAuthorizationCredentials(
+        scheme="Bearer", credentials="signed-token"
+    )
+
+    with pytest.raises(AppError) as e:
+        asyncio.run(get_current_user_from_jwt_token(credentials))
+
+    assert e.value is expected_error
 
 
 def test_get_current_user_from_jwt_token_wraps_unexpected_error(monkeypatch):
