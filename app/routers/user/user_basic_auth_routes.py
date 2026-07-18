@@ -1,14 +1,22 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, status
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 
 # Dependencies
 from app.dependencies.common import CommonBasicAuthRouteDependencies
+from app.database.session_manager import get_session
 from app.utils.shared_context import SharedContext
 
 # Tags & Models
 from app.models.tags import UserverseApiTag
 from app.models.user.response_messages import UserResponseMessages
-from app.models.user.user import TokenResponseModel, UserCreateModel, UserReadModel
+from app.models.user.user import (
+    RefreshTokenRequestModel,
+    TokenResponseModel,
+    TokenRevocationResponseModel,
+    UserCreateModel,
+    UserReadModel,
+)
 from app.models.generic_response import GenericResponseModel
 from app.models.app_error import AppErrorResponseModel
 
@@ -46,6 +54,59 @@ def user_login_api(
         status_code=status.HTTP_202_ACCEPTED,
         content={
             "message": UserResponseMessages.USER_LOGGED_IN.value,
+            "data": response.model_dump(),
+        },
+    )
+
+
+@router.post(
+    "/refresh",
+    description=UserverseApiTag.USER_MANAGEMENT_BASIC_AUTH.description,
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=GenericResponseModel[TokenResponseModel],
+)
+def refresh_user_token_api(
+    payload: RefreshTokenRequestModel,
+    session: Session = Depends(get_session),
+):
+    """
+    Refresh user token API endpoint.
+    - **Requires**: A valid refresh token in the request body
+    - **Returns**: Fresh access and refresh tokens
+    """
+    service = UserBasicAuthService(SharedContext(user=None, db_session=session))
+    response = service.refresh_user_token(refresh_token=payload.refresh_token)
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={
+            "message": UserResponseMessages.USER_TOKEN_REFRESHED.value,
+            "data": response.model_dump(),
+        },
+    )
+
+
+@router.post(
+    "/revoke",
+    description=UserverseApiTag.USER_MANAGEMENT_BASIC_AUTH.description,
+    status_code=status.HTTP_200_OK,
+    response_model=GenericResponseModel[TokenRevocationResponseModel],
+)
+def revoke_refresh_token_api(
+    payload: RefreshTokenRequestModel,
+    session: Session = Depends(get_session),
+):
+    """
+    Revoke refresh tokens API endpoint.
+    - **Requires**: A valid refresh token in the request body
+    - **Returns**: Revocation confirmation
+    """
+    service = UserBasicAuthService(SharedContext(user=None, db_session=session))
+    service.revoke_refresh_token(refresh_token=payload.refresh_token)
+    response = TokenRevocationResponseModel(revoked=True)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "message": UserResponseMessages.USER_REFRESH_TOKEN_REVOKED.value,
             "data": response.model_dump(),
         },
     )

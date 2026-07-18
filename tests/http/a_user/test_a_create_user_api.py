@@ -1,4 +1,3 @@
-import pytest
 from app.models.user.response_messages import UserResponseMessages
 from tests.utils.basic_auth import get_basic_auth_header
 
@@ -103,17 +102,19 @@ def test_c_create_user_two_fail(client, test_user_data):
         "last_name": use_two["last_name"],
         "phone_number": use_two["phone_number"],
     }
-    # Attempt to create the same user again
-    with pytest.raises(ValueError):
+    response = client.post(
+        BASE_URL,
+        json=payload,
+        headers=get_basic_auth_header(
+            username=use_two["email"],
+            password=use_two["password"],
+        ),
+    )
 
-        client.post(
-            BASE_URL,
-            json=payload,
-            headers=get_basic_auth_header(
-                username=use_two["email"],
-                password=use_two["password"],
-            ),
-        )
+    assert response.status_code == 409
+    json_data = response.json()
+    assert json_data["detail"]["message"] == UserResponseMessages.USER_ALREADY_EXISTS.value
+    assert json_data["detail"]["code"] == "app_error"
 
 
 def test_d_create_user_invalid_phone_should_fail(client, test_user_data):

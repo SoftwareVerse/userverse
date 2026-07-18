@@ -19,6 +19,8 @@ class UserResponseMessages(str, Enum):
     USER_DELETION_FAILED = "User deletion failed"
     # user login
     USER_LOGGED_IN = "User logged in successfully"
+    USER_TOKEN_REFRESHED = "User token refreshed successfully"
+    USER_REFRESH_TOKEN_REVOKED = "User refresh token revoked successfully"
     USER_LOGGED_OUT = "User logged out successfully"
     INVALID_CREDENTIALS = "Invalid credentials"
     # user password

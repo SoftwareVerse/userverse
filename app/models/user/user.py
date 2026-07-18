@@ -63,6 +63,17 @@ class TokenResponseModel(BaseModel):
     )
 
 
+class RefreshTokenRequestModel(BaseModel):
+    refresh_token: str = Field(..., description="JWT refresh token")
+
+
+class TokenRevocationResponseModel(BaseModel):
+    revoked: bool = Field(
+        True,
+        description="Indicates whether the presented refresh token family was revoked",
+    )
+
+
 class UserQueryParams(PaginationParams):
     role_name: Optional[str] = Field(None, description="Filter by role name")
     first_name: Optional[str] = Field(None, description="Filter by user first name")

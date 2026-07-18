@@ -1,8 +1,6 @@
 import jwt
-import traceback
 from datetime import datetime, timedelta, timezone
-from fastapi import status, Security, Depends
-from fastapi.security import APIKeyHeader
+from fastapi import status, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 # app imports
@@ -27,7 +25,9 @@ class JWTManager:
         self.SESSION_TIMEOUT = int(settings.jwt.timeout)
         self.REFRESH_TIMEOUT = int(settings.jwt.refresh_timeout)
 
-    def sign_jwt(self, user: UserReadModel) -> TokenResponseModel:
+    def sign_jwt(
+        self, user: UserReadModel, *, refresh_token_version: int = 0
+    ) -> TokenResponseModel:
         """Sign a JWT token with user data and return the token response model."""
         now = datetime.now(timezone.utc)
         access_expire = now + timedelta(minutes=self.SESSION_TIMEOUT)
@@ -42,6 +42,7 @@ class JWTManager:
         refresh_payload = {
             "user": user.model_dump(),
             "type": "refresh",
+            "refresh_token_version": refresh_token_version,
             "exp": refresh_expire,
         }
 
@@ -97,28 +98,26 @@ class JWTManager:
                 message=SecurityResponseMessages.INVALID_TOKEN.value,
             ) from exc
 
-    def decode_token(self, token: str) -> UserReadModel:
-        """
-        Decode a JWT token and return the user data.
-        Raises AppError if the token is invalid or expired.
-        """
+    def _decode_token_payload(self, token: str, *, expected_type: str) -> dict:
         try:
             decoded = jwt.decode(
                 token, self.JWT_SECRET, algorithms=[self.JWT_ALGORITHM]
             )
+            token_type = decoded.get("type")
+            if token_type != expected_type:
+                raise AppError(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    message=SecurityResponseMessages.INVALID_TOKEN.value
+                    + f" for {expected_type} token",
+                )
+
             user = decoded.get("user")
             if not user:
                 raise AppError(
                     status_code=status.HTTP_403_FORBIDDEN,
                     message=SecurityResponseMessages.MISSING_USER_DATA.value,
                 )
-            if decoded.get("type") != "access":
-                raise AppError(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    message=SecurityResponseMessages.INVALID_TOKEN.value
-                    + " for access token",
-                )
-            return UserReadModel(**user)
+            return decoded
 
         except jwt.ExpiredSignatureError as e:
             raise AppError(
@@ -139,31 +138,39 @@ class JWTManager:
                 error=str(e),
             ) from e
 
-    def refresh_token(self, refresh_token: str) -> TokenResponseModel:
+    def decode_token(self, token: str) -> UserReadModel:
+        """
+        Decode a JWT access token and return the user data.
+        Raises AppError if the token is invalid or expired.
+        """
+        decoded = self._decode_token_payload(token, expected_type="access")
+        return UserReadModel(**decoded["user"])
+
+    def decode_refresh_token(self, token: str) -> tuple[UserReadModel, int]:
+        decoded = self._decode_token_payload(token, expected_type="refresh")
+        refresh_token_version = decoded.get("refresh_token_version", 0)
         try:
-            decoded = self.decode_token(refresh_token)
-            if decoded.get("type") != "refresh":
-                raise AppError(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    message=SecurityResponseMessages.INVALID_TOKEN.value
-                    + " for refresh token",
-                )
+            normalized_version = int(refresh_token_version)
+        except (TypeError, ValueError):
+            normalized_version = 0
 
-            user = decoded.get("user")
-            if not user:
-                raise AppError(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    message=SecurityResponseMessages.MISSING_USER_DATA.value,
-                )
+        return UserReadModel(**decoded["user"]), normalized_version
 
-            return self.signJWT(user)
-
-        except Exception as e:
-            traceback.print_exc()
+    def refresh_token(
+        self,
+        refresh_token: str,
+        *,
+        user: UserReadModel,
+        refresh_token_version: int,
+    ) -> TokenResponseModel:
+        token_user, token_version = self.decode_refresh_token(refresh_token)
+        if token_user.id != user.id or token_version != refresh_token_version:
             raise AppError(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message=str(e),
-            ) from e
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                message=SecurityResponseMessages.INVALID_TOKEN.value,
+            )
+
+        return self.sign_jwt(user, refresh_token_version=refresh_token_version)
 
 
 async def get_current_user_from_jwt_token(

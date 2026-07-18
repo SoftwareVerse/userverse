@@ -20,10 +20,9 @@ class AppError(HTTPException):
         # Capture the caller's details
         caller_details = self.get_caller_details(depth)
         # Prepare the error detail
-        details = {
-            "message": message,
-            "error": error or f"An error occurred, {caller_details}",
-        }
+        details = {"message": message}
+        if error is not None:
+            details["error"] = error
 
         # Log the error if needed
         if log_error:

@@ -15,6 +15,8 @@ from app.utils.hash_password import verify_password, hash_password, UnknownHashE
 
 
 class UserRepository:
+    REFRESH_TOKEN_VERSION_KEY = "refresh_token_version"
+
     def __init__(self, session: Session):
         self.session = session
 
@@ -79,7 +81,23 @@ class UserRepository:
 
     def create_user(self, data: dict) -> UserReadModel:
         session = self.session
-        user = User.create(session, **data)
+        existing_user = session.query(User).filter(User.email == data["email"]).first()
+        if existing_user:
+            raise AppError(
+                status_code=status.HTTP_409_CONFLICT,
+                message=UserResponseMessages.USER_ALREADY_EXISTS.value,
+            )
+
+        try:
+            user = User.create(session, **data)
+        except ValueError as exc:
+            if "UNIQUE constraint failed: user.email" in str(exc):
+                raise AppError(
+                    status_code=status.HTTP_409_CONFLICT,
+                    message=UserResponseMessages.USER_ALREADY_EXISTS.value,
+                ) from exc
+            raise
+
         if not user:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -144,6 +162,37 @@ class UserRepository:
             phone_number=user.get("phone_number"),
             is_superuser=user.get("is_superuser", False),
             status=account_status,
+        )
+
+    def get_refresh_token_version(self, user_id: int) -> int:
+        session = self.session
+        user = session.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise AppError(
+                status_code=status.HTTP_404_NOT_FOUND,
+                message=UserResponseMessages.USER_NOT_FOUND.value,
+            )
+
+        metadata = user.primary_meta_data or {}
+        refresh_token_version = metadata.get(self.REFRESH_TOKEN_VERSION_KEY, 0)
+        try:
+            return int(refresh_token_version)
+        except (TypeError, ValueError):
+            return 0
+
+    def increment_refresh_token_version(self, user_id: int) -> int:
+        next_version = self.get_refresh_token_version(user_id) + 1
+        updated_user = User.update_json_field(
+            self.session,
+            user_id,
+            "primary_meta_data",
+            self.REFRESH_TOKEN_VERSION_KEY,
+            next_version,
+        )
+        return int(
+            updated_user.get("primary_meta_data", {}).get(
+                self.REFRESH_TOKEN_VERSION_KEY, next_version
+            )
         )
 
     def delete_user(self, user_id):

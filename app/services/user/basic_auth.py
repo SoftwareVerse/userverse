@@ -5,7 +5,12 @@ from fastapi import BackgroundTasks
 
 from app.services.mailer import MailService
 from app.models.user.response_messages import UserResponseMessages
-from app.models.user.user import UserCreateModel, UserLoginModel, UserReadModel
+from app.models.user.user import (
+    TokenResponseModel,
+    UserCreateModel,
+    UserLoginModel,
+    UserReadModel,
+)
 from app.repository.user import UserRepository
 from app.security.jwt import JWTManager
 from app.utils.app_error import AppError
@@ -84,7 +89,28 @@ class UserBasicAuthService:
                 status_code=401,
                 message=UserResponseMessages.INVALID_CREDENTIALS.value,
             )
-        return JWTManager().sign_jwt(user)
+        refresh_token_version = self.user_repository.get_refresh_token_version(user.id)
+        return JWTManager().sign_jwt(
+            user, refresh_token_version=refresh_token_version
+        )
+
+    def refresh_user_token(self, refresh_token: str) -> TokenResponseModel:
+        jwt_manager = JWTManager()
+        token_user, _ = jwt_manager.decode_refresh_token(refresh_token)
+        current_user = self.user_repository.get_user_by_id(token_user.id)
+        refresh_token_version = self.user_repository.get_refresh_token_version(
+            current_user.id
+        )
+        return jwt_manager.refresh_token(
+            refresh_token,
+            user=current_user,
+            refresh_token_version=refresh_token_version,
+        )
+
+    def revoke_refresh_token(self, refresh_token: str) -> None:
+        token_user, _ = JWTManager().decode_refresh_token(refresh_token)
+        current_user = self.user_repository.get_user_by_id(token_user.id)
+        self.user_repository.increment_refresh_token_version(current_user.id)
 
     def create_user(
         self,
