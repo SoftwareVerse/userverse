@@ -91,8 +91,7 @@ def test_user_revoke_blocks_old_refresh_token(client, test_user_data, seed_users
     assert revoke_response.status_code == 200
     revoke_json = revoke_response.json()
     assert (
-        revoke_json["message"]
-        == UserResponseMessages.USER_REFRESH_TOKEN_REVOKED.value
+        revoke_json["message"] == UserResponseMessages.USER_REFRESH_TOKEN_REVOKED.value
     )
     assert revoke_json["data"]["revoked"] is True
 
