@@ -6,123 +6,163 @@
 
 # Userverse
 
-Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient. It’s built for developers, communities, and organizations who want a free, flexible, and secure way to handle user and organization management without relying on closed or proprietary systems.
+Userverse is an open-source FastAPI backend for managing users, companies, roles, authentication, password resets, and company-user relationships. It is designed as a reusable identity and organization-management service with API, service, repository, and database boundaries kept separate.
 
 ## Directory Overview
 
-```bash
-├── alembic
-│   └── versions
-├── app
-│   ├── database
-│   ├── logic
-│   │   └── user
-│   │       └── repository
-│   ├── middleware
-│   ├── models
-│   │   └── user
-│   ├── routers
-│   │   └── user
-│   ├── security
-│   └── utils
-├── coverage_reports
-├── docs
-│   └── images
-├── scripts
-│   └── versions
-└── tests
-    ├── data
-    │   ├── database
-    │   └── http
-    ├── database
-    ├── http
-    │   └── user
-    └── utils
+```text
+.
+├── alembic/
+│   └── versions/                  # Database migration revisions
+├── app/
+│   ├── api/
+│   │   ├── dependencies/           # Shared FastAPI dependencies
+│   │   ├── middleware/             # Logging, profiling, and OpenTelemetry middleware
+│   │   ├── routers/
+│   │   │   ├── company/            # Company, company-role, and company-user endpoints
+│   │   │   └── user/               # User auth, profile, password, and verification endpoints
+│   │   └── security/               # Basic Auth, API key, and JWT helpers
+│   ├── email/                      # Email rendering, templates, and SMTP sender
+│   ├── models/                     # Pydantic request/response models and enums
+│   ├── repository/
+│   │   └── database/
+│   │       └── tables/             # SQLAlchemy table models
+│   ├── services/                   # Business logic grouped by domain
+│   └── utils/                      # Shared helpers: config, parsing, logging, hashing, errors
+├── coverage_reports/               # Generated coverage XML output
+├── docs/                           # Project documentation
+├── scripts/                        # Test runner and helper scripts
+└── tests/
+    ├── api/
+    │   ├── http/                   # FastAPI integration tests
+    │   ├── middleware/             # API middleware tests
+    │   └── security/               # Auth and JWT tests
+    ├── data/                       # Test fixtures
+    ├── database/                   # Database model/repository tests
+    ├── jobs/                       # Background/job tests
+    └── utils/                      # Utility and lightweight coverage tests
 ```
 
-### Database
- - Database initialization, connection management, and session handling (engine setup, session factory)
-### Logic
- - Services: Core business logic implementation (user registration, authentication flows)
- - Repositories: Data access layer for database operations with clean abstractions
-### Middleware
- - Request/response processing components (CORS configuration, logging, error handlers)
-### Models
- - Pydantic schema definitions for data validation and API documentation
+## Main Components
 
-### Routers
- - API endpoint definitions organized by resource domain (users, auth, etc.)
+### API Layer
 
-### Security
- - Authentication mechanisms and authorization controls (JWT, password hashing)
-### Utils
- - Shared helper functions and third-party integrations (email, OTP generation)
+Routes live under `app/api/routers`. User routes cover account creation, login, token refresh/revocation, profile updates, email verification, and password reset. Company routes cover company CRUD, role management, and company-user membership.
 
-### Docs
- - Technical documentation assets including diagrams and implementation guides
+### Service Layer
 
-### Tests
- - Comprehensive test suite mirroring application structure for unit and integration testing
+Business logic lives in `app/services`. Services coordinate authorization checks, repository calls, JWT generation, password reset flows, and email dispatch.
 
-# 📘 Running the Userverse API
+### Repository and Database Layer
 
-This project uses **FastAPI**, **Uvicorn**, and a dynamic configuration system with support for both CLI and hot-reload development.
+Repository classes live in `app/repository`. SQLAlchemy models and session management live under `app/repository/database`. The canonical tables are `User`, `Company`, `Role`, and `AssociationUserCompany`.
 
----
+### Configuration
 
-## 🚀 Development Mode with Auto-Reload
-
-Use `uvicorn` in **factory mode** to support reload and dynamic config loading via environment variables:
+Runtime settings are loaded from environment variables and `.env` through `app.configs.Settings`. Important variables include:
 
 ```bash
-# To generate JWT
+ENVIRONMENT=development
+TESTING=false
+SERVER_URL=http://localhost:8500
+DATABASE_URL=sqlite:///./development.db
+DB_AUTO_CREATE=true
+JWT_SECRET=change-this-secret
+JWT_ALGORITHM=HS256
+JWT_TIMEOUT=15
+JWT_REFRESH_TIMEOUT=60
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=465
+EMAIL_USERNAME=no-reply@example.com
+EMAIL_PASSWORD=change-me
+EMAIL_SSL=true
+EMAIL_TLS=false
+CORS_ALLOWED='["*"]'
+CORS_BLOCKED='["http://localhost:3000"]'
+```
+
+See [docs/configuration.md](docs/configuration.md) for the full configuration guide.
+
+## Running the API
+
+Install dependencies with `uv`:
+
+```bash
+uv sync
+```
+
+Run the API with the project CLI:
+
+```bash
+uv run -m app.main --env development --host 0.0.0.0 --port 8500 --reload
+```
+
+Run Uvicorn directly in factory mode:
+
+```bash
+uv run uvicorn app.main:create_app --factory --reload --host 0.0.0.0 --port 8500
+```
+
+Generate a stronger JWT secret for local or production use:
+
+```bash
 openssl rand -base64 64
-
-# Set environment variables and run the app
-export ENV=development 
-export JSON_CONFIG_PATH=/userverse/local_config.json 
-# run with python - NOTE: I prefer this since all my logs are json
--  python -m app.main --reload --host 0.0.0.0 --port 8500
-
-# run with uv
-uv run --no-sync uvicorn app.main:create_app \
-  --factory \
-  --reload \
-  --host 0.0.0.0 \
-  --port 8500
-
-# run with uvicorn
-- uvicorn app.main:create_app --factory --reload --host 0.0.0.0 --port 8500
-
 ```
 
-✅ This supports live code reload and is ideal for development workflows.
+## Running Tests
 
----
-
-## ⚙️ Production or CLI Mode (No Reload)
-
-Use the built-in CLI to run the app with full control over config, port, and worker count:
+Run the full CI-style HTTP and coverage suite:
 
 ```bash
-
-
-uv run -m app.main --port 8500 \
-  --env production \
-  --json_config_path local_config.json \
-  --host 0.0.0.0 \
-  --workers 2
+./scripts/run_http_tests.sh
 ```
 
-✅ This mode supports scaling with Uvicorn workers and does not enable reload.
+Run selected suites:
 
----
+```bash
+uv run pytest tests/api/http
+uv run pytest tests/api/security
+uv run pytest tests/database
+uv run pytest tests/utils
+```
 
--  docker build --pull --rm -f 'Dockerfile' -t 'userverse:latest' '.'
+Coverage is generated with `pytest-cov` and written to `coverage_reports/coverage.xml`. The current CI threshold is `95%`.
 
+See [tests/README.md](tests/README.md) and [docs/testing.md](docs/testing.md) for more detail.
+
+## Database Migrations
+
+Apply migrations with Alembic:
+
+```bash
+uv run alembic upgrade head
+```
+
+Create a new migration after changing SQLAlchemy table models:
+
+```bash
+uv run alembic revision --autogenerate -m "describe schema change"
+```
+
+Review autogenerated migrations before applying them.
+
+## Docker
+
+Build the image:
+
+```bash
+docker build --pull --rm -f Dockerfile -t userverse:latest .
+```
+
+Run the container with environment variables:
+
+```bash
 docker run -d \
   --name userverse \
   --restart unless-stopped \
   -p 8500:8500 \
-  -e JSON_CONFIG_PATH=/code/sample-config.json \
+  -e ENVIRONMENT=production \
+  -e DATABASE_URL=postgresql+psycopg2://user:password@db:5432/userverse \
+  -e JWT_SECRET=change-this-secret \
   userverse:latest
+```
