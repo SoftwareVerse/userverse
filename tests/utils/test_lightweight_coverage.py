@@ -169,7 +169,9 @@ def test_settings_normalize_server_url_and_cors_lists(monkeypatch):
     assert normalized.CORS_BLOCKED == ["http://two.test"]
 
 
-def test_settings_rejects_default_jwt_secret_outside_safe_environments():
+def test_settings_rejects_default_jwt_secret_outside_safe_environments(monkeypatch):
+    monkeypatch.delenv("TESTING", raising=False)
+
     with pytest.raises(
         ValidationError,
         match="JWT_SECRET must be explicitly set outside development/testing environments",

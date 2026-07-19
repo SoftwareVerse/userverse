@@ -24,7 +24,7 @@ mkdir -p "$COVERAGE_DIR"
 
 echo "-----------------------------------------"
 echo "Generating Coverage Report Summary:"
-pytest -v --cov=app \
+uv run pytest -v --cov=app \
     --cov-report=term-missing \
     --cov-report=xml:"$COVERAGE_DIR/coverage.xml" \
     --cov-fail-under=95

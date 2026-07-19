@@ -16,6 +16,7 @@ def _clean_profiles_dir():
 
 def test_profiling_enabled(monkeypatch):
     monkeypatch.setattr(settings, "ENABLE_PROFILING", True)
+    monkeypatch.setattr(settings, "TESTING", False)
     _clean_profiles_dir()
 
     with TestClient(create_app()) as client:
