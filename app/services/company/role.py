@@ -2,7 +2,7 @@ from fastapi import status
 
 # utils
 from app.services.company.user import CompanyUserService
-from app.models.generic_pagination import PaginatedResponse, PaginationMeta
+from app.models.generic_pagination import PaginatedResponse
 from app.utils.app_error import AppError
 
 # repository
@@ -103,5 +103,5 @@ class RoleService:
 
         return PaginatedResponse[RoleReadModel](
             records=[RoleReadModel(**role) for role in result["records"]],
-            pagination=PaginationMeta(**result["pagination"]),
+            pagination=result["pagination"],
         )
