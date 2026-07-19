@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 # Dependencies
-from app.dependencies.common import CommonBasicAuthRouteDependencies
+from app.api.dependencies.common import CommonBasicAuthRouteDependencies
 from app.repository.database.session_manager import get_session
 from app.utils.shared_context import SharedContext
 

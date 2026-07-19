@@ -18,7 +18,7 @@ from app.models.company.response_messages import (
 
 # Auth
 from app.models.tags import UserverseApiTag
-from app.dependencies.common import CommonJWTRouteDependencies
+from app.api.dependencies.common import CommonJWTRouteDependencies
 from app.models.user.user import UserQueryParams, UserReadModel
 
 # Logic

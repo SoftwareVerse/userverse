@@ -4,7 +4,7 @@ from fastapi.security import HTTPBasicCredentials
 import pytest
 from app.models.user.user import UserLoginModel
 
-from app.security.basic_auth import get_basic_auth_credentials
+from app.api.security.basic_auth import get_basic_auth_credentials
 from app.utils.app_error import AppError
 
 

@@ -1,4 +1,4 @@
-from app.dependencies.common import CommonJWTRouteDependencies
+from app.api.dependencies.common import CommonJWTRouteDependencies
 from fastapi import APIRouter, Depends, status, Path
 from fastapi.responses import JSONResponse
 

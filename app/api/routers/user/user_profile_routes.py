@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
 # Dependencies
-from app.dependencies.common import CommonJWTRouteDependencies
+from app.api.dependencies.common import CommonJWTRouteDependencies
 from app.utils.shared_context import SharedContext
 
 # Tags & Models
