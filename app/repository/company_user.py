@@ -40,15 +40,20 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         )
 
     def is_user_linked_to_company(
-        self, user_id: int, company_id: int, role_name: str | None = None
+        self,
+        user_id: int,
+        company_id: int,
+        role_name: str | None = None,
+        role: str | None = None,
     ) -> bool:
+        resolved_role_name = role_name if role_name is not None else role
         query = self._base_query().filter_by(
             user_id=user_id,
             company_id=company_id,
             _closed_at=None,
         )
-        if role_name:
-            query = query.filter_by(role_name=role_name)
+        if resolved_role_name:
+            query = query.filter_by(role_name=resolved_role_name)
         return self.db_session.query(query.exists()).scalar()
 
     def ensure_user_linked_to_company(
