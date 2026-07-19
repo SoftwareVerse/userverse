@@ -1,3 +1,4 @@
+import importlib
 from pathlib import Path
 from textwrap import dedent
 from unittest.mock import Mock
@@ -5,12 +6,12 @@ from unittest.mock import Mock
 import pytest
 from pydantic import ValidationError
 
+import app.services.mailer as mailer_module
 from app.configs import Settings, _SettingsProxy
 from app.models.phone_number import validate_phone_number_format
 from app.models.tags import UserverseApiTag
 from app.models.user.account_status import UserAccountStatus
 from app.models.user.password import OTPValidationRequest, PasswordResetRequest
-from app.services.mailer import MailService
 from app.utils.hash_password import UnknownHashError, verify_password
 from app.utils.parsing import normalize_origins
 from app.utils.project_metadata import load_project_defaults
@@ -177,14 +178,16 @@ def test_verify_password_rejects_malformed_bcrypt_hash():
 
 
 def test_mail_service_renders_and_sends_template(monkeypatch):
+    reloaded_mailer = importlib.reload(mailer_module)
     send_email = Mock()
     monkeypatch.setattr(
-        "app.services.mailer.render_email_template",
+        reloaded_mailer,
+        "render_email_template",
         lambda template_name, context: f"{template_name}:{context['user_name']}",
     )
-    monkeypatch.setattr("app.services.mailer.send_email", send_email)
+    monkeypatch.setattr(reloaded_mailer, "send_email", send_email)
 
-    MailService.send_template_email(
+    reloaded_mailer.MailService.send_template_email(
         to="user@example.com",
         subject="Subject",
         template_name="welcome.html",
