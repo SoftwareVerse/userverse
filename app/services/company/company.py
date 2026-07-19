@@ -89,3 +89,11 @@ class CompanyService:
                 message=CompanyResponseMessages.COMPANY_UPDATE_FAILED.value,
             )
         return company
+
+    def delete_company(self, company_id: str) -> None:
+        self.company_user_service.check_if_user_is_in_company(
+            user_id=self.context.user.id,
+            company_id=company_id,
+            role=CompanyDefaultRoles.OWNER.name_value,
+        )
+        self.company_repository.delete_company(company_id)

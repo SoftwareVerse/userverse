@@ -14,7 +14,10 @@ from app.models.company.roles import CompanyDefaultRoles
 from app.models.user.user import UserQueryParams
 
 
-from app.models.company.response_messages import CompanyResponseMessages
+from app.models.company.response_messages import (
+    CompanyResponseMessages,
+    CompanyUserResponseMessages,
+)
 from app.utils.shared_context import SharedContext
 from app.utils.logging import logger
 
@@ -62,11 +65,22 @@ class CompanyUserService:
     def add_user_to_company(
         self, company_id: int, payload: CompanyUserAddModel
     ) -> CompanyUserReadModel:
-        self.check_if_user_is_in_company(
-            user_id=self.context.user.id,
-            company_id=company_id,
-            role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
-        )
+        if not (
+            self.company_user_repository.is_user_linked_to_company(
+                user_id=self.context.user.id,
+                company_id=company_id,
+                role_name=CompanyDefaultRoles.ADMINISTRATOR.name_value,
+            )
+            or self.company_user_repository.is_user_linked_to_company(
+                user_id=self.context.user.id,
+                company_id=company_id,
+                role_name=CompanyDefaultRoles.OWNER.name_value,
+            )
+        ):
+            raise AppError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                message=CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value,
+            )
         user = self.company_user_repository.add_user_to_company(
             company_id=company_id, payload=payload, added_by=self.context.user
         )
@@ -85,11 +99,32 @@ class CompanyUserService:
         company_id: int,
         user_id: int,
     ) -> CompanyUserReadModel:
-        self.check_if_user_is_in_company(
-            user_id=self.context.user.id,
+        if not (
+            self.company_user_repository.is_user_linked_to_company(
+                user_id=self.context.user.id,
+                company_id=company_id,
+                role_name=CompanyDefaultRoles.ADMINISTRATOR.name_value,
+            )
+            or self.company_user_repository.is_user_linked_to_company(
+                user_id=self.context.user.id,
+                company_id=company_id,
+                role_name=CompanyDefaultRoles.OWNER.name_value,
+            )
+        ):
+            raise AppError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                message=CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value,
+            )
+        if self.company_user_repository.is_user_linked_to_company(
+            user_id=user_id,
             company_id=company_id,
-            role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
-        )
+            role_name=CompanyDefaultRoles.OWNER.name_value,
+        ):
+            raise AppError(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                message=CompanyUserResponseMessages.REMOVE_USER_FAILED.value,
+                error="Owner cannot be removed from the company.",
+            )
         return self.company_user_repository.remove_user_from_company(
             company_id=company_id,
             user_id=user_id,

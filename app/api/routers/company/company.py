@@ -163,4 +163,42 @@ def update_company_api(
         raise e
 
 
+@router.delete(
+    "/company/{company_id}",
+    tags=[tag],
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"model": GenericResponseModel[None]},
+        400: {"model": AppErrorResponseModel},
+        404: {"model": AppErrorResponseModel},
+        500: {"model": AppErrorResponseModel},
+    },
+)
+def delete_company_api(
+    company_id: int = Path(..., description="ID of the company to delete"),
+    common_deps: CommonJWTRouteDependencies = Depends(),
+):
+    """
+    Delete a company by its ID.
+
+    - **Requires**: User must be the owner
+    - **Returns**: Success message
+    """
+    try:
+        context = SharedContext(
+            db_session=common_deps.session,
+            user=common_deps.user,
+        )
+        CompanyService(context).delete_company(company_id=company_id)
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=GenericResponseModel(
+                message=CompanyResponseMessages.COMPANY_DELETED.value,
+                data=None,
+            ).model_dump(),
+        )
+    except (AppError, Exception) as e:
+        raise e
+
+
 # NOTE: Company users endpoints live in app/routers/company/users.py

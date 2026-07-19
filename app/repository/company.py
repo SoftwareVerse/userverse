@@ -86,7 +86,7 @@ class CompanyRepository(BaseSQLRepository[Company]):
                 (),
                 {
                     "email": created_by.email,
-                    "role": CompanyDefaultRoles.ADMINISTRATOR.name_value,
+                    "role": CompanyDefaultRoles.OWNER.name_value,
                 },
             )(),
             added_by=created_by,
@@ -133,6 +133,16 @@ class CompanyRepository(BaseSQLRepository[Company]):
                 value=payload.address.model_dump(),
             )
         return self._to_read_model(company)
+
+    def delete_company(self, company_id: str) -> None:
+        company = self._get_company_record_by_id(int(company_id))
+        if not company:
+            raise AppError(
+                status_code=status.HTTP_404_NOT_FOUND,
+                message=CompanyResponseMessages.COMPANY_NOT_FOUND.value,
+            )
+
+        self.soft_delete(company)
 
     def get_user_companies(
         self, user_id: int, params: CompanyQueryParamsModel
