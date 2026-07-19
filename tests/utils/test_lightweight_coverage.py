@@ -279,6 +279,9 @@ def test_phone_number_validator_normalizes_and_rejects_invalid_values():
     assert validate_phone_number_format("011 222 3333") == "011 222 3333"
     assert UserUpdateModel(phone_number=None).phone_number is None
 
+    with pytest.raises(ValueError, match="Invalid phone number."):
+        validate_phone_number_format("+27123")
+
     with pytest.raises(ValueError, match="Invalid phone number"):
         validate_phone_number_format("+1")
 
