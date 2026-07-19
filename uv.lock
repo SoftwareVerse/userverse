@@ -1883,7 +1883,7 @@ wheels = [
 
 [[package]]
 name = "userverse"
-version = "0.6.20"
+version = "0.6.23"
 source = { virtual = "." }
 dependencies = [
     { name = "alembic" },
