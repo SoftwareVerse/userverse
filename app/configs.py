@@ -13,6 +13,8 @@ from app.utils.project_metadata import load_project_defaults
 
 load_dotenv()
 _PROJECT_DEFAULTS = load_project_defaults(Path(__file__).resolve().parent.parent)
+DEFAULT_JWT_SECRET = "secret1234"
+INSECURE_JWT_SECRET_ALLOWED_ENVIRONMENTS = {"development", "testing", "test"}
 
 
 class Settings(BaseSettings):
@@ -33,7 +35,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("SERVER_URL"),
     )
     APP_NAME: str = Field(
-        default=_PROJECT_DEFAULTS["name"] or "Userverse",
+        default="Userverse",
         validation_alias=AliasChoices("APP_NAME"),
     )
     APP_DESCRIPTION: str = Field(
@@ -82,7 +84,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("DB_PORT"),
     )
     DB_AUTO_CREATE: bool = Field(
-        default=True,
+        default=False,
         validation_alias=AliasChoices("DB_AUTO_CREATE"),
     )
     DB_ECHO: bool = Field(
@@ -109,9 +111,24 @@ class Settings(BaseSettings):
         default=False,
         validation_alias=AliasChoices("TESTING"),
     )
+    REQUIRE_EMAIL_VERIFICATION: bool = Field(
+        default=False,
+        validation_alias=AliasChoices(
+            "REQUIRE_EMAIL_VERIFICATION", "ENFORCE_EMAIL_VERIFICATION"
+        ),
+    )
+    ENABLE_PROFILING: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("ENABLE_PROFILING"),
+    )
 
     CORS_ALLOWED: list[str] = Field(
-        default_factory=lambda: ["*"],
+        default_factory=lambda: [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ],
         validation_alias=AliasChoices("CORS_ALLOWED", "COR_ORIGINS__ALLOWED"),
     )
     CORS_BLOCKED: list[str] = Field(
@@ -120,7 +137,7 @@ class Settings(BaseSettings):
     )
 
     JWT_SECRET: str = Field(
-        default="secret1234",
+        default=DEFAULT_JWT_SECRET,
         validation_alias=AliasChoices("JWT_SECRET", "JWT__SECRET"),
     )
     JWT_ALGORITHM: str = Field(
@@ -174,6 +191,15 @@ class Settings(BaseSettings):
         object.__setattr__(self, "SERVER_URL", self.SERVER_URL.rstrip("/"))
         object.__setattr__(self, "CORS_ALLOWED", normalize_origins(self.CORS_ALLOWED))
         object.__setattr__(self, "CORS_BLOCKED", normalize_origins(self.CORS_BLOCKED))
+
+        if (
+            self.JWT_SECRET == DEFAULT_JWT_SECRET
+            and not self.TESTING
+            and self.ENVIRONMENT not in INSECURE_JWT_SECRET_ALLOWED_ENVIRONMENTS
+        ):
+            raise ValueError(
+                "JWT_SECRET must be explicitly set outside development/testing environments"
+            )
 
         if not self.DATABASE_URL:
             object.__setattr__(self, "DATABASE_URL", self._build_database_url())

@@ -70,7 +70,12 @@ class UserRepository(BaseSQLRepository[User]):
     def get_user_record_by_email(self, user_email: str) -> User | None:
         return self._base_query().filter(User.email == user_email).first()
 
-    def create_user(self, data: dict) -> UserReadModel:
+    def create_user(
+        self,
+        data: dict,
+        *,
+        account_status: str = UserAccountStatus.AWAITING_VERIFICATION.name_value,
+    ) -> UserReadModel:
         existing_user = self._base_query().filter(User.email == data["email"]).first()
         if existing_user:
             raise AppError(
@@ -89,15 +94,9 @@ class UserRepository(BaseSQLRepository[User]):
                 ) from exc
             raise
 
-        self.update_user_status(
-            user_id=user.id,
-            account_status=UserAccountStatus.AWAITING_VERIFICATION.name_value,
-        )
+        self.update_user_status(user_id=user.id, account_status=account_status)
         self.db_session.refresh(user)
-        return self._to_read_model(
-            user,
-            status_override=UserAccountStatus.AWAITING_VERIFICATION.name_value,
-        )
+        return self._to_read_model(user, status_override=account_status)
 
     def update_user(self, user_id: int, data: dict) -> UserReadModel:
         user = self._base_query().filter(User.id == user_id).one_or_none()

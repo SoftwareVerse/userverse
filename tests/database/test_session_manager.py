@@ -1,5 +1,6 @@
 from app.configs import settings
 from app.repository.database.session_manager import DatabaseSessionManager
+from sqlalchemy.pool import StaticPool
 
 
 def test_session_manager_uses_sqlite_engine_for_sqlite_urls(monkeypatch):
@@ -23,6 +24,29 @@ def test_session_manager_uses_sqlite_engine_for_sqlite_urls(monkeypatch):
 
     assert manager.database_url == "sqlite:///./development.db"
     assert create_engine_calls[0][1]["connect_args"] == {"check_same_thread": False}
+    assert "poolclass" not in create_engine_calls[0][1]
+
+
+def test_session_manager_uses_static_pool_for_in_memory_sqlite(monkeypatch):
+    create_engine_calls = []
+    monkeypatch.setattr(
+        "app.repository.database.session_manager.create_engine",
+        lambda url, **kwargs: create_engine_calls.append((url, kwargs)) or "engine",
+    )
+    monkeypatch.setattr(
+        "app.repository.database.session_manager.Base.metadata.create_all",
+        lambda bind: None,
+    )
+    monkeypatch.setattr(
+        "app.repository.database.session_manager.DatabaseSessionManager._tables_exist",
+        lambda self: False,
+    )
+    monkeypatch.setattr(settings, "DATABASE_URL", "sqlite:///:memory:")
+    monkeypatch.setattr(settings, "DB_AUTO_CREATE", True)
+
+    DatabaseSessionManager()
+
+    assert create_engine_calls[0][1]["poolclass"] is StaticPool
 
 
 def test_session_manager_creates_non_sqlite_database_when_missing(monkeypatch):
@@ -55,6 +79,62 @@ def test_session_manager_creates_non_sqlite_database_when_missing(monkeypatch):
     assert manager.database_url == "postgresql://db.example/test"
     assert created == ["postgresql://db.example/test"]
     assert create_engine_calls[0][1]["pool_pre_ping"] is True
+
+
+def test_session_manager_does_not_create_database_when_auto_create_disabled(
+    monkeypatch,
+):
+    create_engine_calls = []
+    created = []
+    monkeypatch.setattr(
+        "app.repository.database.session_manager.create_engine",
+        lambda url, **kwargs: create_engine_calls.append((url, kwargs)) or "engine",
+    )
+    monkeypatch.setattr(
+        "app.repository.database.session_manager.database_exists", lambda url: False
+    )
+    monkeypatch.setattr(
+        "app.repository.database.session_manager.create_database",
+        lambda url: created.append(url),
+    )
+    monkeypatch.setattr(
+        "app.repository.database.session_manager.DatabaseSessionManager._tables_exist",
+        lambda self: False,
+    )
+    monkeypatch.setattr(settings, "DATABASE_URL", "postgresql://db.example/test")
+    monkeypatch.setattr(settings, "DB_AUTO_CREATE", False)
+    monkeypatch.setattr(settings, "TESTING", True)
+
+    DatabaseSessionManager()
+
+    assert create_engine_calls[0][0] == "postgresql://db.example/test"
+    assert created == []
+
+
+def test_session_manager_raises_when_schema_missing_and_auto_create_disabled(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        "app.repository.database.session_manager.create_engine",
+        lambda url, **kwargs: "engine",
+    )
+    monkeypatch.setattr(
+        "app.repository.database.session_manager.database_exists", lambda url: True
+    )
+    monkeypatch.setattr(
+        "app.repository.database.session_manager.DatabaseSessionManager._tables_exist",
+        lambda self: False,
+    )
+    monkeypatch.setattr(settings, "DATABASE_URL", "postgresql://db.example/test")
+    monkeypatch.setattr(settings, "DB_AUTO_CREATE", False)
+    monkeypatch.setattr(settings, "TESTING", False)
+
+    try:
+        DatabaseSessionManager()
+    except RuntimeError as exc:
+        assert "run Alembic migrations before startup" in str(exc)
+    else:
+        raise AssertionError("Expected DatabaseSessionManager to require migrations")
 
 
 def test_session_local_uses_default_db_session_object(monkeypatch):

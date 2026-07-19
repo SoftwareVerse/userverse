@@ -51,10 +51,11 @@ class DatabaseSessionManager:
 
         if url.startswith("sqlite"):
             engine_kwargs["connect_args"] = {"check_same_thread": False}
-            engine_kwargs["poolclass"] = StaticPool
+            if url in {"sqlite://", "sqlite:///:memory:"}:
+                engine_kwargs["poolclass"] = StaticPool
             return create_engine(url, **engine_kwargs)
 
-        if not database_exists(url):
+        if settings.DB_AUTO_CREATE and not database_exists(url):
             create_database(url)
 
         if url.startswith("postgresql"):

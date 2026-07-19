@@ -29,11 +29,15 @@ class UserResponseMessages(str, Enum):
     PASSWORD_RESET_FAILED = "Password reset failed"
     USER_ACCOUNT_VERIFIED = "User account verified successfully"
     VERIFICATION_EMAIL_RESENT = "Verification email resent successfully"
+    VERIFICATION_RATE_LIMITED = (
+        "Too many verification email requests. Please try again later."
+    )
     EMAIL_VERIFICATION_FAILED = "Email verification failed"
     INVALID_VERIFICATION_TOKEN = "Invalid token type for verification"
     ACCOUNT_LOCKED = "Account is locked"
     INVALID_REQUEST_MESSAGE = "Invalid request"
     USER_ACCOUNT_ALREADY_ACTIVE = "User account is already active"
+    USER_ACCOUNT_INACTIVE = "User account is not active"
 
 
 class PasswordResetResponseMessages(str, Enum):

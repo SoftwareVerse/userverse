@@ -56,6 +56,7 @@ def setup_database():
     # Ensure any new DatabaseSessionManager instances use this DB.
     os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
     os.environ["ENV"] = "testing"
+    os.environ["DB_AUTO_CREATE"] = "true"
 
     default_db = DatabaseSessionManager()
     session_manager._default_db = default_db
@@ -199,18 +200,22 @@ def _create_role_if_missing(
 @pytest.fixture
 def get_user_two_otp(test_user_data):
     """Get OTP from user metadata."""
-    user = test_user_data["user_two"]
-    db = DatabaseSessionManager()
-    session = db.session_object()
-    try:
-        user_row = session.query(User).filter_by(email=user["email"].lower()).first()
-        if user_row:
-            return user_row.primary_meta_data.get("password_reset", {}).get(
-                "password_reset_token"
-            )
-        return None
-    finally:
-        session.close()
+
+    def _get_otp():
+        user = test_user_data["user_two"]
+        db = DatabaseSessionManager()
+        session = db.session_object()
+        try:
+            user_row = session.query(User).filter_by(email=user["email"].lower()).first()
+            if user_row:
+                return user_row.primary_meta_data.get("password_reset", {}).get(
+                    "password_reset_token"
+                )
+            return None
+        finally:
+            session.close()
+
+    return _get_otp
 
 
 @pytest.fixture(scope="session")

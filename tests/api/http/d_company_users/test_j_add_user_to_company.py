@@ -45,6 +45,7 @@ def test_add_user_to_company(
     client,
     login_token,
     login_token_user_two,
+    seed_company_roles,
     login_token_key,
     company_id,
     payload,

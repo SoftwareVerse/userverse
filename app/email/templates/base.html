@@ -2,37 +2,43 @@
 <html>
 <head>
     <style>
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 25px;
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7fb;
+            font-family: "Segoe UI", Arial, sans-serif;
         }
 
-        .header img {
-            width: 10%;
-            height: 60px;
+        .email-shell {
+            max-width: 720px;
+            margin: 32px auto;
+            padding: 0 16px;
         }
 
-        .header h1 {
-            flex-grow: 1;
-            text-align: center;
+        .email-card {
+            background-color: #ffffff;
+            border: 1px solid #d9e2ec;
+            border-radius: 18px;
+            padding: 40px 32px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
         }
 
         .button {
-            background-color: rgba(8, 37, 64, 0.90);
-            border: none;
-            color: white;
-            padding: 15px 32px;
+            background: linear-gradient(135deg, #16324f 0%, #244e78 100%);
+            border-radius: 999px;
+            color: #ffffff !important;
+            padding: 14px 28px;
             text-align: center;
             display: inline-block;
             font-size: 16px;
-            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.01em;
             text-decoration: none;
+            box-shadow: 0 8px 20px rgba(22, 50, 79, 0.22);
         }
 
         .button:hover {
-            background-color: rgba(8, 37, 64, 1);
+            background: linear-gradient(135deg, #10263d 0%, #1d4267 100%);
         }
 
         a,
@@ -43,17 +49,94 @@
             color: inherit;
         }
 
-        h1, h3, p {
-            color: #5c5b5f;
+        h2, h3, p {
+            color: #425466;
+            margin-top: 0;
         }
 
         .content {
             text-align: center;
-            padding: 20px;
+            padding: 0;
+        }
+
+        .eyebrow {
+            color: #244e78;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            margin-bottom: 18px;
+            text-transform: uppercase;
+        }
+
+        h3 {
+            color: #2f3a4a;
+            font-size: 36px;
+            margin-bottom: 14px;
+        }
+
+        .body-copy {
+            font-size: 18px;
+            line-height: 1.7;
+            margin-bottom: 18px;
+        }
+
+        .detail-card {
+            background: linear-gradient(180deg, #f8fbff 0%, #f2f7fc 100%);
+            border: 1px solid #d9e7f5;
+            border-radius: 16px;
+            margin: 28px 0 22px;
+            padding: 24px 22px;
+        }
+
+        .detail-label {
+            color: #6b7a8c;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        .otp-code {
+            color: #16324f;
+            font-size: 34px;
+            font-weight: 800;
+            letter-spacing: 0.22em;
+            margin: 0 0 10px;
+        }
+
+        .detail-value {
+            color: #16324f;
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .detail-copy {
+            color: #5a6b7d;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+
+        .button-wrap {
+            margin: 28px 0 22px;
+        }
+
+        .fine-print {
+            color: #6b7a8c;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-top: 26px;
         }
     </style>
 </head>
 <body>
-    {% block content %}{% endblock %}
+    <div class="email-shell">
+        <div class="email-card">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
 </body>
 </html>

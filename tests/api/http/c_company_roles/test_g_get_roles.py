@@ -1,13 +1,14 @@
 import pytest
 from app.models.company.response_messages import CompanyRoleResponseMessages
+from app.utils.app_error import AppError
 
 
 @pytest.mark.parametrize(
     "query_params,expected_names",
     [
-        ("limit=10&page=1", {"Administrator", "Client", "User", "Viewer"}),
+        ("limit=10&page=1", {"Administrator", "Client", "Owner", "User", "Viewer"}),
         ("limit=10&page=1&name=Ad", {"Administrator"}),
-        ("limit=10&page=1&name=er&description=access", {"User", "Viewer"}),
+        ("limit=10&page=1&name=er&description=access", {"Owner", "User", "Viewer"}),
     ],
 )
 def test_get_company_roles(
@@ -91,4 +92,30 @@ def test_get_roles_with_pagination(client, seed_pagination_state):
     pagination = json_data["data"]["pagination"]
     assert pagination["limit"] == 1
     assert pagination["current_page"] == 2
-    assert pagination["total_pages"] == 4
+    assert pagination["total_pages"] == 5
+
+
+def test_get_company_roles_reraises_service_errors(
+    client, seed_pagination_state, monkeypatch: pytest.MonkeyPatch
+):
+    company_id = seed_pagination_state["role_company_id"]
+    headers = {
+        "Authorization": f"Bearer {seed_pagination_state['owner_token']}",
+        "accept": "application/json",
+    }
+
+    def _raise_app_error(*args, **kwargs):
+        raise AppError(status_code=418, message="forced role failure", log_error=False)
+
+    monkeypatch.setattr(
+        "app.api.routers.company.roles.RoleService.get_company_roles",
+        _raise_app_error,
+    )
+
+    response = client.get(
+        f"/company/{company_id}/roles?limit=10&page=1",
+        headers=headers,
+    )
+
+    assert response.status_code == 418
+    assert response.json()["detail"]["message"] == "forced role failure"

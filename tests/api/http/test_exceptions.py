@@ -1,8 +1,15 @@
+from types import SimpleNamespace
+
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
-from app.exceptions import register_exception_handlers
+from app.exceptions import (
+    get_correlation_id,
+    json_error,
+    register_exception_handlers,
+    unwrap_exception,
+)
 from app.models.response_messages import ErrorResponseMessagesModel
 from app.utils.app_error import AppError
 
@@ -127,3 +134,60 @@ def test_unhandled_exception_handler_in_debug_mode(
         "RuntimeError",
         "ValueError",
     ]
+
+
+def test_get_correlation_id_prefers_request_state_then_headers():
+    request_with_state = SimpleNamespace(
+        state=SimpleNamespace(correlation_id="state-cid"),
+        headers={},
+    )
+    assert get_correlation_id(request_with_state) == "state-cid"
+
+    request_with_header = SimpleNamespace(
+        state=SimpleNamespace(),
+        headers={"x-correlation-id": "header-cid", "x-request-id": "req-cid"},
+    )
+    assert get_correlation_id(request_with_header) == "header-cid"
+
+    request_with_request_id = SimpleNamespace(
+        state=SimpleNamespace(),
+        headers={"x-request-id": "req-cid"},
+    )
+    assert get_correlation_id(request_with_request_id) == "req-cid"
+
+
+def test_json_error_promotes_legacy_error_fields():
+    response = json_error(
+        status_code=418,
+        correlation_id="cid-legacy",
+        message="Teapot",
+        extra={"error": "short", "errors": [{"field": "name"}]},
+    )
+
+    body = response.body.decode("utf-8")
+    assert response.status_code == 418
+    assert '"error":"short"' in body
+    assert '"errors":[{"field":"name"}]' in body
+
+
+def test_unwrap_exception_handles_cause_and_cycles():
+    inner = ValueError("inner")
+    outer = RuntimeError("outer")
+    outer.__cause__ = inner
+
+    root, trail = unwrap_exception(outer)
+    assert root is inner
+    assert trail == ["RuntimeError", "ValueError"]
+
+    cycled = RuntimeError("cycle")
+    cycled.__cause__ = cycled
+    root, trail = unwrap_exception(cycled)
+    assert root is cycled
+    assert trail == ["RuntimeError", "RuntimeError(cycle)"]
+
+
+def test_unwrap_exception_handles_exception_groups():
+    group = ExceptionGroup("top", [ValueError("grouped")])
+    root, trail = unwrap_exception(group)
+    assert isinstance(root, ValueError)
+    assert trail == ["ExceptionGroup", "ValueError"]

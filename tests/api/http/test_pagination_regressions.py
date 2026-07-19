@@ -18,14 +18,14 @@ def test_get_company_roles_page_two_is_stable(client, seed_pagination_state):
     assert json_data["message"] == CompanyRoleResponseMessages.ROLE_GET_SUCCESS.value
 
     records = json_data["data"]["records"]
-    assert [role["name"] for role in records] == ["User", "Viewer"]
+    assert [role["name"] for role in records] == ["Owner", "User"]
 
     pagination = json_data["data"]["pagination"]
     assert pagination == {
-        "total_records": 4,
+        "total_records": 5,
         "limit": 2,
         "current_page": 2,
-        "total_pages": 2,
+        "total_pages": 3,
     }
 
 

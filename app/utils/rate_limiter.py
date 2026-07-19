@@ -79,11 +79,37 @@ class PasswordResetRateLimiter:
         self._per_pair.reset()
 
 
+class VerificationEmailRateLimiter:
+    """Composite limiter that enforces multiple verification resend limits."""
+
+    def __init__(self) -> None:
+        self._per_email = SlidingWindowRateLimiter(limit=5, window_seconds=3600)
+        self._per_ip = SlidingWindowRateLimiter(limit=20, window_seconds=3600)
+        self._per_pair = SlidingWindowRateLimiter(limit=5, window_seconds=3600)
+
+    def check(self, *, email: str, ip_address: str | None) -> None:
+        key_email = f"email:{email.lower()}"
+        key_ip = f"ip:{(ip_address or 'unknown')}"
+        key_pair = f"pair:{ip_address or 'unknown'}:{email.lower()}"
+
+        self._per_email.hit(key_email)
+        self._per_ip.hit(key_ip)
+        self._per_pair.hit(key_pair)
+
+    def reset(self) -> None:
+        self._per_email.reset()
+        self._per_ip.reset()
+        self._per_pair.reset()
+
+
 PASSWORD_RESET_RATE_LIMITER = PasswordResetRateLimiter()
+VERIFICATION_EMAIL_RATE_LIMITER = VerificationEmailRateLimiter()
 
 __all__ = [
     "RateLimitExceeded",
     "SlidingWindowRateLimiter",
     "PasswordResetRateLimiter",
+    "VerificationEmailRateLimiter",
     "PASSWORD_RESET_RATE_LIMITER",
+    "VERIFICATION_EMAIL_RATE_LIMITER",
 ]

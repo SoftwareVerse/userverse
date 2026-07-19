@@ -67,8 +67,15 @@ def json_error(
 def unwrap_exception(exc: BaseException) -> Tuple[BaseException, list[str]]:
     trail: list[str] = []
     current: BaseException = exc
+    seen: set[int] = set()
 
     while True:
+        current_id = id(current)
+        if current_id in seen:
+            trail.append(f"{type(current).__name__}(cycle)")
+            break
+        seen.add(current_id)
+
         trail.append(type(current).__name__)
 
         try:

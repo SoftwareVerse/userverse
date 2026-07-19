@@ -37,10 +37,18 @@ class CompanyRepository(BaseSQLRepository[Company]):
         return CompanyReadModel(**data)
 
     def _get_company_record_by_id(self, company_id: int) -> Company | None:
-        return self._base_query().filter(Company.id == company_id).one_or_none()
+        return (
+            self._base_query()
+            .filter(Company.id == company_id, Company._closed_at.is_(None))
+            .one_or_none()
+        )
 
     def _get_company_record_by_email(self, email: str) -> Company | None:
-        return self._base_query().filter(Company.email == email).one_or_none()
+        return (
+            self._base_query()
+            .filter(Company.email == email, Company._closed_at.is_(None))
+            .one_or_none()
+        )
 
     def create_company(
         self, payload: CompanyCreateModel, created_by
@@ -86,7 +94,7 @@ class CompanyRepository(BaseSQLRepository[Company]):
                 (),
                 {
                     "email": created_by.email,
-                    "role": CompanyDefaultRoles.ADMINISTRATOR.name_value,
+                    "role": CompanyDefaultRoles.OWNER.name_value,
                 },
             )(),
             added_by=created_by,
@@ -133,6 +141,16 @@ class CompanyRepository(BaseSQLRepository[Company]):
                 value=payload.address.model_dump(),
             )
         return self._to_read_model(company)
+
+    def delete_company(self, company_id: str) -> None:
+        company = self._get_company_record_by_id(int(company_id))
+        if not company:
+            raise AppError(
+                status_code=status.HTTP_404_NOT_FOUND,
+                message=CompanyResponseMessages.COMPANY_NOT_FOUND.value,
+            )
+
+        self.soft_delete(company)
 
     def get_user_companies(
         self, user_id: int, params: CompanyQueryParamsModel

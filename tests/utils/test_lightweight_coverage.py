@@ -8,10 +8,19 @@ from pydantic import ValidationError
 
 import app.services.mailer as mailer_module
 from app.configs import Settings, _SettingsProxy
+import app.repository.database.session_manager as session_manager
+from app.services.company.user import CompanyUserService
+from app.models.user.response_messages import UserResponseMessages
+from app.models.user.user import UserReadModel
+from app.services.user.basic_auth import UserBasicAuthService
+from app.services.user.verification import UserVerificationService
+from app.utils.app_error import AppError
+from app.utils.shared_context import SharedContext
 from app.models.phone_number import validate_phone_number_format
 from app.models.tags import UserverseApiTag
 from app.models.user.account_status import UserAccountStatus
 from app.models.user.password import OTPValidationRequest, PasswordResetRequest
+from app.models.user.user import UserUpdateModel
 from app.utils.hash_password import UnknownHashError, verify_password
 from app.utils.parsing import normalize_origins
 from app.utils.project_metadata import load_project_defaults
@@ -19,6 +28,7 @@ from app.utils.project_metadata import load_project_defaults
 
 def test_normalize_origins_handles_supported_shapes():
     assert normalize_origins(None) == []
+    assert normalize_origins("   ") == []
     assert normalize_origins([" https://api.example.com ", "", 123]) == [
         "https://api.example.com",
         "123",
@@ -118,10 +128,81 @@ def test_settings_builds_database_urls_for_supported_backends(monkeypatch):
     fallback_settings = Settings(
         ENVIRONMENT="review",
         DB_TYPE="postgresql",
+        JWT_SECRET="review-secret",
         _env_file=None,
     )
     assert fallback_settings.DATABASE_URL == "sqlite:///./review.db"
     assert fallback_settings.PROJECT_ROOT.name == "userverse"
+
+
+def test_settings_defaults_use_safe_db_and_cors_defaults():
+    default_settings = Settings(
+        DB_AUTO_CREATE=False,
+        CORS_ALLOWED=[
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ],
+        JWT_SECRET="development-secret",
+        _env_file=None,
+    )
+
+    assert default_settings.DB_AUTO_CREATE is False
+    assert default_settings.CORS_ALLOWED == [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
+
+def test_settings_normalize_server_url_and_cors_lists(monkeypatch):
+    monkeypatch.setenv("SERVER_URL", "http://localhost:8500/")
+    monkeypatch.setenv("CORS_ALLOWED", '["http://one.test", " http://two.test "]')
+    monkeypatch.setenv("CORS_BLOCKED", '["http://two.test"]')
+
+    normalized = Settings(JWT_SECRET="development-secret", _env_file=None)
+
+    assert normalized.SERVER_URL == "http://localhost:8500"
+    assert normalized.CORS_ALLOWED == ["http://one.test", "http://two.test"]
+    assert normalized.CORS_BLOCKED == ["http://two.test"]
+
+
+def test_settings_rejects_default_jwt_secret_outside_safe_environments(monkeypatch):
+    monkeypatch.delenv("TESTING", raising=False)
+
+    with pytest.raises(
+        ValidationError,
+        match="JWT_SECRET must be explicitly set outside development/testing environments",
+    ):
+        Settings(
+            ENVIRONMENT="production",
+            JWT_SECRET="secret1234",
+            _env_file=None,
+        )
+
+    production_settings = Settings(
+        ENVIRONMENT="production",
+        JWT_SECRET="strong-production-secret",
+        _env_file=None,
+    )
+    assert production_settings.JWT_SECRET == "strong-production-secret"
+
+    development_settings = Settings(
+        ENVIRONMENT="development",
+        JWT_SECRET="secret1234",
+        _env_file=None,
+    )
+    assert development_settings.JWT_SECRET == "secret1234"
+
+    testing_settings = Settings(
+        ENVIRONMENT="production",
+        TESTING=True,
+        JWT_SECRET="secret1234",
+        _env_file=None,
+    )
+    assert testing_settings.JWT_SECRET == "secret1234"
 
 
 def test_settings_proxy_tracks_overrides_and_missing_deletes(monkeypatch):
@@ -141,6 +222,41 @@ def test_settings_proxy_tracks_overrides_and_missing_deletes(monkeypatch):
 
     assert "CUSTOM_VALUE" in dir(proxy)
 
+    object.__setattr__(proxy, "_overrides", {})
+    proxy._overrides = {"ANOTHER": "value"}
+    assert proxy._overrides == {"ANOTHER": "value"}
+
+
+def test_default_db_singleton_is_reused(monkeypatch):
+    fake_manager = object()
+    monkeypatch.setattr(session_manager, "_default_db", None)
+    monkeypatch.setattr(
+        session_manager,
+        "DatabaseSessionManager",
+        lambda: fake_manager,
+    )
+
+    assert session_manager._get_default_db() is fake_manager
+    assert session_manager._get_default_db() is fake_manager
+
+
+def test_build_settings_env_snapshot_reads_current_environment(monkeypatch):
+    monkeypatch.setenv("SERVER_URL", "http://snapshot.test")
+
+    from app.utils.env import build_settings_env_snapshot
+
+    snapshot = dict(build_settings_env_snapshot())
+
+    assert snapshot["SERVER_URL"] == "http://snapshot.test"
+
+
+def test_strip_matching_quotes_removes_matching_wrappers():
+    from app.utils.env import strip_matching_quotes
+
+    assert strip_matching_quotes('"quoted"') == "quoted"
+    assert strip_matching_quotes("'quoted'") == "quoted"
+    assert strip_matching_quotes("plain") == "plain"
+
 
 def test_simple_request_models_and_enums():
     assert PasswordResetRequest(email="user@example.com").email == "user@example.com"
@@ -158,8 +274,13 @@ def test_simple_request_models_and_enums():
 
 
 def test_phone_number_validator_normalizes_and_rejects_invalid_values():
+    assert validate_phone_number_format(None) is None
     assert validate_phone_number_format("+27123456789") == "+27123456789"
     assert validate_phone_number_format("011 222 3333") == "011 222 3333"
+    assert UserUpdateModel(phone_number=None).phone_number is None
+
+    with pytest.raises(ValueError, match="Invalid phone number."):
+        validate_phone_number_format("+27123")
 
     with pytest.raises(ValueError, match="Invalid phone number"):
         validate_phone_number_format("+1")
@@ -198,3 +319,204 @@ def test_mail_service_renders_and_sends_template(monkeypatch):
         html_body="welcome.html:Jane",
         reason="template:welcome.html",
     )
+
+
+def test_verification_service_rejects_missing_email(monkeypatch):
+    monkeypatch.setattr(
+        "app.services.user.verification.JWTManager.decode_verification_token",
+        lambda self, token: {"type": "verification"},
+    )
+
+    with pytest.raises(AppError) as exc_info:
+        UserVerificationService(session=object()).verify_user_account("token")
+
+    assert exc_info.value.status_code == 400
+    assert (
+        exc_info.value.detail["message"]
+        == UserResponseMessages.EMAIL_VERIFICATION_FAILED.value
+    )
+
+
+def test_verification_service_rejects_wrong_type_after_decode(monkeypatch):
+    monkeypatch.setattr(
+        "app.services.user.verification.JWTManager.decode_verification_token",
+        lambda self, token: {"sub": "user@example.com", "type": "refresh"},
+    )
+
+    with pytest.raises(AppError) as exc_info:
+        UserVerificationService(session=object()).verify_user_account("token")
+
+    assert exc_info.value.status_code == 400
+    assert (
+        exc_info.value.detail["message"]
+        == UserResponseMessages.INVALID_VERIFICATION_TOKEN.value
+    )
+
+
+def test_verification_service_rejects_non_pending_accounts(monkeypatch):
+    monkeypatch.setattr(
+        "app.services.user.verification.JWTManager.decode_verification_token",
+        lambda self, token: {"sub": "user@example.com", "type": "verification"},
+    )
+
+    class FakeUserRepository:
+        def __init__(self, session):
+            self.session = session
+
+        def get_user_by_email(self, email):
+            return UserReadModel(
+                id=1,
+                email=email,
+                first_name="Jane",
+                last_name="Doe",
+                phone_number="+27123456789",
+                status=UserAccountStatus.SUSPENDED.name_value,
+                is_superuser=False,
+            )
+
+    monkeypatch.setattr(
+        "app.services.user.verification.UserRepository",
+        FakeUserRepository,
+    )
+
+    with pytest.raises(AppError) as exc_info:
+        UserVerificationService(session=object()).verify_user_account("token")
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail["message"] == "User account is not awaiting verification"
+
+
+def test_send_verification_email_logs_dispatch_failures(monkeypatch):
+    captured_errors = []
+    monkeypatch.setattr(
+        "app.services.user.basic_auth.MailService.send_template_email",
+        lambda **kwargs: (_ for _ in ()).throw(RuntimeError("smtp down")),
+    )
+    monkeypatch.setattr(
+        "app.services.user.basic_auth.logger.error",
+        lambda message, extra: captured_errors.append((message, extra)),
+    )
+
+    user = UserReadModel(
+        id=1,
+        email="user@example.com",
+        first_name="Jane",
+        last_name="Doe",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    context = SharedContext(db_session=object(), user=user)
+
+    UserBasicAuthService(context).send_verification_email()
+
+    assert captured_errors[0][0] == "Verification email dispatch failed"
+    assert captured_errors[0][1]["extra"]["error"] == "smtp down"
+
+
+def test_company_user_service_sends_company_invite(monkeypatch):
+    sent_messages = []
+    monkeypatch.setattr(
+        "app.services.company.user.MailService.send_template_email",
+        lambda **kwargs: sent_messages.append(kwargs),
+    )
+
+    acting_user = UserReadModel(
+        id=99,
+        email="admin@example.com",
+        first_name="Admin",
+        last_name="User",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    added_user = UserReadModel(
+        id=2,
+        email="invitee@example.com",
+        first_name="Invited",
+        last_name="Member",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    added_company_user = type(
+        "AddedCompanyUser",
+        (),
+        {**added_user.model_dump(), "role_name": "Viewer"},
+    )()
+    company = type("Company", (), {"name": "Acme Co"})()
+
+    service = CompanyUserService(SharedContext(db_session=object(), user=acting_user))
+    monkeypatch.setattr(service, "check_if_user_is_in_company", lambda **kwargs: True)
+    monkeypatch.setattr(
+        service.company_user_repository,
+        "is_user_linked_to_company",
+        lambda **kwargs: True,
+    )
+    monkeypatch.setattr(
+        service.company_user_repository,
+        "add_user_to_company",
+        lambda **kwargs: added_company_user,
+    )
+    monkeypatch.setattr(
+        service.company_repository,
+        "get_company_by_id",
+        lambda company_id: company,
+    )
+
+    result = service.add_user_to_company(
+        company_id=1,
+        payload=type("Payload", (), {"email": "invitee@example.com", "role": "Viewer"})(),
+    )
+
+    assert result.email == "invitee@example.com"
+    assert sent_messages == [
+        {
+            "to": "invitee@example.com",
+            "subject": "Userverse Company Invitation",
+            "template_name": "company_invite.html",
+            "context": {
+                "invitee": "Invited Member",
+                "company": "Acme Co",
+                "role": "Viewer",
+                "app_name": "Userverse",
+            },
+        }
+    ]
+
+
+def test_company_user_service_logs_invite_failures(monkeypatch):
+    captured_errors = []
+    monkeypatch.setattr(
+        "app.services.company.user.MailService.send_template_email",
+        lambda **kwargs: (_ for _ in ()).throw(RuntimeError("smtp down")),
+    )
+    monkeypatch.setattr(
+        "app.services.company.user.logger.error",
+        lambda message, extra: captured_errors.append((message, extra)),
+    )
+
+    acting_user = UserReadModel(
+        id=99,
+        email="admin@example.com",
+        first_name="Admin",
+        last_name="User",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    service = CompanyUserService(SharedContext(db_session=object(), user=acting_user))
+
+    service.send_company_invite(
+        invitee_email="invitee@example.com",
+        invitee_name="Invited Member",
+        company_name="Acme Co",
+        role_name="Viewer",
+    )
+
+    assert captured_errors[0][0] == "Company invite dispatch failed"
+    assert captured_errors[0][1]["extra"]["error"] == "smtp down"
+
+
+def test_shared_context_safe_json_returns_scalars_unchanged():
+    assert SharedContext.safe_json("plain") == "plain"
