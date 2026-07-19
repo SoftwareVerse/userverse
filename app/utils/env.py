@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 from typing import Any
 
-
 SETTINGS_ENV_KEYS = (
     "ENVIRONMENT",
     "ENV",

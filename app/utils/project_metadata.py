@@ -22,11 +22,15 @@ def load_project_defaults(project_root: Path) -> dict[str, str | None]:
         return defaults
 
     project_urls = project.get("urls") or {}
-    normalized_urls = {str(key).lower(): str(value) for key, value in project_urls.items()}
+    normalized_urls = {
+        str(key).lower(): str(value) for key, value in project_urls.items()
+    }
     return {
         "name": str(project.get("name") or defaults["name"]),
         "version": str(project.get("version") or defaults["version"]),
         "description": str(project.get("description") or defaults["description"]),
         "repository": normalized_urls.get("repository", defaults["repository"]),
-        "documentation": normalized_urls.get("documentation", defaults["documentation"]),
+        "documentation": normalized_urls.get(
+            "documentation", defaults["documentation"]
+        ),
     }

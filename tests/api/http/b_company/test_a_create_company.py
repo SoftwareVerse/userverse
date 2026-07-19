@@ -59,5 +59,8 @@ def test_c_create_company_one_again_should_fail(client, test_company_data, login
 
     assert response.status_code == 409
     json_data = response.json()
-    assert json_data["detail"]["message"] == CompanyResponseMessages.COMPANY_ALREADY_EXISTS.value
+    assert (
+        json_data["detail"]["message"]
+        == CompanyResponseMessages.COMPANY_ALREADY_EXISTS.value
+    )
     assert json_data["detail"]["code"] == "app_error"

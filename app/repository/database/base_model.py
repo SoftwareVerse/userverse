@@ -122,7 +122,9 @@ class BaseModel(TimestampMixin, Base):
             raise RecordNotFoundError(cls.__name__, record_id) from exc
 
     @classmethod
-    def update_by_filters(cls, session: Session, filters: dict[str, Any], **kwargs) -> dict[str, Any]:
+    def update_by_filters(
+        cls, session: Session, filters: dict[str, Any], **kwargs
+    ) -> dict[str, Any]:
         try:
             record = session.query(cls).filter_by(**filters).one()
             for field, value in kwargs.items():
@@ -131,7 +133,9 @@ class BaseModel(TimestampMixin, Base):
             session.refresh(record)
             return cls.to_dict(record)
         except NoResultFound as exc:
-            raise ValueError(f"{cls.__name__} with filters {filters} not found.") from exc
+            raise ValueError(
+                f"{cls.__name__} with filters {filters} not found."
+            ) from exc
 
     @classmethod
     def delete(cls, session: Session, record_id: Any) -> dict[str, str]:
@@ -145,7 +149,9 @@ class BaseModel(TimestampMixin, Base):
             raise RecordNotFoundError(cls.__name__, record_id) from exc
 
     @classmethod
-    def delete_by_filters(cls, session: Session, filters: dict[str, Any]) -> dict[str, str]:
+    def delete_by_filters(
+        cls, session: Session, filters: dict[str, Any]
+    ) -> dict[str, str]:
         try:
             record = session.query(cls).filter_by(**filters).one()
             record._closed_at = func.now()
@@ -153,10 +159,14 @@ class BaseModel(TimestampMixin, Base):
             session.commit()
             return {"message": f"{cls.__name__} with filters {filters} deleted"}
         except NoResultFound as exc:
-            raise ValueError(f"{cls.__name__} with filters {filters} not found.") from exc
+            raise ValueError(
+                f"{cls.__name__} with filters {filters} not found."
+            ) from exc
 
     @classmethod
-    def bulk_create(cls, session: Session, records: list[dict[str, Any]]) -> dict[str, str]:
+    def bulk_create(
+        cls, session: Session, records: list[dict[str, Any]]
+    ) -> dict[str, str]:
         objects = [cls(**record) for record in records]
         session.bulk_save_objects(objects)
         session.commit()
@@ -224,5 +234,7 @@ def to_dict(obj: Any) -> Any:
     if isinstance(obj, list):
         return [to_dict(item) for item in obj]
     if hasattr(obj, "__table__"):
-        return {column.name: getattr(obj, column.name) for column in obj.__table__.columns}
+        return {
+            column.name: getattr(obj, column.name) for column in obj.__table__.columns
+        }
     return convert_datetime(obj)

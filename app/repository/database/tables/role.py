@@ -30,7 +30,9 @@ class Role(BaseModel):
     )
 
     @classmethod
-    def role_belongs_to_company(cls, session: Session, company_id: int, role_name: str) -> dict:
+    def role_belongs_to_company(
+        cls, session: Session, company_id: int, role_name: str
+    ) -> dict:
         role = (
             session.query(cls)
             .filter_by(company_id=company_id, name=role_name, _closed_at=None)
@@ -77,7 +79,9 @@ class Role(BaseModel):
         key: str,
         value,
     ):
-        role = session.query(cls).filter_by(company_id=company_id, name=name).one_or_none()
+        role = (
+            session.query(cls).filter_by(company_id=company_id, name=name).one_or_none()
+        )
         if not role:
             raise ValueError(
                 f"Role with company_id={company_id} and name='{name}' not found."
@@ -106,13 +110,17 @@ class Role(BaseModel):
             raise ValueError("Cannot replace a role with itself.")
 
         role_to_delete = (
-            session.query(cls).filter_by(company_id=company_id, name=name_to_delete).one_or_none()
+            session.query(cls)
+            .filter_by(company_id=company_id, name=name_to_delete)
+            .one_or_none()
         )
         if not role_to_delete:
             raise ValueError(f"Role '{name_to_delete}' not found.")
 
         replacement_role = (
-            session.query(cls).filter_by(company_id=company_id, name=replacement_name).one_or_none()
+            session.query(cls)
+            .filter_by(company_id=company_id, name=replacement_name)
+            .one_or_none()
         )
         if not replacement_role:
             raise ValueError(f"Replacement role '{replacement_name}' not found.")

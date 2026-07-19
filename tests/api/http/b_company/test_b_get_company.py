@@ -55,7 +55,10 @@ def test_d_get_company_not_found(client, login_token):
 
     assert response.status_code == 404
     json_data = response.json()
-    assert json_data["detail"]["message"] == CompanyResponseMessages.COMPANY_NOT_FOUND.value
+    assert (
+        json_data["detail"]["message"]
+        == CompanyResponseMessages.COMPANY_NOT_FOUND.value
+    )
     assert json_data["detail"]["code"] == "app_error"
 
 

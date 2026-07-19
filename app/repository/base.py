@@ -69,7 +69,9 @@ class BaseSQLRepository(Generic[TModel]):
         self.db_session.refresh(record)
         return record
 
-    def paginate(self, query, *, page: int, limit: int, order_by: list[Any]) -> dict[str, Any]:
+    def paginate(
+        self, query, *, page: int, limit: int, order_by: list[Any]
+    ) -> dict[str, Any]:
         total_records = query.count()
         records = apply_pagination(
             query,

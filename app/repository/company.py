@@ -3,10 +3,19 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from app.models.company.address import CompanyAddressModel
-from app.models.company.company import CompanyCreateModel, CompanyQueryParamsModel, CompanyReadModel, CompanyUpdateModel
+from app.models.company.company import (
+    CompanyCreateModel,
+    CompanyQueryParamsModel,
+    CompanyReadModel,
+    CompanyUpdateModel,
+)
 from app.models.company.response_messages import CompanyResponseMessages
 from app.models.company.roles import CompanyDefaultRoles
-from app.models.generic_pagination import PaginatedResponse, apply_pagination, build_pagination_meta
+from app.models.generic_pagination import (
+    PaginatedResponse,
+    apply_pagination,
+    build_pagination_meta,
+)
 from app.repository.base import BaseSQLRepository
 from app.repository.company_user import CompanyUserRepository
 from app.repository.database.tables import AssociationUserCompany, Company, Role
@@ -33,7 +42,9 @@ class CompanyRepository(BaseSQLRepository[Company]):
     def _get_company_record_by_email(self, email: str) -> Company | None:
         return self._base_query().filter(Company.email == email).one_or_none()
 
-    def create_company(self, payload: CompanyCreateModel, created_by) -> CompanyReadModel:
+    def create_company(
+        self, payload: CompanyCreateModel, created_by
+    ) -> CompanyReadModel:
         existing_company = self._get_company_record_by_email(payload.email)
         if existing_company:
             raise AppError(
@@ -70,7 +81,14 @@ class CompanyRepository(BaseSQLRepository[Company]):
 
         CompanyUserRepository(self.db_session).add_user_to_company(
             company_id=company.id,
-            payload=type("Payload", (), {"email": created_by.email, "role": CompanyDefaultRoles.ADMINISTRATOR.name_value})(),
+            payload=type(
+                "Payload",
+                (),
+                {
+                    "email": created_by.email,
+                    "role": CompanyDefaultRoles.ADMINISTRATOR.name_value,
+                },
+            )(),
             added_by=created_by,
         )
         company = self._get_company_record_by_id(company.id)
@@ -94,7 +112,9 @@ class CompanyRepository(BaseSQLRepository[Company]):
             )
         return self._to_read_model(company)
 
-    def update_company(self, payload: CompanyUpdateModel, company_id: str, user) -> CompanyReadModel:
+    def update_company(
+        self, payload: CompanyUpdateModel, company_id: str, user
+    ) -> CompanyReadModel:
         company = self._get_company_record_by_id(int(company_id))
         if not company:
             raise AppError(
@@ -114,7 +134,9 @@ class CompanyRepository(BaseSQLRepository[Company]):
             )
         return self._to_read_model(company)
 
-    def get_user_companies(self, user_id: int, params: CompanyQueryParamsModel) -> PaginatedResponse[CompanyReadModel]:
+    def get_user_companies(
+        self, user_id: int, params: CompanyQueryParamsModel
+    ) -> PaginatedResponse[CompanyReadModel]:
         query = (
             self.db_session.query(AssociationUserCompany)
             .join(AssociationUserCompany.company)
@@ -125,7 +147,9 @@ class CompanyRepository(BaseSQLRepository[Company]):
             )
         )
         if params.role_name:
-            query = query.filter(AssociationUserCompany.role_name.ilike(f"%{params.role_name}%"))
+            query = query.filter(
+                AssociationUserCompany.role_name.ilike(f"%{params.role_name}%")
+            )
         if params.name:
             query = query.filter(Company.name.ilike(f"%{params.name}%"))
         if params.description:

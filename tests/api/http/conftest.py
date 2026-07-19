@@ -444,17 +444,21 @@ def seed_pagination_state():
 
         session.commit()
         session.refresh(owner_row)
-        owner_token = JWTManager().sign_jwt(
-            UserReadModel(
-                id=owner_row.id,
-                first_name=owner_row.first_name,
-                last_name=owner_row.last_name,
-                email=owner_row.email,
-                phone_number=owner_row.phone_number,
-                status=UserAccountStatus.ACTIVE.name_value,
-                is_superuser=owner_row.is_superuser,
+        owner_token = (
+            JWTManager()
+            .sign_jwt(
+                UserReadModel(
+                    id=owner_row.id,
+                    first_name=owner_row.first_name,
+                    last_name=owner_row.last_name,
+                    email=owner_row.email,
+                    phone_number=owner_row.phone_number,
+                    status=UserAccountStatus.ACTIVE.name_value,
+                    is_superuser=owner_row.is_superuser,
+                )
             )
-        ).access_token
+            .access_token
+        )
 
         return {
             "owner": owner,

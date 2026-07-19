@@ -47,8 +47,7 @@ def test_project_metadata_loads_defaults_for_missing_or_invalid_files(tmp_path: 
 
 def test_project_metadata_loads_project_fields(tmp_path: Path):
     (tmp_path / "pyproject.toml").write_text(
-        dedent(
-            """
+        dedent("""
             [project]
             name = "customverse"
             version = "1.2.3"
@@ -57,8 +56,7 @@ def test_project_metadata_loads_project_fields(tmp_path: Path):
             [project.urls]
             Repository = "https://example.com/repo"
             Documentation = "https://example.com/docs"
-            """
-        ).strip(),
+            """).strip(),
         encoding="utf-8",
     )
 

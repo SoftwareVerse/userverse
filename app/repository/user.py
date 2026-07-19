@@ -15,7 +15,9 @@ class UserRepository(BaseSQLRepository[User]):
     REFRESH_TOKEN_VERSION_KEY = "refresh_token_version"
 
     @staticmethod
-    def _to_read_model(user: User, *, status_override: str | None = None) -> UserReadModel:
+    def _to_read_model(
+        user: User, *, status_override: str | None = None
+    ) -> UserReadModel:
         metadata = user.primary_meta_data or {}
         return UserReadModel(
             id=user.id,
@@ -37,7 +39,9 @@ class UserRepository(BaseSQLRepository[User]):
             ) from exc
         return self._to_read_model(user)
 
-    def get_user_by_email(self, user_email: str, password: str | None = None) -> UserReadModel:
+    def get_user_by_email(
+        self, user_email: str, password: str | None = None
+    ) -> UserReadModel:
         user = self._base_query().filter(User.email == user_email).first()
         if not user:
             raise AppError(
@@ -149,7 +153,11 @@ class UserRepository(BaseSQLRepository[User]):
             key=self.REFRESH_TOKEN_VERSION_KEY,
             value=next_version,
         )
-        return int(updated_user.primary_meta_data.get(self.REFRESH_TOKEN_VERSION_KEY, next_version))
+        return int(
+            updated_user.primary_meta_data.get(
+                self.REFRESH_TOKEN_VERSION_KEY, next_version
+            )
+        )
 
     def delete_user(self, user_id: int):
         raise NotImplementedError("Delete user method not implemented")

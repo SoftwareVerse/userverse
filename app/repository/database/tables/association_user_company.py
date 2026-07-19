@@ -98,7 +98,10 @@ class AssociationUserCompany(BaseModel):
                 status_code=status.HTTP_403_FORBIDDEN,
                 message=CompanyUserResponseMessages.USER_ALREADY_REMOVED.value,
             )
-        if assoc.user_id == removed_by.id and assoc.role_name == CompanyDefaultRoles.ADMINISTRATOR.name_value:
+        if (
+            assoc.user_id == removed_by.id
+            and assoc.role_name == CompanyDefaultRoles.ADMINISTRATOR.name_value
+        ):
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 message=CompanyUserResponseMessages.SUPER_ADMIN_REMOVE_FORBIDDEN.value,

@@ -8,9 +8,7 @@ import pytest
 from app.email.sender import deliver_email, send_email
 
 
-def _runtime_settings(
-    environment: str = "prod", email: dict | None = None
-):
+def _runtime_settings(environment: str = "prod", email: dict | None = None):
     email = email or {}
     return SimpleNamespace(
         ENVIRONMENT=environment,

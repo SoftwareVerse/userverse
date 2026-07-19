@@ -153,9 +153,7 @@ def deliver_email(
     # Decide TLS mode.
     # Prefer configured flags from settings (`email_ssl` / `email_tls`) and keep
     # legacy fallbacks (`use_ssl` / `use_starttls`) for compatibility.
-    use_implicit_ssl = bool(
-        getattr(email_settings, "EMAIL_SSL", False)
-    )
+    use_implicit_ssl = bool(getattr(email_settings, "EMAIL_SSL", False))
     use_starttls = bool(
         getattr(
             email_settings,
@@ -219,7 +217,9 @@ def deliver_email(
                         },
                     )
                     stage = "auth"
-                    smtp.login(email_settings.EMAIL_USERNAME, email_settings.EMAIL_PASSWORD)
+                    smtp.login(
+                        email_settings.EMAIL_USERNAME, email_settings.EMAIL_PASSWORD
+                    )
                     logger.info(
                         "SMTP authenticated",
                         extra={"extra": {"attempt": attempt, "stage": stage}},

@@ -2,10 +2,17 @@ from fastapi import status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.orm.attributes import flag_modified
 
-from app.models.company.response_messages import CompanyResponseMessages, CompanyUserResponseMessages
+from app.models.company.response_messages import (
+    CompanyResponseMessages,
+    CompanyUserResponseMessages,
+)
 from app.models.company.roles import CompanyDefaultRoles
 from app.models.company.user import CompanyUserAddModel, CompanyUserReadModel
-from app.models.generic_pagination import PaginatedResponse, apply_pagination, build_pagination_meta
+from app.models.generic_pagination import (
+    PaginatedResponse,
+    apply_pagination,
+    build_pagination_meta,
+)
 from app.models.user.user import UserQueryParams
 from app.repository.base import BaseSQLRepository
 from app.repository.database.tables import AssociationUserCompany, Role, User
@@ -32,7 +39,9 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
             role_name=role_name,
         )
 
-    def is_user_linked_to_company(self, user_id: int, company_id: int, role_name: str | None = None) -> bool:
+    def is_user_linked_to_company(
+        self, user_id: int, company_id: int, role_name: str | None = None
+    ) -> bool:
         query = self._base_query().filter_by(
             user_id=user_id,
             company_id=company_id,
@@ -42,7 +51,9 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
             query = query.filter_by(role_name=role_name)
         return self.db_session.query(query.exists()).scalar()
 
-    def ensure_user_linked_to_company(self, user_id: int, company_id: int, role_name: str | None = None) -> bool:
+    def ensure_user_linked_to_company(
+        self, user_id: int, company_id: int, role_name: str | None = None
+    ) -> bool:
         linked_company = self.is_user_linked_to_company(user_id, company_id, role_name)
         if not linked_company:
             raise AppError(
@@ -51,7 +62,9 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
             )
         return linked_company
 
-    def add_user_to_company(self, company_id: int, payload: CompanyUserAddModel, added_by) -> CompanyUserReadModel:
+    def add_user_to_company(
+        self, company_id: int, payload: CompanyUserAddModel, added_by
+    ) -> CompanyUserReadModel:
         user = self.db_session.query(User).filter(User.email == payload.email).first()
         if not user:
             raise AppError(
@@ -95,7 +108,9 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         )
         return self._to_company_user(user, assoc.role_name)
 
-    def remove_user_from_company(self, company_id: int, user_id: int, removed_by) -> CompanyUserReadModel:
+    def remove_user_from_company(
+        self, company_id: int, user_id: int, removed_by
+    ) -> CompanyUserReadModel:
         assoc = (
             self._base_query()
             .filter_by(user_id=user_id, company_id=company_id, _closed_at=None)
@@ -107,7 +122,10 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
                 message=CompanyUserResponseMessages.USER_ALREADY_REMOVED.value,
             )
 
-        if assoc.user_id == removed_by.id and assoc.role_name == CompanyDefaultRoles.ADMINISTRATOR.name_value:
+        if (
+            assoc.user_id == removed_by.id
+            and assoc.role_name == CompanyDefaultRoles.ADMINISTRATOR.name_value
+        ):
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 message=CompanyUserResponseMessages.SUPER_ADMIN_REMOVE_FORBIDDEN.value,
@@ -123,7 +141,9 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         user = self.db_session.query(User).filter(User.id == user_id).one()
         return self._to_company_user(user, assoc.role_name)
 
-    def get_company_users(self, company_id: int, params: UserQueryParams) -> PaginatedResponse[CompanyUserReadModel]:
+    def get_company_users(
+        self, company_id: int, params: UserQueryParams
+    ) -> PaginatedResponse[CompanyUserReadModel]:
         query = (
             self.db_session.query(AssociationUserCompany)
             .join(AssociationUserCompany.user)
@@ -135,7 +155,9 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         )
 
         if params.role_name:
-            query = query.filter(AssociationUserCompany.role_name.ilike(f"%{params.role_name}%"))
+            query = query.filter(
+                AssociationUserCompany.role_name.ilike(f"%{params.role_name}%")
+            )
         if params.first_name:
             query = query.filter(User.first_name.ilike(f"%{params.first_name}%"))
         if params.last_name:
@@ -151,7 +173,9 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
             order_by=[User.id.asc()],
         ).all()
 
-        users = [self._to_company_user(assoc.user, assoc.role_name) for assoc in results]
+        users = [
+            self._to_company_user(assoc.user, assoc.role_name) for assoc in results
+        ]
         return PaginatedResponse[CompanyUserReadModel](
             records=users,
             pagination=build_pagination_meta(

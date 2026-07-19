@@ -46,7 +46,9 @@ class UserPasswordRepository(BaseSQLRepository[User]):
         if not created_at:
             return False
 
-        return (datetime.fromisoformat(created_at) + timedelta(hours=1)) > datetime.now(timezone.utc)
+        return (datetime.fromisoformat(created_at) + timedelta(hours=1)) > datetime.now(
+            timezone.utc
+        )
 
     def update_password(self, user_email: str, new_password: str) -> None:
         user = self._get_user(user_email)

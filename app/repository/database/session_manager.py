@@ -79,7 +79,9 @@ class DatabaseSessionManager:
 
     def _tables_exist(self) -> bool:
         inspector = inspect(self.engine)
-        return all(inspector.has_table(table_name) for table_name in self.expected_tables)
+        return all(
+            inspector.has_table(table_name) for table_name in self.expected_tables
+        )
 
     def get_session(self) -> Generator[Session, None, None]:
         db = self.SessionLocal()

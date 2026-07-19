@@ -104,7 +104,9 @@ def test_decode_invalid_token_signature():
 
 
 def test_decode_token_wraps_unexpected_decode_error(monkeypatch):
-    monkeypatch.setattr("app.api.security.jwt.jwt.decode", lambda *args, **kwargs: 1 / 0)
+    monkeypatch.setattr(
+        "app.api.security.jwt.jwt.decode", lambda *args, **kwargs: 1 / 0
+    )
     jwt_manager = JWTManager()
 
     with pytest.raises(AppError) as e:

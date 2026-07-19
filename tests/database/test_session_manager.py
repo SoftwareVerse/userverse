@@ -63,7 +63,9 @@ def test_session_local_uses_default_db_session_object(monkeypatch):
             return fake_session
 
     fake_session = object()
-    monkeypatch.setattr("app.repository.database.session_manager._default_db", FakeManager())
+    monkeypatch.setattr(
+        "app.repository.database.session_manager._default_db", FakeManager()
+    )
 
     from app.repository.database.session_manager import session_local
 

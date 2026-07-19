@@ -125,10 +125,7 @@ def test_get_refresh_token_version_raises_when_user_missing(test_session):
         UserRepository(test_session).get_refresh_token_version(999)
 
     assert exc_info.value.status_code == 404
-    assert (
-        exc_info.value.detail["message"]
-        == UserResponseMessages.USER_NOT_FOUND.value
-    )
+    assert exc_info.value.detail["message"] == UserResponseMessages.USER_NOT_FOUND.value
 
 
 def test_get_refresh_token_version_defaults_to_zero_for_invalid_metadata(
@@ -149,10 +146,10 @@ def test_get_refresh_token_version_defaults_to_zero_for_invalid_metadata(
     assert version == 0
 
 
-def test_increment_refresh_token_version_updates_metadata(
-    test_session, test_user_data
-):
-    user_data = test_user_data["create_user"] | {"email": "refresh-increment@example.com"}
+def test_increment_refresh_token_version_updates_metadata(test_session, test_user_data):
+    user_data = test_user_data["create_user"] | {
+        "email": "refresh-increment@example.com"
+    }
     created_user = User.create(test_session, **user_data)
     repository = UserRepository(test_session)
 
@@ -161,6 +158,5 @@ def test_increment_refresh_token_version_updates_metadata(
     assert version == 1
     updated_user = User.get_by_id(test_session, created_user["id"])
     assert (
-        updated_user["primary_meta_data"][UserRepository.REFRESH_TOKEN_VERSION_KEY]
-        == 1
+        updated_user["primary_meta_data"][UserRepository.REFRESH_TOKEN_VERSION_KEY] == 1
     )

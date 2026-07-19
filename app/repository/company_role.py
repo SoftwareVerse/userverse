@@ -1,7 +1,16 @@
 from fastapi import status
 
-from app.models.company.response_messages import CompanyRoleResponseMessages, CompanyUserResponseMessages
-from app.models.company.roles import RoleCreateModel, RoleDeleteModel, RoleQueryParamsModel, RoleReadModel, RoleUpdateModel
+from app.models.company.response_messages import (
+    CompanyRoleResponseMessages,
+    CompanyUserResponseMessages,
+)
+from app.models.company.roles import (
+    RoleCreateModel,
+    RoleDeleteModel,
+    RoleQueryParamsModel,
+    RoleReadModel,
+    RoleUpdateModel,
+)
 from app.models.user.user import UserReadModel
 from app.repository.base import BaseSQLRepository
 from app.repository.database.tables import Role
@@ -75,7 +84,9 @@ class RoleRepository(BaseSQLRepository[Role]):
 
             replacement_role = self.get_role_record(payload.replacement_role_name)
             if not replacement_role:
-                raise ValueError(f"Replacement role '{payload.replacement_role_name}' not found.")
+                raise ValueError(
+                    f"Replacement role '{payload.replacement_role_name}' not found."
+                )
 
             reassigned_count = 0
             for user_link in role_to_delete.users:
@@ -110,7 +121,9 @@ class RoleRepository(BaseSQLRepository[Role]):
         try:
             role = self.get_role_record(name)
             if not role:
-                raise ValueError(f"Role with company_id={self.company_id} and name='{name}' not found.")
+                raise ValueError(
+                    f"Role with company_id={self.company_id} and name='{name}' not found."
+                )
             if payload.name:
                 role.name = payload.name
             if payload.description is not None:
@@ -125,7 +138,9 @@ class RoleRepository(BaseSQLRepository[Role]):
                 error=str(exc),
             ) from exc
 
-    def create_role(self, payload: RoleCreateModel, created_by: UserReadModel) -> RoleReadModel:
+    def create_role(
+        self, payload: RoleCreateModel, created_by: UserReadModel
+    ) -> RoleReadModel:
         try:
             role = self.create(
                 name=payload.name,
