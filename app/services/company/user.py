@@ -47,6 +47,7 @@ class CompanyUserService:
                     "invitee": invitee_name,
                     "company": company_name,
                     "role": role_name,
+                    "app_name": self.context.configs.APP_NAME,
                 },
             )
         except Exception as exc:  # noqa: BLE001

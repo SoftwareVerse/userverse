@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import BackgroundTasks, status
 
 # models
+from app.configs import settings
 from app.services.mailer import MailService
 from app.models.generic_response import GenericResponseModel
 
@@ -97,8 +98,9 @@ class UserPasswordService:
             if part and part.strip()
         )
         email_context = {
-            "user_name": full_name,
+            "user_name": full_name or session_user.email,
             "otp": token,
+            "app_name": settings.APP_NAME,
         }
         if background_tasks is not None:
             background_tasks.add_task(
