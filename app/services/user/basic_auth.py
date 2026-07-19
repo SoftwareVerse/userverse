@@ -90,9 +90,7 @@ class UserBasicAuthService:
                 message=UserResponseMessages.INVALID_CREDENTIALS.value,
             )
         refresh_token_version = self.user_repository.get_refresh_token_version(user.id)
-        return JWTManager().sign_jwt(
-            user, refresh_token_version=refresh_token_version
-        )
+        return JWTManager().sign_jwt(user, refresh_token_version=refresh_token_version)
 
     def refresh_user_token(self, refresh_token: str) -> TokenResponseModel:
         jwt_manager = JWTManager()

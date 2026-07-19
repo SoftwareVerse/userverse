@@ -113,7 +113,9 @@ def test_c_create_user_two_fail(client, test_user_data):
 
     assert response.status_code == 409
     json_data = response.json()
-    assert json_data["detail"]["message"] == UserResponseMessages.USER_ALREADY_EXISTS.value
+    assert (
+        json_data["detail"]["message"] == UserResponseMessages.USER_ALREADY_EXISTS.value
+    )
     assert json_data["detail"]["code"] == "app_error"
 
 
