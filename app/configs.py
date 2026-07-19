@@ -35,7 +35,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("SERVER_URL"),
     )
     APP_NAME: str = Field(
-        default=_PROJECT_DEFAULTS["name"] or "Userverse",
+        default="Userverse",
         validation_alias=AliasChoices("APP_NAME"),
     )
     APP_DESCRIPTION: str = Field(
