@@ -40,6 +40,7 @@ Documentation = "https://userverse.softwareverse.co.za/docs"
 
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 # Silence DeprecationWarning from passlib importing Python's 'crypt' (Py3.13 removal)
 filterwarnings = [
     "ignore::DeprecationWarning:passlib.utils",

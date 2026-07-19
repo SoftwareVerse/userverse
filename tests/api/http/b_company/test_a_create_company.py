@@ -1,4 +1,3 @@
-import pytest
 from app.models.company.response_messages import CompanyResponseMessages
 
 
@@ -56,5 +55,9 @@ def test_c_create_company_one_again_should_fail(client, test_company_data, login
     }
     headers = {"Authorization": f"Bearer {login_token}"}
 
-    with pytest.raises(ValueError):
-        client.post("/company", json=payload, headers=headers)
+    response = client.post("/company", json=payload, headers=headers)
+
+    assert response.status_code == 409
+    json_data = response.json()
+    assert json_data["detail"]["message"] == CompanyResponseMessages.COMPANY_ALREADY_EXISTS.value
+    assert json_data["detail"]["code"] == "app_error"

@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from app.middleware.otel import setup_otel
+from app.api.middleware.otel import setup_otel
 
 
 def test_setup_otel_instruments_app(monkeypatch):
@@ -16,18 +16,18 @@ def test_setup_otel_instruments_app(monkeypatch):
     span_processor_factory = MagicMock(return_value=span_processor)
     set_tracer_provider = MagicMock()
 
-    monkeypatch.setattr("app.middleware.otel.Resource", resource_factory)
-    monkeypatch.setattr("app.middleware.otel.TracerProvider", tracer_provider_factory)
-    monkeypatch.setattr("app.middleware.otel.OTLPSpanExporter", exporter_factory)
+    monkeypatch.setattr("app.api.middleware.otel.Resource", resource_factory)
+    monkeypatch.setattr("app.api.middleware.otel.TracerProvider", tracer_provider_factory)
+    monkeypatch.setattr("app.api.middleware.otel.OTLPSpanExporter", exporter_factory)
     monkeypatch.setattr(
-        "app.middleware.otel.BatchSpanProcessor", span_processor_factory
+        "app.api.middleware.otel.BatchSpanProcessor", span_processor_factory
     )
     monkeypatch.setattr(
-        "app.middleware.otel.trace.set_tracer_provider", set_tracer_provider
+        "app.api.middleware.otel.trace.set_tracer_provider", set_tracer_provider
     )
-    monkeypatch.setattr("app.middleware.otel.FastAPIInstrumentor", fastapi_instrumentor)
+    monkeypatch.setattr("app.api.middleware.otel.FastAPIInstrumentor", fastapi_instrumentor)
     monkeypatch.setattr(
-        "app.middleware.otel.RequestsInstrumentor",
+        "app.api.middleware.otel.RequestsInstrumentor",
         MagicMock(return_value=requests_instrumentor),
     )
 

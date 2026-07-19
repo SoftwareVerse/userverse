@@ -8,7 +8,7 @@ from app.models.generic_response import GenericResponseModel
 from app.models.tags import UserverseApiTag
 
 # Auth & Logic
-from app.dependencies.common import CommonBasicAuthRouteDependencies
+from app.api.dependencies.common import CommonBasicAuthRouteDependencies
 from app.services.user.password import UserPasswordService
 from app.repository.database.session_manager import get_session
 from sqlalchemy.orm import Session

@@ -16,17 +16,17 @@ from app.repository.database.session_manager import get_engine
 from app.exceptions import register_exception_handlers
 
 # user routers
-from app.middleware.logging import LogMiddleware
-from app.middleware.profiling import ProfilingMiddleware
+from app.api.middleware.logging import LogMiddleware
+from app.api.middleware.profiling import ProfilingMiddleware
 
 # from app.models.tags import UserverseApiTag
-from app.routers.user import (
+from app.api.routers.user import (
     user_basic_auth_routes,
     user_password_routes,
     user_profile_routes,
     user_verification_routes,
 )
-from app.routers.company import (
+from app.api.routers.company import (
     company,
     users,
     roles,

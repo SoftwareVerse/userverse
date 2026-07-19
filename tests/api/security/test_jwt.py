@@ -7,7 +7,7 @@ import jwt
 
 from app.models.user.user import UserReadModel
 from app.models.security_messages import SecurityResponseMessages
-from app.security.jwt import JWTManager, get_current_user_from_jwt_token
+from app.api.security.jwt import JWTManager, get_current_user_from_jwt_token
 from app.utils.app_error import AppError
 
 # Sample user
@@ -104,7 +104,7 @@ def test_decode_invalid_token_signature():
 
 
 def test_decode_token_wraps_unexpected_decode_error(monkeypatch):
-    monkeypatch.setattr("app.security.jwt.jwt.decode", lambda *args, **kwargs: 1 / 0)
+    monkeypatch.setattr("app.api.security.jwt.jwt.decode", lambda *args, **kwargs: 1 / 0)
     jwt_manager = JWTManager()
 
     with pytest.raises(AppError) as e:
@@ -222,7 +222,7 @@ def test_get_current_user_from_jwt_token_rejects_missing_credentials():
 
 def test_get_current_user_from_jwt_token_returns_decoded_user(monkeypatch):
     monkeypatch.setattr(
-        "app.security.jwt.JWTManager.decode_token",
+        "app.api.security.jwt.JWTManager.decode_token",
         lambda self, token: sample_user,
     )
     credentials = HTTPAuthorizationCredentials(
@@ -244,7 +244,7 @@ def test_get_current_user_from_jwt_token_reraises_app_error(monkeypatch):
     def _raise(self, token):
         raise expected_error
 
-    monkeypatch.setattr("app.security.jwt.JWTManager.decode_token", _raise)
+    monkeypatch.setattr("app.api.security.jwt.JWTManager.decode_token", _raise)
     credentials = HTTPAuthorizationCredentials(
         scheme="Bearer", credentials="signed-token"
     )
@@ -259,7 +259,7 @@ def test_get_current_user_from_jwt_token_wraps_unexpected_error(monkeypatch):
     def _raise(self, token):
         raise RuntimeError("decode failed")
 
-    monkeypatch.setattr("app.security.jwt.JWTManager.decode_token", _raise)
+    monkeypatch.setattr("app.api.security.jwt.JWTManager.decode_token", _raise)
     credentials = HTTPAuthorizationCredentials(
         scheme="Bearer", credentials="signed-token"
     )

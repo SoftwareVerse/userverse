@@ -11,7 +11,7 @@ from app.models.app_error import AppErrorResponseModel
 from app.services.user.verification import UserVerificationService
 from app.services.user.basic_auth import UserBasicAuthService
 from app.utils.shared_context import SharedContext
-from app.dependencies.common import CommonJWTRouteDependencies
+from app.api.dependencies.common import CommonJWTRouteDependencies
 from sqlalchemy.orm import Session
 from app.repository.database.session_manager import get_session
 

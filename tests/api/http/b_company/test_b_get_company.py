@@ -1,6 +1,4 @@
-import pytest
 from app.models.company.response_messages import CompanyResponseMessages
-from app.repository.database.base_model import RecordNotFoundError
 
 
 def test_a_get_company_one_by_id_success(client, login_token):
@@ -53,8 +51,12 @@ def test_d_get_company_not_found(client, login_token):
     """Test creating Company One using User One's token"""
     headers = {"Authorization": f"Bearer {login_token}"}
 
-    with pytest.raises(RecordNotFoundError):
-        client.get("/company?company_id=99999", headers=headers)
+    response = client.get("/company?company_id=99999", headers=headers)
+
+    assert response.status_code == 404
+    json_data = response.json()
+    assert json_data["detail"]["message"] == CompanyResponseMessages.COMPANY_NOT_FOUND.value
+    assert json_data["detail"]["code"] == "app_error"
 
 
 def test_e_get_company_without_associated(client, login_token):

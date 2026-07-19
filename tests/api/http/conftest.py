@@ -15,7 +15,7 @@ from app.repository.database.tables import Role
 from app.repository.database.tables import AssociationUserCompany
 from app.models.user.account_status import UserAccountStatus
 from tests.utils.basic_auth import get_basic_auth_header
-from app.security.jwt import JWTManager
+from app.api.security.jwt import JWTManager
 from datetime import timedelta
 
 TEST_DATA_BASE_PATH = "tests/data/http/"

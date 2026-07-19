@@ -12,7 +12,7 @@ from app.models.user.user import (
     UserReadModel,
 )
 from app.repository.user import UserRepository
-from app.security.jwt import JWTManager
+from app.api.security.jwt import JWTManager
 from app.utils.app_error import AppError
 from app.utils.hash_password import hash_password
 from app.utils.logging import logger

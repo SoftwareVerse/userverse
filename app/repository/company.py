@@ -1,4 +1,5 @@
 from fastapi import status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from app.models.company.address import CompanyAddressModel
@@ -33,7 +34,22 @@ class CompanyRepository(BaseSQLRepository[Company]):
         return self._base_query().filter(Company.email == email).one_or_none()
 
     def create_company(self, payload: CompanyCreateModel, created_by) -> CompanyReadModel:
-        company = self.create(**payload.model_dump(exclude={"address"}))
+        existing_company = self._get_company_record_by_email(payload.email)
+        if existing_company:
+            raise AppError(
+                status_code=status.HTTP_409_CONFLICT,
+                message=CompanyResponseMessages.COMPANY_ALREADY_EXISTS.value,
+            )
+
+        try:
+            company = self.create(**payload.model_dump(exclude={"address"}))
+        except IntegrityError as exc:
+            self.db_session.rollback()
+            raise AppError(
+                status_code=status.HTTP_409_CONFLICT,
+                message=CompanyResponseMessages.COMPANY_ALREADY_EXISTS.value,
+            ) from exc
+
         if payload.address:
             company = self.update_json_field(
                 company,
