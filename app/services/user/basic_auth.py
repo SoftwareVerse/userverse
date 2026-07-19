@@ -56,6 +56,7 @@ class UserBasicAuthService:
         template_context = {
             "template_name": self.ACCOUNT_REGISTRATION_SUBJECT,
             "user_name": f"{user.first_name or ''} {user.last_name or ''}",
+            "app_name": self.context.configs.APP_NAME,
             "verification_link": verification_link,
             "mode": mode,
         }

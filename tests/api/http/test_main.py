@@ -1,4 +1,5 @@
 from app.api.middleware.profiling import ProfilingMiddleware
+from app.configs import settings
 from app.main import create_app
 
 
@@ -39,3 +40,33 @@ def test_profiling_middleware_disabled_by_default(monkeypatch):
     assert all(
         middleware.cls is not ProfilingMiddleware for middleware in app.user_middleware
     )
+
+
+def test_create_app_disables_credentials_for_wildcard_cors(monkeypatch):
+    monkeypatch.setattr(settings, "CORS_ALLOWED", ["*"])
+    monkeypatch.setattr(settings, "CORS_BLOCKED", [])
+    app = create_app()
+
+    cors_middleware = next(
+        middleware
+        for middleware in app.user_middleware
+        if middleware.cls.__name__ == "CORSMiddleware"
+    )
+
+    assert cors_middleware.kwargs["allow_origins"] == ["*"]
+    assert cors_middleware.kwargs["allow_credentials"] is False
+
+
+def test_create_app_keeps_credentials_for_explicit_cors_origins(monkeypatch):
+    monkeypatch.setattr(settings, "CORS_ALLOWED", ["http://localhost:3000"])
+    monkeypatch.setattr(settings, "CORS_BLOCKED", [])
+    app = create_app()
+
+    cors_middleware = next(
+        middleware
+        for middleware in app.user_middleware
+        if middleware.cls.__name__ == "CORSMiddleware"
+    )
+
+    assert cors_middleware.kwargs["allow_origins"] == ["http://localhost:3000"]
+    assert cors_middleware.kwargs["allow_credentials"] is True

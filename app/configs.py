@@ -84,7 +84,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("DB_PORT"),
     )
     DB_AUTO_CREATE: bool = Field(
-        default=True,
+        default=False,
         validation_alias=AliasChoices("DB_AUTO_CREATE"),
     )
     DB_ECHO: bool = Field(
@@ -117,7 +117,12 @@ class Settings(BaseSettings):
     )
 
     CORS_ALLOWED: list[str] = Field(
-        default_factory=lambda: ["*"],
+        default_factory=lambda: [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ],
         validation_alias=AliasChoices("CORS_ALLOWED", "COR_ORIGINS__ALLOWED"),
     )
     CORS_BLOCKED: list[str] = Field(

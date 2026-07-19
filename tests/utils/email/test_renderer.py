@@ -9,6 +9,16 @@ from app.email.renderer import render_email_template
             "user_registration.html",
             {"user_name": "Sandile", "verification_link": "123456"},
         ),
+        (
+            "user_notification.html",
+            {
+                "template_name": "User Account Registration",
+                "user_name": "Sandile",
+                "app_name": "Userverse",
+                "verification_link": "123456",
+                "mode": "create",
+            },
+        ),
         ("reset_user_password.html", {"user_name": "Sandile", "otp": "123456"}),
         (
             "company_invite.html",

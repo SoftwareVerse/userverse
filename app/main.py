@@ -51,6 +51,12 @@ def create_app() -> FastAPI:
     origins = [
         origin for origin in cor_origins_allowed if origin not in cor_origins_blocked
     ]
+    allow_credentials = "*" not in origins
+
+    if not allow_credentials:
+        logger.warning(
+            "Wildcard CORS origins disable credentialed cross-origin requests"
+        )
 
     app = FastAPI(
         lifespan=lifespan,
@@ -69,7 +75,7 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
-        allow_credentials=True,
+        allow_credentials=allow_credentials,
         allow_methods=["*"],
         allow_headers=["*"],
     )

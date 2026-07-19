@@ -1,38 +1,36 @@
 import os
 import shutil
 import glob
-import pytest
+
+from fastapi.testclient import TestClient
+
+from app.main import create_app
+from app.configs import settings
 
 
-def test_profiling_enabled(client):
-    # Ensure clean state
+def _clean_profiles_dir():
     if os.path.exists("profiles"):
         shutil.rmtree("profiles")
     os.makedirs("profiles")
 
-    response = client.get("/", headers={"X-Profile": "true"})
+
+def test_profiling_enabled(monkeypatch):
+    monkeypatch.setattr(settings, "ENABLE_PROFILING", True)
+    _clean_profiles_dir()
+
+    with TestClient(create_app()) as client:
+        response = client.get("/", headers={"X-Profile": "true"})
+
     assert response.status_code == 200
-
-    # Check for profile file
-    files = glob.glob("profiles/*.prof")
-    assert len(files) >= 1
-
-    # Cleanup
+    assert len(glob.glob("profiles/*.prof")) >= 1
     shutil.rmtree("profiles")
 
 
 def test_profiling_disabled_by_default(client):
-    # Ensure clean state
-    if os.path.exists("profiles"):
-        shutil.rmtree("profiles")
-    os.makedirs("profiles")
+    _clean_profiles_dir()
 
     response = client.get("/")
     assert response.status_code == 200
 
-    # Check for profile file
-    files = glob.glob("profiles/*.prof")
-    assert len(files) == 0
-
-    # Cleanup
+    assert len(glob.glob("profiles/*.prof")) == 0
     shutil.rmtree("profiles")

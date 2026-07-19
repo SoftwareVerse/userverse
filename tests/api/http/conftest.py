@@ -56,6 +56,7 @@ def setup_database():
     # Ensure any new DatabaseSessionManager instances use this DB.
     os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
     os.environ["ENV"] = "testing"
+    os.environ["DB_AUTO_CREATE"] = "true"
 
     default_db = DatabaseSessionManager()
     session_manager._default_db = default_db
