@@ -14,6 +14,8 @@ from app.repository.database.tables import Company
 from app.repository.database.tables import Role
 from app.repository.database.tables import AssociationUserCompany
 from app.models.user.account_status import UserAccountStatus
+from app.models.company.roles import CompanyDefaultRoles
+from app.models.user.user import UserReadModel
 from tests.utils.basic_auth import get_basic_auth_header
 from app.api.security.jwt import JWTManager
 from datetime import timedelta
@@ -290,7 +292,7 @@ def seed_company_roles(
 
 
 @pytest.fixture(scope="session")
-def seed_pagination_state(client):
+def seed_pagination_state():
     owner = {
         "first_name": "Pagy",
         "last_name": "Owner",
@@ -298,13 +300,6 @@ def seed_pagination_state(client):
         "email": "pagination.owner@email.com",
         "password": "secureOwner",
     }
-    _create_user_if_missing(client, owner)
-    owner_row = _get_user_row(owner["email"])
-    owner_status = (owner_row.primary_meta_data or {}).get("status")
-    if owner_status != UserAccountStatus.ACTIVE.name_value:
-        _verify_user_account(client, owner["email"])
-    owner_token = _login_user(client, owner)
-
     companies = [
         {
             "email": "pagination.company.one@email.com",
@@ -335,33 +330,6 @@ def seed_pagination_state(client):
             "phone_number": "+27167890123",
         },
     ]
-
-    for company in companies:
-        _create_company_if_missing(client, owner_token, company)
-
-    role_company = _get_company_row("pagination.company.one@email.com")
-    users_company = _get_company_row("pagination.company.two@email.com")
-    user_companies = [
-        _get_company_row("pagination.company.one@email.com"),
-        _get_company_row("pagination.company.two@email.com"),
-        _get_company_row("pagination.company.three@email.com"),
-        _get_company_row("pagination.company.four@email.com"),
-    ]
-
-    for role_payload in (
-        {"name": "User", "description": "Standard user role with limited access."},
-        {
-            "name": "Client",
-            "description": "Client role with access to client features.",
-        },
-    ):
-        _create_role_if_missing(
-            client,
-            company_id=role_company.id,
-            token=owner_token,
-            role_payload=role_payload,
-        )
-
     extra_users = [
         {
             "first_name": "Alex",
@@ -386,21 +354,132 @@ def seed_pagination_state(client):
         },
     ]
 
-    for user in extra_users:
-        _create_user_if_missing(client, user)
-        user_row = _get_user_row(user["email"])
-        if not _get_link_row(company_id=users_company.id, user_id=user_row.id):
-            response = client.post(
-                f"/company/{users_company.id}/users",
-                json={"email": user["email"], "role": "Viewer"},
-                headers={"Authorization": f"Bearer {owner_token}"},
+    db = DatabaseSessionManager()
+    session = db.session_object()
+    try:
+        owner_row = session.query(User).filter_by(email=owner["email"]).one_or_none()
+        if owner_row is None:
+            owner_row = User(
+                first_name=owner["first_name"],
+                last_name=owner["last_name"],
+                phone_number=owner["phone_number"],
+                email=owner["email"],
+                password=owner["password"],
+                primary_meta_data={"status": UserAccountStatus.ACTIVE.name_value},
             )
-            assert response.status_code == 201, response.text
+            session.add(owner_row)
+            session.flush()
 
-    return {
-        "owner": owner,
-        "owner_token": owner_token,
-        "role_company_id": role_company.id,
-        "users_company_id": users_company.id,
-        "user_company_ids": [company.id for company in user_companies],
-    }
+        company_rows = []
+        for company in companies:
+            company_row = (
+                session.query(Company).filter_by(email=company["email"]).one_or_none()
+            )
+            if company_row is None:
+                company_row = Company(**company)
+                session.add(company_row)
+                session.flush()
+            company_rows.append(company_row)
+
+            for default_role in CompanyDefaultRoles:
+                if not _role_exists(session, company_row.id, default_role.name_value):
+                    session.add(
+                        Role(
+                            company_id=company_row.id,
+                            name=default_role.name_value,
+                            description=default_role.description,
+                        )
+                    )
+
+            if not _link_exists(session, company_row.id, owner_row.id):
+                session.add(
+                    AssociationUserCompany(
+                        company_id=company_row.id,
+                        user_id=owner_row.id,
+                        role_name=CompanyDefaultRoles.ADMINISTRATOR.name_value,
+                    )
+                )
+
+        session.flush()
+        role_company = company_rows[0]
+        users_company = company_rows[1]
+
+        for role_payload in (
+            {"name": "User", "description": "Standard user role with limited access."},
+            {
+                "name": "Client",
+                "description": "Client role with access to client features.",
+            },
+        ):
+            if not _role_exists(session, role_company.id, role_payload["name"]):
+                session.add(
+                    Role(
+                        company_id=role_company.id,
+                        name=role_payload["name"],
+                        description=role_payload["description"],
+                    )
+                )
+
+        for user in extra_users:
+            user_row = session.query(User).filter_by(email=user["email"]).one_or_none()
+            if user_row is None:
+                user_row = User(
+                    first_name=user["first_name"],
+                    last_name=user["last_name"],
+                    phone_number=user["phone_number"],
+                    email=user["email"],
+                    password=user["password"],
+                    primary_meta_data={"status": UserAccountStatus.ACTIVE.name_value},
+                )
+                session.add(user_row)
+                session.flush()
+            if not _link_exists(session, users_company.id, user_row.id):
+                session.add(
+                    AssociationUserCompany(
+                        company_id=users_company.id,
+                        user_id=user_row.id,
+                        role_name=CompanyDefaultRoles.VIEWER.name_value,
+                    )
+                )
+
+        session.commit()
+        session.refresh(owner_row)
+        owner_token = JWTManager().sign_jwt(
+            UserReadModel(
+                id=owner_row.id,
+                first_name=owner_row.first_name,
+                last_name=owner_row.last_name,
+                email=owner_row.email,
+                phone_number=owner_row.phone_number,
+                status=UserAccountStatus.ACTIVE.name_value,
+                is_superuser=owner_row.is_superuser,
+            )
+        ).access_token
+
+        return {
+            "owner": owner,
+            "owner_token": owner_token,
+            "role_company_id": role_company.id,
+            "users_company_id": users_company.id,
+            "user_company_ids": [company.id for company in company_rows],
+        }
+    finally:
+        session.close()
+
+
+def _role_exists(session, company_id: int, name: str) -> bool:
+    return (
+        session.query(Role)
+        .filter_by(company_id=company_id, name=name, _closed_at=None)
+        .first()
+        is not None
+    )
+
+
+def _link_exists(session, company_id: int, user_id: int) -> bool:
+    return (
+        session.query(AssociationUserCompany)
+        .filter_by(company_id=company_id, user_id=user_id, _closed_at=None)
+        .first()
+        is not None
+    )
