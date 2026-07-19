@@ -1,193 +1,127 @@
-# 📘 Application Configuration Guide
+# Configuration
 
-This guide explains how to manage and load configuration for the **Userverse** backend API. Configuration can be supplied through two sources:
+Userverse configuration is loaded by `app.configs.Settings`, a `pydantic-settings` model. Values can come from process environment variables or a local `.env` file. The app no longer uses a JSON config loader or `[tool.userverse.config]` entries in `pyproject.toml` for runtime configuration.
 
-1. `pyproject.toml` (preferred)
-2. `sample-config.json` (fallback)
+## Core Settings
 
----
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `ENVIRONMENT` or `ENV` | `development` | Runtime environment name. Normalized to lowercase. |
+| `TESTING` | `false` | Enables test-safe behavior such as relaxed DB initialization and skipped SMTP delivery. |
+| `SERVER_URL` | `http://localhost:8500` | Public base URL used for generated links. |
+| `APP_NAME` | project metadata | API title. |
+| `APP_DESCRIPTION` | project metadata | API description. |
+| `APP_VERSION` | project metadata | API version. |
+| `REPOSITORY` | project metadata | Repository URL surfaced by the root endpoint. |
+| `DOCUMENTATION` | project metadata | Documentation URL surfaced by the root endpoint. |
 
-## 🔧 Configuration Loader
+## Database Settings
 
-The app uses a flexible `ConfigLoader` class that allows selecting a configuration source. If no source is specified, it attempts to load from `pyproject.toml`, and falls back to JSON if unavailable.
-
-### ✅ Usage
-
-```python
-from config_loader import ConfigLoader
-
-loader = ConfigLoader(source="toml")  # or "json"
-config = loader.load()
-```
-
----
-
-## 1️⃣ `pyproject.toml` Format (Recommended)
-
-Place your configuration under `[tool.userverse.config]`:
-
-```toml
-[tool.userverse.config]
-environment = "production"
-version = "1.0.0"
-name = "Userverse"
-description = "Userverse backend API"
-
-[tool.userverse.config.database]
-development = "sqlite:///dev.db"
-production = "postgresql://user:pass@host:port/dbname"
-
-[tool.userverse.config.jwt]
-secret_key = "supersecret"
-algorithm = "HS256"
-
-[tool.userverse.config.email]
-smtp_host = "smtp.mailserver.com"
-smtp_port = 587
-username = "no-reply@domain.com"
-password = "emailpassword"
-
-[tool.userverse.config.cor_origins]
-allowed = ["https://yourdomain.com"]
-blocked = ["http://localhost:3000"]
-```
-
----
-
-## 2️⃣ `sample-config.json` Format (Fallback)
-
-A simplified JSON alternative with the same structure:
-
-```json
-{
-  "environment": "development",
-  "version": "1.0.0",
-  "name": "Userverse",
-  "description": "Userverse backend API",
-  "database": {
-    "development": "sqlite:///dev.db",
-    "production": "postgresql://user:pass@host/db"
-  },
-  "jwt": {
-    "secret_key": "supersecret",
-    "algorithm": "HS256"
-  },
-  "email": {
-    "smtp_host": "smtp.mailserver.com",
-    "smtp_port": 587,
-    "username": "no-reply@domain.com",
-    "password": "emailpassword"
-  },
-  "cor_origins": {
-    "allowed": ["https://yourdomain.com"],
-    "blocked": ["http://localhost:3000"]
-  }
-}
-```
-
----
-
-# Userverse Project: Database Setup and Model Integration Guide
-
-## Configure the Database
-
-Ensure that the `sqlalchemy.url` in your `alembic.ini` file is correctly configured to point to your PostgreSQL database. Example:
-
-```ini
-sqlalchemy.url = postgresql://user:password@host:port/database_name
-```
-
-## Applying Database Changes (Migrations)
-
-### 1. Fetch the Latest Changes
-
-Before applying any migrations, make sure you have the latest changes from the repository:
+Prefer `DATABASE_URL` when the full connection string is known:
 
 ```bash
-git pull origin main
+DATABASE_URL=sqlite:///./development.db
 ```
 
-### 2. Apply Migrations
-
-Use Alembic to apply the latest database migrations:
+The app can also build a URL from parts:
 
 ```bash
-alembic upgrade head
+DB_TYPE=postgresql
+DB_USER=userverse
+DB_PASSWORD=change-me
+DB_NAME=userverse
+DB_HOST=localhost
+DB_PORT=5432
 ```
 
-This command will bring your database schema up to date with the latest changes defined in the migration scripts.
+Supported `DB_TYPE` values are:
 
-### 3. Verify the Changes
+| `DB_TYPE` | Generated URL |
+| --- | --- |
+| `sqlite` | `sqlite:///{DB_NAME}` or `sqlite:///{ENVIRONMENT}.db` |
+| `postgres` / `postgresql` | `postgresql+psycopg2://user:password@host:port/name` |
+| `mysql` | `mysql://user:password@host:port/name` |
 
-Connect to your database using a tool like `psql` or pgAdmin and verify that the database schema has been updated as expected.
-
-## Adding New Application Models
-
-### 1. Create the Model File
-
-Create a new Python file (e.g., `app/database/new_model.py`) to define your new SQLAlchemy model.
-
-### 2. Define the Model
-
-Define your model class, inheriting from `BaseModel` (or your base model class):
-
-```python
-from sqlalchemy import Column, Integer, String
-from app.database.base_model import BaseModel
-
-class NewModel(BaseModel):
-    __tablename__ = "new_model"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(255))
-
-    def __repr__(self):
-        return f"<NewModel(name='{self.name}')>"
-```
-
-### 3. Import the Model
-
-Import the new model in your `alembic/env.py` file to ensure Alembic is aware of it:
-
-```python
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-from app.database.base_model import BaseModel
-from app.database.user import User
-from app.database.company import Company
-from app.database.association_user_company import AssociationUserCompany
-from app.database.new_model import NewModel  # Import the new model here
-
-target_metadata = BaseModel.metadata
-```
-
-### 4. Generate a Migration
-
-Generate a new Alembic migration to create the table in the database:
+Additional database controls:
 
 ```bash
-alembic revision --autogenerate -m "Add new_model table"
+DB_AUTO_CREATE=true
+DB_ECHO=false
+DB_POOL_SIZE=5
+DB_MAX_OVERFLOW=10
+DB_POOL_TIMEOUT=30
+DB_POOL_RECYCLE=1800
 ```
 
-### 5. Apply the Migration
+For production databases, prefer Alembic migrations over automatic table creation.
 
-Apply the generated migration to update the database schema:
+## JWT Settings
 
 ```bash
-alembic upgrade head
+JWT_SECRET=change-this-secret
+JWT_ALGORITHM=HS256
+JWT_TIMEOUT=15
+JWT_REFRESH_TIMEOUT=60
 ```
 
-## Best Practices
+`JWT_TIMEOUT` and `JWT_REFRESH_TIMEOUT` are measured in minutes.
 
-- Always create a virtual environment to manage project dependencies.
-- Keep your database connection details secure and avoid committing them to version control.
-- Test migrations in a development environment before applying them to production.
-- Review autogenerated migrations to ensure they accurately reflect the intended changes.
-- Commit your model definitions and migration scripts to version control.
+## Email Settings
 
----
+Email rendering lives in `app/email`, and SMTP delivery is handled by `app.email.sender`.
 
-**By following these steps, you can easily configure your database, apply schema changes, and add new models to the Userverse project.**
+```bash
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=465
+EMAIL_USERNAME=no-reply@example.com
+EMAIL_PASSWORD=change-me
+EMAIL_SSL=true
+EMAIL_TLS=false
+```
+
+In test mode (`TESTING=true` or `ENVIRONMENT=testing`), SMTP delivery is skipped.
+
+## CORS Settings
+
+`CORS_ALLOWED` and `CORS_BLOCKED` accept JSON arrays or comma-separated values:
+
+```bash
+CORS_ALLOWED='["https://app.example.com", "https://admin.example.com"]'
+CORS_BLOCKED='["http://localhost:3000"]'
+```
+
+The application computes allowed origins by removing blocked origins from the allowed list.
+
+## Local `.env` Example
+
+```bash
+ENVIRONMENT=development
+TESTING=false
+SERVER_URL=http://localhost:8500
+DATABASE_URL=sqlite:///./development.db
+DB_AUTO_CREATE=true
+JWT_SECRET=replace-with-a-long-secret
+JWT_ALGORITHM=HS256
+JWT_TIMEOUT=15
+JWT_REFRESH_TIMEOUT=60
+CORS_ALLOWED='["*"]'
+CORS_BLOCKED='["http://localhost:3000"]'
+```
+
+## Migrations
+
+SQLAlchemy table models live in `app/repository/database/tables`. Alembic reads metadata from `app.repository.database.Base`.
+
+Apply migrations:
+
+```bash
+uv run alembic upgrade head
+```
+
+Create a migration:
+
+```bash
+uv run alembic revision --autogenerate -m "describe schema change"
+```
+
+Review autogenerated migrations before applying them to shared environments.
