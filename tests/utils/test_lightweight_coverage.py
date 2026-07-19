@@ -474,6 +474,7 @@ def test_company_user_service_sends_company_invite(monkeypatch):
                 "invitee": "Invited Member",
                 "company": "Acme Co",
                 "role": "Viewer",
+                "app_name": "Userverse",
             },
         }
     ]
