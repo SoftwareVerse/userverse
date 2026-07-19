@@ -14,7 +14,7 @@ from app.models.company.response_messages import (
             "login_token",
             1,
             "limit=10&page=1&role_name=Admin",
-            {"user.one@email.com"},
+            set(),
             200,
         ),
         (

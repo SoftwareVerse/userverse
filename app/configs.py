@@ -111,6 +111,12 @@ class Settings(BaseSettings):
         default=False,
         validation_alias=AliasChoices("TESTING"),
     )
+    REQUIRE_EMAIL_VERIFICATION: bool = Field(
+        default=False,
+        validation_alias=AliasChoices(
+            "REQUIRE_EMAIL_VERIFICATION", "ENFORCE_EMAIL_VERIFICATION"
+        ),
+    )
     ENABLE_PROFILING: bool = Field(
         default=False,
         validation_alias=AliasChoices("ENABLE_PROFILING"),

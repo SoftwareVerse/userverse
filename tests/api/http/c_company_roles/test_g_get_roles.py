@@ -5,9 +5,9 @@ from app.models.company.response_messages import CompanyRoleResponseMessages
 @pytest.mark.parametrize(
     "query_params,expected_names",
     [
-        ("limit=10&page=1", {"Administrator", "Client", "User", "Viewer"}),
+        ("limit=10&page=1", {"Administrator", "Client", "Owner", "User", "Viewer"}),
         ("limit=10&page=1&name=Ad", {"Administrator"}),
-        ("limit=10&page=1&name=er&description=access", {"User", "Viewer"}),
+        ("limit=10&page=1&name=er&description=access", {"Owner", "User", "Viewer"}),
     ],
 )
 def test_get_company_roles(
@@ -91,4 +91,4 @@ def test_get_roles_with_pagination(client, seed_pagination_state):
     pagination = json_data["data"]["pagination"]
     assert pagination["limit"] == 1
     assert pagination["current_page"] == 2
-    assert pagination["total_pages"] == 4
+    assert pagination["total_pages"] == 5

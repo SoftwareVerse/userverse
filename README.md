@@ -66,22 +66,33 @@ ENVIRONMENT=development
 TESTING=false
 SERVER_URL=http://localhost:8500
 DATABASE_URL=sqlite:///./development.db
-DB_AUTO_CREATE=true
+DB_AUTO_CREATE=false
 JWT_SECRET=change-this-secret
 JWT_ALGORITHM=HS256
 JWT_TIMEOUT=15
 JWT_REFRESH_TIMEOUT=60
+REQUIRE_EMAIL_VERIFICATION=true
 EMAIL_HOST=smtp.example.com
 EMAIL_PORT=465
 EMAIL_USERNAME=no-reply@example.com
 EMAIL_PASSWORD=change-me
 EMAIL_SSL=true
 EMAIL_TLS=false
-CORS_ALLOWED='["*"]'
+CORS_ALLOWED='["http://localhost:3000","http://127.0.0.1:3000","http://localhost:5173","http://127.0.0.1:5173"]'
 CORS_BLOCKED='["http://localhost:3000"]'
 ```
 
 See [docs/configuration.md](docs/configuration.md) for the full configuration guide.
+
+If `REQUIRE_EMAIL_VERIFICATION=true`, users must verify their email before login and JWT-protected API access. Verification resends are handled through an unauthenticated, rate-limited email-only endpoint:
+
+```bash
+curl -X POST \
+  'http://127.0.0.1:8000/userverse/user/resend-verification' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@example.com"}'
+```
 
 ## Running the API
 
@@ -94,7 +105,7 @@ uv sync
 Run the API with the project CLI:
 
 ```bash
-uv run -m app.main --env development --host 0.0.0.0 --port 8500 --reload
+uv run -m app.main --host 0.0.0.0 --port 8500 --reload
 ```
 
 Run Uvicorn directly in factory mode:

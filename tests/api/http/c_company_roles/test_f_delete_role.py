@@ -4,7 +4,7 @@ from app.models.company.response_messages import (
 )
 
 
-def test_a_delete_role_success(client, login_token, test_company_data):
+def test_a_delete_role_success(client, login_token, test_company_data, seed_company_roles):
     """
     Test deleting a role successfully and reassigning users.
     """
@@ -34,7 +34,7 @@ def test_a_delete_role_success(client, login_token, test_company_data):
     assert isinstance(json_data["data"]["users_reassigned"], int)
 
 
-def test_b_delete_default_role_forbidden(client, login_token):
+def test_b_delete_default_role_forbidden(client, login_token, seed_company_roles):
     """
     Test attempting to delete a default system role like 'Administrator'.
     """
@@ -64,7 +64,7 @@ def test_b_delete_default_role_forbidden(client, login_token):
     )
 
 
-def test_c_delete_role_not_found(client, login_token):
+def test_c_delete_role_not_found(client, login_token, seed_company_roles):
     """
     Test deleting a role that does not exist.
     """
@@ -95,7 +95,7 @@ def test_c_delete_role_not_found(client, login_token):
     )
 
 
-def test_d_delete_role_self_replacement_forbidden(client, login_token):
+def test_d_delete_role_self_replacement_forbidden(client, login_token, seed_company_roles):
     """
     Test rejecting deletion where role is being replaced with itself.
     """

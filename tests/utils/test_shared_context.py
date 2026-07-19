@@ -37,6 +37,17 @@ def test_shared_context_enforces_active_status():
     )
 
 
+def test_shared_context_allows_awaiting_verification_when_verification_not_required():
+    context = SharedContext(
+        db_session=object(),
+        user=_build_user(status=UserAccountStatus.AWAITING_VERIFICATION.name_value),
+        configs=type("Config", (), {"REQUIRE_EMAIL_VERIFICATION": False})(),
+        enforce_status_check=True,
+    )
+
+    assert context.user.status == UserAccountStatus.AWAITING_VERIFICATION.name_value
+
+
 def test_shared_context_user_helpers_and_log_context():
     context = SharedContext(db_session=object(), user=_build_user())
 

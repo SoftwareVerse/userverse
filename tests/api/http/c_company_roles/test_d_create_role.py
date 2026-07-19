@@ -9,7 +9,9 @@ from app.models.company.response_messages import (
 )
 
 
-def test_a_create_company_one_roles_success(client, login_token, test_company_data):
+def test_a_create_company_one_roles_success(
+    client, login_token, test_company_data, seed_companies
+):
     """
     Test creating roles for a company successfully.
     """
@@ -33,7 +35,7 @@ def test_a_create_company_one_roles_success(client, login_token, test_company_da
 
 
 def test_a_create_company_two_roles_success(
-    client, login_token_user_two, test_company_data
+    client, login_token_user_two, test_company_data, seed_companies
 ):
     """
     Test creating roles for a company successfully.
@@ -58,7 +60,7 @@ def test_a_create_company_two_roles_success(
 
 
 def test_b_create_company_roles_failure(
-    client, login_token_user_two, test_company_data
+    client, login_token_user_two, test_company_data, seed_companies
 ):
     """
     Test creating roles for a company failure. When the user is not authorized to create roles.
@@ -80,7 +82,7 @@ def test_b_create_company_roles_failure(
 
 
 def test_c_create_company_roles_failure(
-    client, login_token_user_two, test_company_data
+    client, login_token_user_two, test_company_data, seed_companies
 ):
     """
     Test creating roles for a company failure. When the roles already exist

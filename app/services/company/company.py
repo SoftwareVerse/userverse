@@ -74,11 +74,22 @@ class CompanyService:
         """
         Update a company by its ID.
         """
-        self.company_user_service.check_if_user_is_in_company(
-            user_id=self.context.user.id,
-            company_id=company_id,
-            role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
-        )
+        if not (
+            self.company_user_service.company_user_repository.is_user_linked_to_company(
+                user_id=self.context.user.id,
+                company_id=company_id,
+                role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
+            )
+            or self.company_user_service.company_user_repository.is_user_linked_to_company(
+                user_id=self.context.user.id,
+                company_id=company_id,
+                role=CompanyDefaultRoles.OWNER.name_value,
+            )
+        ):
+            raise AppError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                message=CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value,
+            )
 
         company = self.company_repository.update_company(
             payload, company_id, self.context.user

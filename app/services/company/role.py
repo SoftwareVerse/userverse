@@ -27,17 +27,32 @@ class RoleService:
     def __init__(self, context: SharedContext):
         self.context = context
 
+    def _ensure_company_manager(self, company_id: int) -> None:
+        company_user_service = CompanyUserService(self.context)
+        if not (
+            company_user_service.company_user_repository.is_user_linked_to_company(
+                user_id=self.context.user.id,
+                company_id=company_id,
+                role_name=CompanyDefaultRoles.ADMINISTRATOR.name_value,
+            )
+            or company_user_service.company_user_repository.is_user_linked_to_company(
+                user_id=self.context.user.id,
+                company_id=company_id,
+                role_name=CompanyDefaultRoles.OWNER.name_value,
+            )
+        ):
+            raise AppError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                message="Access denied. You are not authorized to access this company.",
+            )
+
     def update_role(
         self, company_id: int, name: str, payload: RoleUpdateModel
     ) -> RoleReadModel:
         """
         Update the description or name of a role for a company.
         """
-        CompanyUserService(self.context).check_if_user_is_in_company(
-            user_id=self.context.user.id,
-            company_id=company_id,
-            role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
-        )
+        self._ensure_company_manager(company_id)
         role_repository = RoleRepository(
             company_id=company_id, session=self.context.db_session
         )
@@ -56,11 +71,7 @@ class RoleService:
         """
         Create a new company role and store its creator in primary_meta_data.
         """
-        CompanyUserService(self.context).check_if_user_is_in_company(
-            user_id=self.context.user.id,
-            company_id=company_id,
-            role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
-        )
+        self._ensure_company_manager(company_id)
         role_repository = RoleRepository(
             company_id=company_id, session=self.context.db_session
         )
@@ -73,11 +84,7 @@ class RoleService:
         return role
 
     def delete_role(self, payload: RoleDeleteModel, company_id: int) -> dict:
-        CompanyUserService(self.context).check_if_user_is_in_company(
-            user_id=self.context.user.id,
-            company_id=company_id,
-            role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
-        )
+        self._ensure_company_manager(company_id)
         role_repository = RoleRepository(
             company_id=company_id, session=self.context.db_session
         )
@@ -91,11 +98,7 @@ class RoleService:
         """
         Get company roles with pagination and optional filtering.
         """
-        CompanyUserService(self.context).check_if_user_is_in_company(
-            user_id=self.context.user.id,
-            company_id=company_id,
-            role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
-        )
+        self._ensure_company_manager(company_id)
         role_repository = RoleRepository(
             company_id=company_id, session=self.context.db_session
         )

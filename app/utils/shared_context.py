@@ -30,7 +30,11 @@ class SharedContext:
             self._check_user_status()
 
     def _check_user_status(self):
-        if self.user.status != UserAccountStatus.ACTIVE.name_value:
+        allowed_statuses = {UserAccountStatus.ACTIVE.name_value}
+        if not self.configs.REQUIRE_EMAIL_VERIFICATION:
+            allowed_statuses.add(UserAccountStatus.AWAITING_VERIFICATION.name_value)
+
+        if self.user.status not in allowed_statuses:
             raise AppError(
                 status_code=403,
                 message=UserResponseMessages.USER_ACCOUNT_INACTIVE.value,

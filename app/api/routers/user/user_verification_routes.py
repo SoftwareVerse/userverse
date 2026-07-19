@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 from fastapi.responses import JSONResponse
 
 # Tags & Models
@@ -6,14 +6,13 @@ from app.models.tags import UserverseApiTag
 from app.models.user.response_messages import UserResponseMessages
 from app.models.generic_response import GenericResponseModel
 from app.models.app_error import AppErrorResponseModel
+from app.models.user.password import PasswordResetRequest
 
 # Logic
 from app.services.user.verification import UserVerificationService
-from app.services.user.basic_auth import UserBasicAuthService
-from app.utils.shared_context import SharedContext
-from app.api.dependencies.common import CommonJWTRouteDependencies
 from sqlalchemy.orm import Session
 from app.repository.database.session_manager import get_session
+from app.configs import settings
 
 router = APIRouter(
     prefix="/user",
@@ -50,22 +49,26 @@ def verify_user_account(token: str, session: Session = Depends(get_session)):
     response_model=GenericResponseModel[None],
 )
 def resend_verification_email(
+    payload: PasswordResetRequest,
+    request: Request,
     background_tasks: BackgroundTasks,
-    common: CommonJWTRouteDependencies = Depends(),
+    session: Session = Depends(get_session),
 ):
     """
     Resend verification email to the user.
-    - **Requires**: JWT token for authentication
+    - **Requires**: Email address in the request body
     - **Returns**: Success message on email resend
     """
-    service = UserBasicAuthService(
-        SharedContext(user=common.user, db_session=common.session)
+    service = UserVerificationService(session)
+    response = service.resend_verification_email(
+        user_email=payload.email,
+        server_url=settings.SERVER_URL,
+        app_name=settings.APP_NAME,
+        verification_required=settings.REQUIRE_EMAIL_VERIFICATION,
+        client_ip=request.client.host if request.client else None,
+        background_tasks=background_tasks,
     )
-    service.send_verification_email(mode="verify", background_tasks=background_tasks)
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content=GenericResponseModel(
-            message=UserResponseMessages.VERIFICATION_EMAIL_RESENT.value,
-            data=None,
-        ).model_dump(),
+        content=response.model_dump(),
     )

@@ -13,6 +13,7 @@ The script sets:
 ```bash
 ENVIRONMENT=testing
 TESTING=true
+REQUIRE_EMAIL_VERIFICATION=true
 ```
 
 It then runs:
@@ -41,3 +42,19 @@ uv run --no-cache pytest tests/utils
 ```
 
 The HTTP suite uses a test SQLite database and patches email dispatch so tests do not perform network SMTP calls.
+
+If you want to exercise the non-verification flow locally, run tests or manual API checks with:
+
+```bash
+REQUIRE_EMAIL_VERIFICATION=false
+```
+
+The resend-verification endpoint is now unauthenticated and rate-limited, so local manual checks should use a JSON body rather than a bearer token:
+
+```bash
+curl -X POST \
+  'http://127.0.0.1:8000/userverse/user/resend-verification' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@example.com"}'
+```

@@ -17,6 +17,13 @@ from app.utils.app_error import AppError
 http_bearer = HTTPBearer()
 
 
+def _status_allowed_for_authenticated_access(user_status: str | None) -> bool:
+    allowed_statuses = {UserAccountStatus.ACTIVE.name_value}
+    if not settings.REQUIRE_EMAIL_VERIFICATION:
+        allowed_statuses.add(UserAccountStatus.AWAITING_VERIFICATION.name_value)
+    return user_status in allowed_statuses
+
+
 class JWTManager:
     """
     JWT Manager for handling JWT operations like signing, decoding, and refreshing tokens.
@@ -197,7 +204,7 @@ async def get_current_user_from_jwt_token(
     try:
         token_user = JWTManager().decode_token(authorization)
         current_user = UserRepository(session).get_user_by_id(token_user.id)
-        if current_user.status != UserAccountStatus.ACTIVE.name_value:
+        if not _status_allowed_for_authenticated_access(current_user.status):
             raise AppError(
                 status_code=status.HTTP_403_FORBIDDEN,
                 message=UserResponseMessages.USER_ACCOUNT_INACTIVE.value,

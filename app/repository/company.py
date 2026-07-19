@@ -37,10 +37,18 @@ class CompanyRepository(BaseSQLRepository[Company]):
         return CompanyReadModel(**data)
 
     def _get_company_record_by_id(self, company_id: int) -> Company | None:
-        return self._base_query().filter(Company.id == company_id).one_or_none()
+        return (
+            self._base_query()
+            .filter(Company.id == company_id, Company._closed_at.is_(None))
+            .one_or_none()
+        )
 
     def _get_company_record_by_email(self, email: str) -> Company | None:
-        return self._base_query().filter(Company.email == email).one_or_none()
+        return (
+            self._base_query()
+            .filter(Company.email == email, Company._closed_at.is_(None))
+            .one_or_none()
+        )
 
     def create_company(
         self, payload: CompanyCreateModel, created_by

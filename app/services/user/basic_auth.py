@@ -22,6 +22,7 @@ from app.utils.shared_context import SharedContext
 
 class UserBasicAuthService:
     ACCOUNT_REGISTRATION_SUBJECT = "User Account Registration"
+    VERIFICATION_REMINDER_SUBJECT = "Verify Your Email Address"
     ACCOUNT_NOTIFICATION_TEMPLATE = "user_notification.html"
     VERIFICATION_TOKEN_EXPIRY_MINUTES = 60 * 24
 
@@ -29,13 +30,25 @@ class UserBasicAuthService:
         self.context = context
         self.user_repository = UserRepository(context.db_session)
 
-    @staticmethod
-    def _ensure_user_is_active(user: UserReadModel) -> None:
-        if user.status != UserAccountStatus.ACTIVE.name_value:
+    def _ensure_user_is_active(self, user: UserReadModel) -> None:
+        allowed_statuses = {UserAccountStatus.ACTIVE.name_value}
+        if not self.context.configs.REQUIRE_EMAIL_VERIFICATION:
+            allowed_statuses.add(UserAccountStatus.AWAITING_VERIFICATION.name_value)
+
+        if user.status not in allowed_statuses:
             raise AppError(
                 status_code=403,
                 message=UserResponseMessages.USER_ACCOUNT_INACTIVE.value,
             )
+
+    def _resend_verification_email_for_pending_login(self, user: UserReadModel) -> None:
+        if not self.context.configs.REQUIRE_EMAIL_VERIFICATION:
+            return
+        if user.status != UserAccountStatus.AWAITING_VERIFICATION.name_value:
+            return
+
+        self.context.user = user
+        self.send_verification_email(mode="verify")
 
     def generate_verification_link(self) -> str:
         token = JWTManager().sign_payload(
@@ -53,8 +66,13 @@ class UserBasicAuthService:
     ) -> None:
         user = self.context.get_user()
         verification_link = self.generate_verification_link()
+        subject = (
+            self.ACCOUNT_REGISTRATION_SUBJECT
+            if mode == "create"
+            else self.VERIFICATION_REMINDER_SUBJECT
+        )
         template_context = {
-            "template_name": self.ACCOUNT_REGISTRATION_SUBJECT,
+            "template_name": subject,
             "user_name": f"{user.first_name or ''} {user.last_name or ''}",
             "app_name": self.context.configs.APP_NAME,
             "verification_link": verification_link,
@@ -65,7 +83,7 @@ class UserBasicAuthService:
             background_tasks.add_task(
                 MailService.send_template_email,
                 to=user.email,
-                subject=self.ACCOUNT_REGISTRATION_SUBJECT,
+                subject=subject,
                 template_name=self.ACCOUNT_NOTIFICATION_TEMPLATE,
                 context=template_context,
             )
@@ -74,7 +92,7 @@ class UserBasicAuthService:
         try:
             MailService.send_template_email(
                 to=user.email,
-                subject=self.ACCOUNT_REGISTRATION_SUBJECT,
+                subject=subject,
                 template_name=self.ACCOUNT_NOTIFICATION_TEMPLATE,
                 context=template_context,
             )
@@ -94,6 +112,7 @@ class UserBasicAuthService:
         user = self.user_repository.get_user_by_email(
             user_credentials.email, user_credentials.password
         )
+        self._resend_verification_email_for_pending_login(user)
         self._ensure_user_is_active(user)
         refresh_token_version = self.user_repository.get_refresh_token_version(user.id)
         return JWTManager().sign_jwt(user, refresh_token_version=refresh_token_version)
@@ -124,6 +143,11 @@ class UserBasicAuthService:
         *,
         background_tasks: Optional[BackgroundTasks] = None,
     ) -> UserReadModel:
+        account_status = (
+            UserAccountStatus.AWAITING_VERIFICATION.name_value
+            if self.context.configs.REQUIRE_EMAIL_VERIFICATION
+            else UserAccountStatus.ACTIVE.name_value
+        )
         data = {
             "first_name": user_data.first_name,
             "last_name": user_data.last_name,
@@ -131,7 +155,8 @@ class UserBasicAuthService:
             "phone_number": user_data.phone_number,
             "password": hash_password(user_credentials.password),
         }
-        user = self.user_repository.create_user(data)
+        user = self.user_repository.create_user(data, account_status=account_status)
         self.context.user = user
-        self.send_verification_email(mode="create", background_tasks=background_tasks)
+        if self.context.configs.REQUIRE_EMAIL_VERIFICATION:
+            self.send_verification_email(mode="create", background_tasks=background_tasks)
         return user

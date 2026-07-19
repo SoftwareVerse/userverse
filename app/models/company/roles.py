@@ -7,6 +7,7 @@ from app.models.generic_pagination import PaginationParams
 
 
 class CompanyDefaultRoles(str, Enum):
+    OWNER = "Owner: Full access to manage users and data"
     ADMINISTRATOR = "Administrator: Full access to manage users and data"
     VIEWER = "Viewer: Read-only access to company data"
 

@@ -445,6 +445,11 @@ def test_company_user_service_sends_company_invite(monkeypatch):
     monkeypatch.setattr(service, "check_if_user_is_in_company", lambda **kwargs: True)
     monkeypatch.setattr(
         service.company_user_repository,
+        "is_user_linked_to_company",
+        lambda **kwargs: True,
+    )
+    monkeypatch.setattr(
+        service.company_user_repository,
         "add_user_to_company",
         lambda **kwargs: added_company_user,
     )
@@ -463,7 +468,7 @@ def test_company_user_service_sends_company_invite(monkeypatch):
     assert sent_messages == [
         {
             "to": "invitee@example.com",
-            "subject": "userverse Company Invitation",
+            "subject": "Userverse Company Invitation",
             "template_name": "company_invite.html",
             "context": {
                 "invitee": "Invited Member",

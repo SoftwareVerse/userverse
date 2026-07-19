@@ -4,7 +4,9 @@ from app.models.company.response_messages import (
 )
 
 
-def test_a_update_role_description_success(client, login_token, test_company_data):
+def test_a_update_role_description_success(
+    client, login_token, test_company_data, seed_company_roles
+):
     """
     Test updating a role's description successfully.
     """
@@ -29,7 +31,9 @@ def test_a_update_role_description_success(client, login_token, test_company_dat
         assert json_data["data"]["description"] == data["description"]
 
 
-def test_b_update_role_description_forbidden(client, login_token_user_two):
+def test_b_update_role_description_forbidden(
+    client, login_token_user_two, seed_company_roles
+):
     """
     Test updating a role's description fails if not admin.
     """
@@ -49,7 +53,9 @@ def test_b_update_role_description_forbidden(client, login_token_user_two):
     )
 
 
-def test_c_update_role_description_not_found(client, login_token):
+def test_c_update_role_description_not_found(
+    client, login_token, seed_company_roles
+):
     """
     Test updating a role that does not exist
     """

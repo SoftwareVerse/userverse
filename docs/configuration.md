@@ -14,6 +14,7 @@ Userverse configuration is loaded by `app.configs.Settings`, a `pydantic-setting
 | `APP_VERSION` | project metadata | API version. |
 | `REPOSITORY` | project metadata | Repository URL surfaced by the root endpoint. |
 | `DOCUMENTATION` | project metadata | Documentation URL surfaced by the root endpoint. |
+| `REQUIRE_EMAIL_VERIFICATION` | `true` | Controls whether users must verify email before login and protected API access. |
 
 ## Database Settings
 
@@ -45,15 +46,16 @@ Supported `DB_TYPE` values are:
 Additional database controls:
 
 ```bash
-DB_AUTO_CREATE=true
+DB_AUTO_CREATE=false
 DB_ECHO=false
 DB_POOL_SIZE=5
 DB_MAX_OVERFLOW=10
 DB_POOL_TIMEOUT=30
 DB_POOL_RECYCLE=1800
+REQUIRE_EMAIL_VERIFICATION=true
 ```
 
-For production databases, prefer Alembic migrations over automatic table creation.
+For production databases, prefer Alembic migrations over automatic table creation. `DB_AUTO_CREATE` should generally be enabled only for local development or disposable test databases.
 
 ## JWT Settings
 
@@ -65,6 +67,24 @@ JWT_REFRESH_TIMEOUT=60
 ```
 
 `JWT_TIMEOUT` and `JWT_REFRESH_TIMEOUT` are measured in minutes.
+
+## Verification Settings
+
+```bash
+REQUIRE_EMAIL_VERIFICATION=true
+```
+
+When `REQUIRE_EMAIL_VERIFICATION=true`:
+
+- New users are created with `Awaiting Verification` status.
+- Unverified users cannot log in.
+- JWT-protected routes reject unverified users.
+
+When `REQUIRE_EMAIL_VERIFICATION=false`:
+
+- New users are created as `Active`.
+- Unverified users are not blocked from login or protected routes.
+- Verification resend requests still return success, but no email is sent.
 
 ## Email Settings
 
@@ -90,7 +110,7 @@ CORS_ALLOWED='["https://app.example.com", "https://admin.example.com"]'
 CORS_BLOCKED='["http://localhost:3000"]'
 ```
 
-The application computes allowed origins by removing blocked origins from the allowed list.
+The application computes allowed origins by removing blocked origins from the allowed list. If `CORS_ALLOWED` includes `"*"`, the app disables credentialed CORS responses automatically.
 
 ## Local `.env` Example
 
@@ -99,14 +119,33 @@ ENVIRONMENT=development
 TESTING=false
 SERVER_URL=http://localhost:8500
 DATABASE_URL=sqlite:///./development.db
-DB_AUTO_CREATE=true
+DB_AUTO_CREATE=false
 JWT_SECRET=replace-with-a-long-secret
 JWT_ALGORITHM=HS256
 JWT_TIMEOUT=15
 JWT_REFRESH_TIMEOUT=60
-CORS_ALLOWED='["*"]'
+REQUIRE_EMAIL_VERIFICATION=true
+CORS_ALLOWED='["http://localhost:3000","http://127.0.0.1:3000","http://localhost:5173","http://127.0.0.1:5173"]'
 CORS_BLOCKED='["http://localhost:3000"]'
 ```
+
+## Verification Resend Endpoint
+
+The verification resend endpoint is unauthenticated and accepts only an email address:
+
+```bash
+curl -X POST \
+  'http://127.0.0.1:8000/userverse/user/resend-verification' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@example.com"}'
+```
+
+Behavior:
+
+- Returns success for unknown emails to avoid account enumeration.
+- Returns success for already verified users without sending a new email.
+- Enforces resend rate limits and returns `429` when exceeded.
 
 ## Migrations
 
