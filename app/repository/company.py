@@ -1,105 +1,122 @@
 from fastapi import status
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
-# utils
+from app.models.company.address import CompanyAddressModel
+from app.models.company.company import CompanyCreateModel, CompanyQueryParamsModel, CompanyReadModel, CompanyUpdateModel
+from app.models.company.response_messages import CompanyResponseMessages
+from app.models.company.roles import CompanyDefaultRoles
+from app.models.generic_pagination import PaginatedResponse, apply_pagination, build_pagination_meta
+from app.repository.base import BaseSQLRepository
+from app.repository.company_user import CompanyUserRepository
+from app.repository.database.tables import AssociationUserCompany, Company, Role
 from app.utils.app_error import AppError
 
-# database
-from sqlalchemy.orm import Session, joinedload
-from app.database.company import Company
-from app.database.role import Role
-from app.database.association_user_company import AssociationUserCompany
 
-# models
-from app.models.company.address import CompanyAddressModel
-from app.models.company.company import (
-    CompanyQueryParamsModel,
-    CompanyReadModel,
-    CompanyCreateModel,
-    CompanyUpdateModel,
-)
-from app.models.company.roles import CompanyDefaultRoles
-from app.models.company.response_messages import CompanyResponseMessages
-from app.models.generic_pagination import (
-    PaginatedResponse,
-    apply_pagination,
-    build_pagination_meta,
-)
+class CompanyRepository(BaseSQLRepository[Company]):
+    model = Company
 
+    def __init__(self, session):
+        super().__init__(session)
 
-class CompanyRepository:
-    def __init__(self, session: Session):
-        self.session = session
+    @staticmethod
+    def _to_read_model(company: Company) -> CompanyReadModel:
+        data = BaseSQLRepository.serialize(company)
+        primary_meta_data = data.get("primary_meta_data") or {}
+        if "address" in primary_meta_data:
+            data["address"] = primary_meta_data["address"]
+        return CompanyReadModel(**data)
 
-    def create_company(
-        self, payload: CompanyCreateModel, created_by
-    ) -> CompanyReadModel:
-        session = self.session
-        company = self._create_company_record(session, payload)
-        company_id = company["id"]
+    def _get_company_record_by_id(self, company_id: int) -> Company | None:
+        return self._base_query().filter(Company.id == company_id).one_or_none()
+
+    def _get_company_record_by_email(self, email: str) -> Company | None:
+        return self._base_query().filter(Company.email == email).one_or_none()
+
+    def create_company(self, payload: CompanyCreateModel, created_by) -> CompanyReadModel:
+        existing_company = self._get_company_record_by_email(payload.email)
+        if existing_company:
+            raise AppError(
+                status_code=status.HTTP_409_CONFLICT,
+                message=CompanyResponseMessages.COMPANY_ALREADY_EXISTS.value,
+            )
+
+        try:
+            company = self.create(**payload.model_dump(exclude={"address"}))
+        except IntegrityError as exc:
+            self.db_session.rollback()
+            raise AppError(
+                status_code=status.HTTP_409_CONFLICT,
+                message=CompanyResponseMessages.COMPANY_ALREADY_EXISTS.value,
+            ) from exc
 
         if payload.address:
-            self._add_company_address(session, company_id, payload.address)
+            company = self.update_json_field(
+                company,
+                column_name="primary_meta_data",
+                key="address",
+                value=payload.address.model_dump(),
+            )
 
-        self._create_default_roles(session, company_id)
+        for role in CompanyDefaultRoles:
+            self.db_session.add(
+                Role(
+                    company_id=company.id,
+                    name=role.name_value,
+                    description=role.description,
+                )
+            )
+        self.db_session.commit()
 
-        AssociationUserCompany.link_user(
-            session,
-            user_id=created_by.id,
-            company_id=company_id,
-            role_name=CompanyDefaultRoles.ADMINISTRATOR.name_value,
+        CompanyUserRepository(self.db_session).add_user_to_company(
+            company_id=company.id,
+            payload=type("Payload", (), {"email": created_by.email, "role": CompanyDefaultRoles.ADMINISTRATOR.name_value})(),
             added_by=created_by,
         )
-
-        registered_company = self._get_registered_company(session, company_id)
-        return CompanyReadModel(**registered_company)
+        company = self._get_company_record_by_id(company.id)
+        return self._to_read_model(company)
 
     def get_company_by_id(self, company_id: str) -> CompanyReadModel:
-        session = self.session
-        company = self._get_registered_company(session, company_id)
-
+        company = self._get_company_record_by_id(int(company_id))
         if not company:
             raise AppError(
                 status_code=status.HTTP_404_NOT_FOUND,
                 message=CompanyResponseMessages.COMPANY_NOT_FOUND.value,
             )
-
-        return CompanyReadModel(**company)
+        return self._to_read_model(company)
 
     def get_company_by_email(self, email: str) -> CompanyReadModel:
-        session = self.session
-        company = Company.get_company_by_email(session, email)
-
+        company = self._get_company_record_by_email(email)
         if not company:
             raise AppError(
                 status_code=status.HTTP_404_NOT_FOUND,
                 message=CompanyResponseMessages.COMPANY_NOT_FOUND.value,
             )
+        return self._to_read_model(company)
 
-        return CompanyReadModel(**self._get_registered_company(session, company["id"]))
-
-    def update_company(
-        self, payload: CompanyUpdateModel, company_id: str, user
-    ) -> CompanyReadModel:
-        session = self.session
-        company = Company.update(session, company_id, **payload.model_dump())
-
-        if payload.address:
-            self._add_company_address(session, company_id, payload.address)
-
+    def update_company(self, payload: CompanyUpdateModel, company_id: str, user) -> CompanyReadModel:
+        company = self._get_company_record_by_id(int(company_id))
         if not company:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 message=CompanyResponseMessages.COMPANY_UPDATE_FAILED.value,
             )
 
-        return CompanyReadModel(**self._get_registered_company(session, company["id"]))
+        update_payload = payload.model_dump(exclude={"address"}, exclude_none=True)
+        if update_payload:
+            company = self.update(company, **update_payload)
+        if payload.address:
+            company = self.update_json_field(
+                company,
+                column_name="primary_meta_data",
+                key="address",
+                value=payload.address.model_dump(),
+            )
+        return self._to_read_model(company)
 
-    def get_user_companies(
-        self, user_id: int, params: CompanyQueryParamsModel
-    ) -> PaginatedResponse[CompanyReadModel]:
-        session = self.session
+    def get_user_companies(self, user_id: int, params: CompanyQueryParamsModel) -> PaginatedResponse[CompanyReadModel]:
         query = (
-            session.query(AssociationUserCompany)
+            self.db_session.query(AssociationUserCompany)
             .join(AssociationUserCompany.company)
             .filter(
                 AssociationUserCompany.user_id == user_id,
@@ -107,11 +124,8 @@ class CompanyRepository:
                 Company._closed_at.is_(None),
             )
         )
-
         if params.role_name:
-            query = query.filter(
-                AssociationUserCompany.role_name.ilike(f"%{params.role_name}%")
-            )
+            query = query.filter(AssociationUserCompany.role_name.ilike(f"%{params.role_name}%"))
         if params.name:
             query = query.filter(Company.name.ilike(f"%{params.name}%"))
         if params.description:
@@ -122,26 +136,13 @@ class CompanyRepository:
             query = query.filter(Company.email.ilike(f"%{params.email}%"))
 
         total = query.count()
-
         results = apply_pagination(
             query.options(joinedload(AssociationUserCompany.company)),
             page=params.page,
             limit=params.limit,
             order_by=[Company.id.asc()],
-        )
-        results = results.all()
-
-        companies = []
-        for assoc in results:
-            registered_company = Company.to_dict(assoc.company)
-            if "primary_meta_data" in registered_company:
-                primary_meta_data = registered_company.get("primary_meta_data")
-                if "address" in primary_meta_data:
-                    address = primary_meta_data.get("address")
-                    registered_company["address"] = address
-
-            companies.append(CompanyReadModel(**registered_company))
-
+        ).all()
+        companies = [self._to_read_model(assoc.company) for assoc in results]
         return PaginatedResponse[CompanyReadModel](
             records=companies,
             pagination=build_pagination_meta(
@@ -150,45 +151,3 @@ class CompanyRepository:
                 page=params.page,
             ),
         )
-
-    def _create_company_record(self, session, payload: CompanyCreateModel) -> dict:
-        company = Company.create(session, **payload.model_dump(exclude={"address"}))
-
-        if not company:
-            raise AppError(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                message=CompanyResponseMessages.COMPANY_CREATION_FAILED.value,
-            )
-
-        return company
-
-    def _add_company_address(
-        self, session, company_id: str, address: CompanyAddressModel
-    ) -> None:
-        Company.update_json_field(
-            session,
-            record_id=company_id,
-            column_name="primary_meta_data",
-            key="address",
-            value=address.model_dump(),
-        )
-
-    def _create_default_roles(self, session, company_id: str) -> None:
-        for role in CompanyDefaultRoles:
-            Role.create(
-                session,
-                company_id=company_id,
-                name=role.name_value,
-                description=role.description,
-            )
-
-    def _get_registered_company(self, session, company_id: str) -> dict:
-        registered_company = Company.get_by_id(session, company_id)
-
-        if "primary_meta_data" in registered_company:
-            primary_meta_data = registered_company.get("primary_meta_data")
-            if "address" in primary_meta_data:
-                address = primary_meta_data.get("address")
-                registered_company["address"] = address
-
-        return registered_company

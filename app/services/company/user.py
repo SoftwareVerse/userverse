@@ -7,10 +7,6 @@ from app.models.company.user import CompanyUserAddModel, CompanyUserReadModel
 from app.models.generic_pagination import PaginatedResponse
 from app.utils.app_error import AppError
 
-# database
-from app.database.association_user_company import AssociationUserCompany
-
-
 from app.models.company.roles import CompanyDefaultRoles
 
 
@@ -89,18 +85,14 @@ class CompanyUserService:
         Check if the user is linked to the company.
         If a role is provided, check if the user has that role.
         """
-        with self.context.db_session as session:
-            # Check if the user is linked to the company
-            linked_company = AssociationUserCompany.is_user_linked_to_company(
-                session=session,
-                user_id=user_id,
-                company_id=company_id,
-                role_name=role,
+        linked_company = self.company_user_repository.is_user_linked_to_company(
+            user_id=user_id,
+            company_id=company_id,
+            role_name=role,
+        )
+        if not linked_company:
+            raise AppError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                message=CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value,
             )
-            if not linked_company:
-                raise AppError(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    message=CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value,
-                )
-
-            return linked_company
+        return linked_company

@@ -12,28 +12,28 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from uvicorn.config import Config
 from uvicorn.server import Server
 
-from app.database.session_manager import get_engine
+from app.repository.database.session_manager import get_engine
 from app.exceptions import register_exception_handlers
 
 # user routers
-from app.middleware.logging import LogMiddleware
-from app.middleware.profiling import ProfilingMiddleware
+from app.api.middleware.logging import LogMiddleware
+from app.api.middleware.profiling import ProfilingMiddleware
 
 # from app.models.tags import UserverseApiTag
-from app.routers.user import (
+from app.api.routers.user import (
     user_basic_auth_routes,
     user_password_routes,
     user_profile_routes,
     user_verification_routes,
 )
-from app.routers.company import (
+from app.api.routers.company import (
     company,
     users,
     roles,
 )
 
 # utils
-from app.configs import get_settings
+from app.configs import settings
 from app.utils.logging import get_uvicorn_log_config, logger
 
 
@@ -46,9 +46,8 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    settings = get_settings()
-    cor_origins_allowed = settings.cor_origins.allowed
-    cor_origins_blocked = settings.cor_origins.blocked
+    cor_origins_allowed = settings.CORS_ALLOWED
+    cor_origins_blocked = settings.CORS_BLOCKED
     origins = [
         origin for origin in cor_origins_allowed if origin not in cor_origins_blocked
     ]
@@ -56,14 +55,15 @@ def create_app() -> FastAPI:
     app = FastAPI(
         lifespan=lifespan,
         root_path="/userverse",
-        title=settings.name,
-        version=settings.version,
-        description=settings.description,
+        title=settings.APP_NAME,
+        version=settings.APP_VERSION,
+        description=settings.APP_DESCRIPTION,
         # openapi_tags=UserverseApiTag.list(),
     )
 
     # setup_otel(app)
-    app.add_middleware(LogMiddleware)
+    if not settings.TESTING:
+        app.add_middleware(LogMiddleware)
     app.add_middleware(ProfilingMiddleware)
     app.add_middleware(
         CORSMiddleware,
@@ -93,12 +93,12 @@ def create_app() -> FastAPI:
                 status_code=200,
                 content={
                     "status": "ok",
-                    "environment": settings.environment,
-                    "version": settings.version,
-                    "name": settings.name,
-                    "description": settings.description,
-                    "repository": settings.repository,
-                    "documentation": settings.documentation,
+                    "environment": settings.ENVIRONMENT,
+                    "version": settings.APP_VERSION,
+                    "name": settings.APP_NAME,
+                    "description": settings.APP_DESCRIPTION,
+                    "repository": settings.REPOSITORY,
+                    "documentation": settings.DOCUMENTATION,
                     "message": "Welcome to the Userverse backend API",
                 },
             )

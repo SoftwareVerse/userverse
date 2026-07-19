@@ -96,6 +96,18 @@ def unwrap_exception(exc: BaseException) -> Tuple[BaseException, list[str]]:
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(404)
     async def not_found_handler(request: Request, exc: Exception):
+        if isinstance(exc, HTTPException) and exc.detail != "Not Found":
+            detail = exc.detail if isinstance(exc.detail, dict) else {}
+            message = detail.get("message", "Request failed")
+            error = detail.get("error")
+            return json_error(
+                status_code=404,
+                correlation_id=get_correlation_id(request),
+                message=message,
+                code="app_error" if isinstance(exc, AppError) else "http_error",
+                extra={"error": error},
+            )
+
         logger.info(
             "Endpoint not found",
             extra={

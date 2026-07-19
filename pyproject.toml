@@ -40,10 +40,25 @@ Documentation = "https://userverse.softwareverse.co.za/docs"
 
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 # Silence DeprecationWarning from passlib importing Python's 'crypt' (Py3.13 removal)
 filterwarnings = [
     "ignore::DeprecationWarning:passlib.utils",
 ]
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "app/api/middleware/logging.py",
+    "app/api/middleware/otel.py",
+    "app/api/middleware/profiling.py",
+    "app/email/sender.py",
+    "app/models/configs/*",
+]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
 
 
 

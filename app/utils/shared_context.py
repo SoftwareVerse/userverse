@@ -6,9 +6,8 @@ from typing import Any, Optional
 from sqlalchemy.orm import Session
 
 from app.models.user.account_status import UserAccountStatus
-from app.models.configs import RuntimeSettings
 from app.models.user.user import UserReadModel
-from app.configs import get_settings
+from app.configs import Settings, settings
 from app.utils.logging import logger
 
 
@@ -16,11 +15,11 @@ class SharedContext:
     def __init__(
         self,
         db_session: Session,
-        configs: Optional[RuntimeSettings] = None,
+        configs: Optional[Settings] = None,
         user: Optional[UserReadModel] = None,
         enforce_status_check: bool = False,  # <-- optional control
     ):
-        self.configs: RuntimeSettings = configs or get_settings()
+        self.configs: Settings = configs or settings
         if user:
             self.user: UserReadModel = user
         self.db_session = db_session

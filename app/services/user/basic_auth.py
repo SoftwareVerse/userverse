@@ -12,7 +12,7 @@ from app.models.user.user import (
     UserReadModel,
 )
 from app.repository.user import UserRepository
-from app.security.jwt import JWTManager
+from app.api.security.jwt import JWTManager
 from app.utils.app_error import AppError
 from app.utils.hash_password import hash_password
 from app.utils.logging import logger
@@ -33,7 +33,7 @@ class UserBasicAuthService:
             {"sub": self.context.get_user_email(), "type": "verification"},
             expires_delta=timedelta(minutes=self.VERIFICATION_TOKEN_EXPIRY_MINUTES),
         )
-        server_url = self.context.configs.server_url
+        server_url = self.context.configs.SERVER_URL
         return f"{server_url}/user/verify?token={token}"
 
     def send_verification_email(

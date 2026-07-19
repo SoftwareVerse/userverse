@@ -2,213 +2,253 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Optional
-import tomllib
+from typing import Any
 
-from pydantic import Field
+from dotenv import load_dotenv
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from app.models.configs import (
-    CorsSettings,
-    DatabaseSettings,
-    EmailSettings,
-    JwtSettings,
-    RuntimeSettings,
-)
+from app.utils.env import build_settings_env_snapshot, strip_matching_quotes
+from app.utils.parsing import normalize_origins
+from app.utils.project_metadata import load_project_defaults
 
-_SETTINGS_ENV_KEYS = (
-    "ENV",
-    "SERVER_URL",
-    "APP_NAME",
-    "APP_DESCRIPTION",
-    "APP_VERSION",
-    "REPOSITORY",
-    "DOCUMENTATION",
-    # DB flat envs (optional)
-    "DATABASE_URL",
-    "DB_TYPE",
-    "DB_USER",
-    "DB_PASSWORD",
-    "DB_NAME",
-    "DB_HOST",
-    "DB_PORT",
-    # Nested settings
-    "COR_ORIGINS__ALLOWED",
-    "COR_ORIGINS__BLOCKED",
-    "JWT__SECRET",
-    "JWT__ALGORITHM",
-    "JWT__TIMEOUT",
-    "JWT__REFRESH_TIMEOUT",
-    "EMAIL__HOST",
-    "EMAIL__PORT",
-    "EMAIL__USERNAME",
-    "EMAIL__PASSWORD",
-    "EMAIL__EMAIL_TLS",
-    "EMAIL__EMAIL_SSL",
-)
-
-
-@lru_cache(maxsize=1)
-def _project_defaults() -> dict[str, Optional[str]]:
-    defaults = {
-        "name": "Userverse",
-        "version": "0.1.0",
-        "description": "Userverse backend API",
-        "repository": None,
-        "documentation": None,
-    }
-    pyproject_path = Path(__file__).resolve().parent.parent / "pyproject.toml"
-    try:
-        with pyproject_path.open("rb") as file:
-            project = tomllib.load(file).get("project", {})
-    except (FileNotFoundError, OSError, tomllib.TOMLDecodeError):
-        return defaults
-
-    project_urls = project.get("urls") or {}
-    normalized_urls = {str(k).lower(): str(v) for k, v in project_urls.items()}
-
-    return {
-        "name": str(project.get("name") or defaults["name"]),
-        "version": str(project.get("version") or defaults["version"]),
-        "description": str(project.get("description") or defaults["description"]),
-        "repository": normalized_urls.get("repository", defaults["repository"]),
-        "documentation": normalized_urls.get(
-            "documentation", defaults["documentation"]
-        ),
-    }
-
-
-_PROJECT_DEFAULTS = _project_defaults()
+load_dotenv()
+_PROJECT_DEFAULTS = load_project_defaults(Path(__file__).resolve().parent.parent)
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_nested_delimiter="__",
         extra="ignore",
         case_sensitive=False,
         validate_default=False,
     )
 
-    # Base
-    env: str = Field(default="development", alias="ENV")
-    server_url: str = Field(default="http://localhost:8500", alias="SERVER_URL")
-    name: str = Field(default=_PROJECT_DEFAULTS["name"], alias="APP_NAME")
-    description: str = Field(
-        default=_PROJECT_DEFAULTS["description"], alias="APP_DESCRIPTION"
+    ENVIRONMENT: str = Field(
+        default="development",
+        validation_alias=AliasChoices("ENVIRONMENT", "ENV"),
     )
-    version: str = Field(default=_PROJECT_DEFAULTS["version"], alias="APP_VERSION")
-    repository: Optional[str] = Field(
-        default=_PROJECT_DEFAULTS["repository"], alias="REPOSITORY"
+    SERVER_URL: str = Field(
+        default="http://localhost:8500",
+        validation_alias=AliasChoices("SERVER_URL"),
     )
-    documentation: Optional[str] = Field(
-        default=_PROJECT_DEFAULTS["documentation"], alias="DOCUMENTATION"
+    APP_NAME: str = Field(
+        default=_PROJECT_DEFAULTS["name"] or "Userverse",
+        validation_alias=AliasChoices("APP_NAME"),
+    )
+    APP_DESCRIPTION: str = Field(
+        default=_PROJECT_DEFAULTS["description"] or "Userverse backend API",
+        validation_alias=AliasChoices("APP_DESCRIPTION"),
+    )
+    APP_VERSION: str = Field(
+        default=_PROJECT_DEFAULTS["version"] or "0.1.0",
+        validation_alias=AliasChoices("APP_VERSION"),
+    )
+    REPOSITORY: str | None = Field(
+        default=_PROJECT_DEFAULTS["repository"],
+        validation_alias=AliasChoices("REPOSITORY"),
+    )
+    DOCUMENTATION: str | None = Field(
+        default=_PROJECT_DEFAULTS["documentation"],
+        validation_alias=AliasChoices("DOCUMENTATION"),
     )
 
-    # DB (flat env aliases)
-    database_url: Optional[str] = Field(default=None, alias="DATABASE_URL")
-    db_type: Optional[str] = Field(default=None, alias="DB_TYPE")
-    db_user: Optional[str] = Field(default=None, alias="DB_USER")
-    db_password: Optional[str] = Field(default=None, alias="DB_PASSWORD")
-    db_name: Optional[str] = Field(default=None, alias="DB_NAME")
-    db_host: Optional[str] = Field(default=None, alias="DB_HOST")
-    db_port: Optional[int] = Field(default=None, alias="DB_PORT")
+    DATABASE_URL: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("DATABASE_URL"),
+    )
+    DB_TYPE: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("DB_TYPE"),
+    )
+    DB_USER: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("DB_USER"),
+    )
+    DB_PASSWORD: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("DB_PASSWORD"),
+    )
+    DB_NAME: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("DB_NAME"),
+    )
+    DB_HOST: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("DB_HOST"),
+    )
+    DB_PORT: int = Field(
+        default=5432,
+        validation_alias=AliasChoices("DB_PORT"),
+    )
+    DB_AUTO_CREATE: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("DB_AUTO_CREATE"),
+    )
+    DB_ECHO: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("DB_ECHO"),
+    )
+    DB_POOL_SIZE: int = Field(
+        default=5,
+        validation_alias=AliasChoices("DB_POOL_SIZE"),
+    )
+    DB_MAX_OVERFLOW: int = Field(
+        default=10,
+        validation_alias=AliasChoices("DB_MAX_OVERFLOW"),
+    )
+    DB_POOL_TIMEOUT: int = Field(
+        default=30,
+        validation_alias=AliasChoices("DB_POOL_TIMEOUT"),
+    )
+    DB_POOL_RECYCLE: int = Field(
+        default=1800,
+        validation_alias=AliasChoices("DB_POOL_RECYCLE"),
+    )
+    TESTING: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("TESTING"),
+    )
 
-    # Nested blocks
-    database: DatabaseSettings = Field(default_factory=DatabaseSettings)
-    cor_origins: CorsSettings = Field(default_factory=CorsSettings)
-    jwt: JwtSettings = Field(default_factory=JwtSettings)
-    email: EmailSettings = Field(default_factory=EmailSettings)
+    CORS_ALLOWED: list[str] = Field(
+        default_factory=lambda: ["*"],
+        validation_alias=AliasChoices("CORS_ALLOWED", "COR_ORIGINS__ALLOWED"),
+    )
+    CORS_BLOCKED: list[str] = Field(
+        default_factory=lambda: ["http://localhost:3000"],
+        validation_alias=AliasChoices("CORS_BLOCKED", "COR_ORIGINS__BLOCKED"),
+    )
+
+    JWT_SECRET: str = Field(
+        default="secret1234",
+        validation_alias=AliasChoices("JWT_SECRET", "JWT__SECRET"),
+    )
+    JWT_ALGORITHM: str = Field(
+        default="HS256",
+        validation_alias=AliasChoices("JWT_ALGORITHM", "JWT__ALGORITHM"),
+    )
+    JWT_TIMEOUT: int = Field(
+        default=15,
+        validation_alias=AliasChoices("JWT_TIMEOUT", "JWT__TIMEOUT"),
+    )
+    JWT_REFRESH_TIMEOUT: int = Field(
+        default=60,
+        validation_alias=AliasChoices("JWT_REFRESH_TIMEOUT", "JWT__REFRESH_TIMEOUT"),
+    )
+
+    EMAIL_HOST: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("EMAIL_HOST", "EMAIL__HOST"),
+    )
+    EMAIL_PORT: int | None = Field(
+        default=None,
+        validation_alias=AliasChoices("EMAIL_PORT", "EMAIL__PORT"),
+    )
+    EMAIL_USERNAME: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("EMAIL_USERNAME", "EMAIL__USERNAME"),
+    )
+    EMAIL_PASSWORD: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("EMAIL_PASSWORD", "EMAIL__PASSWORD"),
+    )
+    EMAIL_TLS: bool | None = Field(
+        default=None,
+        validation_alias=AliasChoices("EMAIL_TLS", "EMAIL__EMAIL_TLS"),
+    )
+    EMAIL_SSL: bool | None = Field(
+        default=None,
+        validation_alias=AliasChoices("EMAIL_SSL", "EMAIL__EMAIL_SSL"),
+    )
+
+    @model_validator(mode="after")
+    def normalize_settings(self) -> "Settings":
+        for field_name in self.__class__.model_fields:
+            object.__setattr__(
+                self,
+                field_name,
+                strip_matching_quotes(getattr(self, field_name)),
+            )
+
+        object.__setattr__(self, "ENVIRONMENT", self.ENVIRONMENT.strip().lower())
+        object.__setattr__(self, "SERVER_URL", self.SERVER_URL.rstrip("/"))
+        object.__setattr__(self, "CORS_ALLOWED", normalize_origins(self.CORS_ALLOWED))
+        object.__setattr__(self, "CORS_BLOCKED", normalize_origins(self.CORS_BLOCKED))
+
+        if not self.DATABASE_URL:
+            object.__setattr__(self, "DATABASE_URL", self._build_database_url())
+
+        return self
+
+    def _build_database_url(self) -> str:
+        db_type = (self.DB_TYPE or "").strip().lower()
+        if db_type == "sqlite":
+            return f"sqlite:///{self.DB_NAME or f'{self.ENVIRONMENT}.db'}"
+
+        if db_type in {"postgres", "postgresql"}:
+            required = [self.DB_USER, self.DB_PASSWORD, self.DB_NAME, self.DB_HOST]
+            if all(required):
+                return (
+                    f"postgresql+psycopg2://{self.DB_USER}:{self.DB_PASSWORD}"
+                    f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+                )
+
+        if db_type == "mysql":
+            required = [self.DB_USER, self.DB_PASSWORD, self.DB_NAME, self.DB_HOST]
+            if all(required):
+                return (
+                    f"mysql://{self.DB_USER}:{self.DB_PASSWORD}"
+                    f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+                )
+
+        return f"sqlite:///./{self.ENVIRONMENT}.db"
+
+    @property
+    def PROJECT_ROOT(self) -> Path:
+        return Path(__file__).resolve().parent.parent
 
 
-def _settings_env_snapshot() -> tuple[tuple[str, Optional[str]], ...]:
-    import os
-
-    return tuple((key, os.getenv(key)) for key in _SETTINGS_ENV_KEYS)
+def _settings_env_snapshot() -> tuple[tuple[str, str | None], ...]:
+    return build_settings_env_snapshot()
 
 
 @lru_cache(maxsize=16)
-def _resolve_settings(
-    environment: Optional[str],
-    env_snapshot: tuple[tuple[str, Optional[str]], ...],
-) -> RuntimeSettings:
-    _ = env_snapshot  # used for cache key stability
-
-    settings = Settings()
-
-    resolved_env = (environment or settings.env or "development").strip().lower()
-
-    # Build DB settings:
-    db_from_env = {
-        "database_url": settings.database_url,
-        "type": settings.db_type,
-        "user": settings.db_user,
-        "password": settings.db_password,
-        "name": settings.db_name,
-        "host": settings.db_host,
-        "port": settings.db_port,
-    }
-    db = DatabaseSettings(**{k: v for k, v in db_from_env.items() if v is not None})
-
-    # Allow nested "database" block to fill anything missing
-    # (env_nested_delimiter enables DATABASE__TYPE etc if you ever add them)
-    merged_db = DatabaseSettings(
-        **{
-            **settings.database.model_dump(exclude_none=True),
-            **db.model_dump(exclude_none=True),
-        }
-    )
-
-    return RuntimeSettings(
-        environment=resolved_env,
-        database_url=merged_db.build_url(resolved_env),
-        server_url=settings.server_url,
-        cor_origins=settings.cor_origins,
-        jwt=settings.jwt,
-        email=settings.email,
-        name=settings.name,
-        version=settings.version,
-        description=settings.description,
-        repository=settings.repository,
-        documentation=settings.documentation,
-    )
+def _resolve_settings(env_snapshot: tuple[tuple[str, str | None], ...]) -> Settings:
+    _ = env_snapshot
+    return Settings()
 
 
-def get_settings(environment: Optional[str] = None) -> RuntimeSettings:
-    return _resolve_settings(environment, _settings_env_snapshot()).model_copy(
-        deep=True
-    )
+def get_settings() -> Settings:
+    return _resolve_settings(_settings_env_snapshot())
 
 
-def get_config(environment: Optional[str] = None) -> dict[str, Any]:
-    runtime_settings = get_settings(environment=environment)
-    dict_config = {
-        "environment": runtime_settings.environment,
-        "database_url": runtime_settings.database_url,
-        "server_url": runtime_settings.server_url,
-        "cor_origins": {
-            "allowed": runtime_settings.cor_origins.allowed,
-            "blocked": runtime_settings.cor_origins.blocked,
-        },
-        "jwt": {
-            "SECRET": runtime_settings.jwt.secret,
-            "ALGORITHM": runtime_settings.jwt.algorithm,
-            "TIMEOUT": int(runtime_settings.jwt.timeout),
-            "REFRESH_TIMEOUT": int(runtime_settings.jwt.refresh_timeout),
-        },
-        "email": {
-            "HOST": runtime_settings.email.host,
-            "PORT": runtime_settings.email.port,
-            "USERNAME": runtime_settings.email.username,
-            "PASSWORD": runtime_settings.email.password,
-            "EMAIL_TLS": runtime_settings.email.email_tls,
-            "EMAIL_SSL": runtime_settings.email.email_ssl,
-        },
-        "name": runtime_settings.name,
-        "version": runtime_settings.version,
-        "description": runtime_settings.description,
-        "repository": runtime_settings.repository,
-        "documentation": runtime_settings.documentation,
-    }
-    print(f"\n Current environment: {dict_config} \n")
-    return dict_config
+class _SettingsProxy:
+    def __init__(self) -> None:
+        object.__setattr__(self, "_overrides", {})
+
+    def __getattr__(self, name: str) -> Any:
+        overrides = object.__getattribute__(self, "_overrides")
+        if name in overrides:
+            return overrides[name]
+        return getattr(get_settings(), name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name == "_overrides":
+            object.__setattr__(self, name, value)
+            return
+        object.__getattribute__(self, "_overrides")[name] = value
+
+    def __delattr__(self, name: str) -> None:
+        overrides = object.__getattribute__(self, "_overrides")
+        if name in overrides:
+            del overrides[name]
+            return
+        raise AttributeError(name)
+
+    def __dir__(self) -> list[str]:
+        current = set(dir(get_settings()))
+        current.update(object.__getattribute__(self, "_overrides").keys())
+        return sorted(current)
+
+
+settings = _SettingsProxy()
