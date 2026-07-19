@@ -2,11 +2,16 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from fastapi import status, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.orm import Session
 
 # app imports
 from app.configs import settings
 from app.models.security_messages import SecurityResponseMessages
+from app.models.user.account_status import UserAccountStatus
+from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import TokenResponseModel, UserReadModel
+from app.repository.database.session_manager import get_session
+from app.repository.user import UserRepository
 from app.utils.app_error import AppError
 
 http_bearer = HTTPBearer()
@@ -173,6 +178,7 @@ class JWTManager:
 
 
 async def get_current_user_from_jwt_token(
+    session: Session = Depends(get_session),
     credentials: HTTPAuthorizationCredentials = Depends(http_bearer),
 ) -> UserReadModel:
     """
@@ -189,7 +195,14 @@ async def get_current_user_from_jwt_token(
         )
 
     try:
-        current_user = JWTManager().decode_token(authorization)
+        token_user = JWTManager().decode_token(authorization)
+        current_user = UserRepository(session).get_user_by_id(token_user.id)
+        if current_user.status != UserAccountStatus.ACTIVE.name_value:
+            raise AppError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                message=UserResponseMessages.USER_ACCOUNT_INACTIVE.value,
+                log_error=False,
+            )
     except AppError:
         raise
     except Exception as e:

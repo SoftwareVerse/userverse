@@ -34,6 +34,7 @@ class UserResponseMessages(str, Enum):
     ACCOUNT_LOCKED = "Account is locked"
     INVALID_REQUEST_MESSAGE = "Invalid request"
     USER_ACCOUNT_ALREADY_ACTIVE = "User account is already active"
+    USER_ACCOUNT_INACTIVE = "User account is not active"
 
 
 class PasswordResetResponseMessages(str, Enum):

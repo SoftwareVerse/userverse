@@ -7,6 +7,7 @@ from app.models.user.response_messages import UserResponseMessages
 from app.repository.base import BaseSQLRepository
 from app.repository.database.tables import User
 from app.utils.app_error import AppError
+from app.utils.hash_password import hash_password
 
 
 class UserPasswordRepository(BaseSQLRepository[User]):
@@ -52,6 +53,9 @@ class UserPasswordRepository(BaseSQLRepository[User]):
 
     def update_password(self, user_email: str, new_password: str) -> None:
         user = self._get_user(user_email)
-        user.password = new_password
+        user.password = hash_password(new_password)
+        password_reset_data = (user.primary_meta_data or {}).copy()
+        password_reset_data.pop("password_reset", None)
+        user.primary_meta_data = password_reset_data
         self.db_session.commit()
         self.db_session.refresh(user)

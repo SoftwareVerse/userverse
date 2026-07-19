@@ -212,7 +212,7 @@ def test_decode_verification_token_rejects_expired_token():
 
 def test_get_current_user_from_jwt_token_rejects_missing_credentials():
     with pytest.raises(AppError) as e:
-        asyncio.run(get_current_user_from_jwt_token(None))
+        asyncio.run(get_current_user_from_jwt_token(session=object(), credentials=None))
 
     assert e.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert e.value.detail["message"] == SecurityResponseMessages.INVALID_REQUEST.value
@@ -227,11 +227,17 @@ def test_get_current_user_from_jwt_token_returns_decoded_user(monkeypatch):
         "app.api.security.jwt.JWTManager.decode_token",
         lambda self, token: sample_user,
     )
+    monkeypatch.setattr(
+        "app.api.security.jwt.UserRepository.get_user_by_id",
+        lambda self, user_id: sample_user.model_copy(update={"status": "Active"}),
+    )
     credentials = HTTPAuthorizationCredentials(
         scheme="Bearer", credentials="signed-token"
     )
 
-    current_user = asyncio.run(get_current_user_from_jwt_token(credentials))
+    current_user = asyncio.run(
+        get_current_user_from_jwt_token(session=object(), credentials=credentials)
+    )
 
     assert current_user.email == sample_user.email
 
@@ -252,7 +258,9 @@ def test_get_current_user_from_jwt_token_reraises_app_error(monkeypatch):
     )
 
     with pytest.raises(AppError) as e:
-        asyncio.run(get_current_user_from_jwt_token(credentials))
+        asyncio.run(
+            get_current_user_from_jwt_token(session=object(), credentials=credentials)
+        )
 
     assert e.value is expected_error
 
@@ -267,8 +275,34 @@ def test_get_current_user_from_jwt_token_wraps_unexpected_error(monkeypatch):
     )
 
     with pytest.raises(AppError) as e:
-        asyncio.run(get_current_user_from_jwt_token(credentials))
+        asyncio.run(
+            get_current_user_from_jwt_token(session=object(), credentials=credentials)
+        )
 
     assert e.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert e.value.detail["message"] == SecurityResponseMessages.INVALID_REQUEST.value
     assert e.value.detail["error"] == "decode failed"
+
+
+def test_get_current_user_from_jwt_token_rejects_inactive_database_user(monkeypatch):
+    monkeypatch.setattr(
+        "app.api.security.jwt.JWTManager.decode_token",
+        lambda self, token: sample_user,
+    )
+    inactive_user = sample_user.model_copy(
+        update={"status": "Suspended"}
+    )
+    monkeypatch.setattr(
+        "app.api.security.jwt.UserRepository.get_user_by_id",
+        lambda self, user_id: inactive_user,
+    )
+    credentials = HTTPAuthorizationCredentials(
+        scheme="Bearer", credentials="signed-token"
+    )
+
+    with pytest.raises(AppError) as e:
+        asyncio.run(
+            get_current_user_from_jwt_token(session=object(), credentials=credentials)
+        )
+
+    assert e.value.status_code == status.HTTP_403_FORBIDDEN

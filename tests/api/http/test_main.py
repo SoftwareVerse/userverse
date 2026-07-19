@@ -1,3 +1,7 @@
+from app.api.middleware.profiling import ProfilingMiddleware
+from app.main import create_app
+
+
 def test_read_main(client):
     response = client.get("/")
     assert response.status_code == 200
@@ -26,3 +30,12 @@ def test_metrics_endpoint_exposes_prometheus_payload(client):
     assert response.status_code == 200
     assert "text/plain" in response.headers["content-type"]
     assert "python_gc_objects_collected_total" in response.text
+
+
+def test_profiling_middleware_disabled_by_default(monkeypatch):
+    monkeypatch.delenv("ENABLE_PROFILING", raising=False)
+    app = create_app()
+
+    assert all(
+        middleware.cls is not ProfilingMiddleware for middleware in app.user_middleware
+    )

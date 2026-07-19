@@ -9,6 +9,8 @@ from app.utils.logging import logger
 
 
 class ProfilingMiddleware(BaseHTTPMiddleware):
+    LOCAL_CLIENT_HOSTS = {"127.0.0.1", "::1", "localhost", "testclient"}
+
     def __init__(self, app: ASGIApp):
         super().__init__(app)
         self.profile_dir = "profiles"
@@ -16,10 +18,10 @@ class ProfilingMiddleware(BaseHTTPMiddleware):
             os.makedirs(self.profile_dir)
 
     async def dispatch(self, request: Request, call_next):
-        # Check if profiling is enabled via environment variable or header
+        client_host = request.client.host if request.client else None
         should_profile = (
-            os.getenv("ENABLE_PROFILING", "false").lower() == "true"
-            or request.headers.get("X-Profile", "false").lower() == "true"
+            request.headers.get("X-Profile", "false").lower() == "true"
+            and client_host in self.LOCAL_CLIENT_HOSTS
         )
 
         if not should_profile:

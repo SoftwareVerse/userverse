@@ -64,7 +64,8 @@ def create_app() -> FastAPI:
     # setup_otel(app)
     if not settings.TESTING:
         app.add_middleware(LogMiddleware)
-    app.add_middleware(ProfilingMiddleware)
+    if settings.ENABLE_PROFILING and not settings.TESTING:
+        app.add_middleware(ProfilingMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,

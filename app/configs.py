@@ -109,6 +109,10 @@ class Settings(BaseSettings):
         default=False,
         validation_alias=AliasChoices("TESTING"),
     )
+    ENABLE_PROFILING: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("ENABLE_PROFILING"),
+    )
 
     CORS_ALLOWED: list[str] = Field(
         default_factory=lambda: ["*"],

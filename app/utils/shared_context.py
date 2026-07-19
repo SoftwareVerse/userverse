@@ -6,8 +6,10 @@ from typing import Any, Optional
 from sqlalchemy.orm import Session
 
 from app.models.user.account_status import UserAccountStatus
+from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import UserReadModel
 from app.configs import Settings, settings
+from app.utils.app_error import AppError
 from app.utils.logging import logger
 
 
@@ -29,8 +31,9 @@ class SharedContext:
 
     def _check_user_status(self):
         if self.user.status != UserAccountStatus.ACTIVE.name_value:
-            raise ValueError(
-                "Account is not active. Please verify your email or contact support.",
+            raise AppError(
+                status_code=403,
+                message=UserResponseMessages.USER_ACCOUNT_INACTIVE.value,
             )
 
     def get_user_email(self) -> str:

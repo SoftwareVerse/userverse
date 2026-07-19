@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import BackgroundTasks
 
 from app.services.mailer import MailService
+from app.models.user.account_status import UserAccountStatus
 from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import (
     TokenResponseModel,
@@ -27,6 +28,14 @@ class UserBasicAuthService:
     def __init__(self, context: SharedContext):
         self.context = context
         self.user_repository = UserRepository(context.db_session)
+
+    @staticmethod
+    def _ensure_user_is_active(user: UserReadModel) -> None:
+        if user.status != UserAccountStatus.ACTIVE.name_value:
+            raise AppError(
+                status_code=403,
+                message=UserResponseMessages.USER_ACCOUNT_INACTIVE.value,
+            )
 
     def generate_verification_link(self) -> str:
         token = JWTManager().sign_payload(
@@ -84,11 +93,7 @@ class UserBasicAuthService:
         user = self.user_repository.get_user_by_email(
             user_credentials.email, user_credentials.password
         )
-        if not user:
-            raise AppError(
-                status_code=401,
-                message=UserResponseMessages.INVALID_CREDENTIALS.value,
-            )
+        self._ensure_user_is_active(user)
         refresh_token_version = self.user_repository.get_refresh_token_version(user.id)
         return JWTManager().sign_jwt(user, refresh_token_version=refresh_token_version)
 
@@ -96,6 +101,7 @@ class UserBasicAuthService:
         jwt_manager = JWTManager()
         token_user, _ = jwt_manager.decode_refresh_token(refresh_token)
         current_user = self.user_repository.get_user_by_id(token_user.id)
+        self._ensure_user_is_active(current_user)
         refresh_token_version = self.user_repository.get_refresh_token_version(
             current_user.id
         )
