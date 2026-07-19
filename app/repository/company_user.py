@@ -5,7 +5,7 @@ from sqlalchemy.orm.attributes import flag_modified
 from app.models.company.response_messages import CompanyResponseMessages, CompanyUserResponseMessages
 from app.models.company.roles import CompanyDefaultRoles
 from app.models.company.user import CompanyUserAddModel, CompanyUserReadModel
-from app.models.generic_pagination import PaginatedResponse, PaginationMeta, apply_pagination, build_pagination_meta
+from app.models.generic_pagination import PaginatedResponse, apply_pagination, build_pagination_meta
 from app.models.user.user import UserQueryParams
 from app.repository.base import BaseSQLRepository
 from app.repository.database.tables import AssociationUserCompany, Role, User
@@ -154,7 +154,9 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         users = [self._to_company_user(assoc.user, assoc.role_name) for assoc in results]
         return PaginatedResponse[CompanyUserReadModel](
             records=users,
-            pagination=PaginationMeta(
-                **build_pagination_meta(total_records=total, limit=params.limit, page=params.page)
+            pagination=build_pagination_meta(
+                total_records=total,
+                limit=params.limit,
+                page=params.page,
             ),
         )

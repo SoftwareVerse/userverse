@@ -48,7 +48,6 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     cor_origins_allowed = settings.CORS_ALLOWED
     cor_origins_blocked = settings.CORS_BLOCKED
-    is_testing = settings.TESTING or settings.ENVIRONMENT == "testing"
     origins = [
         origin for origin in cor_origins_allowed if origin not in cor_origins_blocked
     ]
@@ -63,9 +62,9 @@ def create_app() -> FastAPI:
     )
 
     # setup_otel(app)
-    if not is_testing:
+    if not settings.TESTING:
         app.add_middleware(LogMiddleware)
-        app.add_middleware(ProfilingMiddleware)
+    app.add_middleware(ProfilingMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,

@@ -32,7 +32,7 @@ DEFAULT_SMTP_MAX_RETRIES = 1
 
 
 def _load_email_settings() -> Optional[Settings]:
-    if settings.TESTING or settings.ENVIRONMENT in TEST_ENVIRONMENTS:
+    if getattr(settings, "TESTING", False) or settings.ENVIRONMENT in TEST_ENVIRONMENTS:
         logger.warning("Skipping email config in test environment.")
         return None
 

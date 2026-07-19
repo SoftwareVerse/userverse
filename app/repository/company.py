@@ -6,7 +6,7 @@ from app.models.company.address import CompanyAddressModel
 from app.models.company.company import CompanyCreateModel, CompanyQueryParamsModel, CompanyReadModel, CompanyUpdateModel
 from app.models.company.response_messages import CompanyResponseMessages
 from app.models.company.roles import CompanyDefaultRoles
-from app.models.generic_pagination import PaginatedResponse, PaginationMeta, apply_pagination, build_pagination_meta
+from app.models.generic_pagination import PaginatedResponse, apply_pagination, build_pagination_meta
 from app.repository.base import BaseSQLRepository
 from app.repository.company_user import CompanyUserRepository
 from app.repository.database.tables import AssociationUserCompany, Company, Role
@@ -145,7 +145,9 @@ class CompanyRepository(BaseSQLRepository[Company]):
         companies = [self._to_read_model(assoc.company) for assoc in results]
         return PaginatedResponse[CompanyReadModel](
             records=companies,
-            pagination=PaginationMeta(
-                **build_pagination_meta(total_records=total, limit=params.limit, page=params.page)
+            pagination=build_pagination_meta(
+                total_records=total,
+                limit=params.limit,
+                page=params.page,
             ),
         )

@@ -24,3 +24,10 @@ class Company(BaseModel):
         back_populates="company",
         cascade="all, delete-orphan",
     )
+
+    @classmethod
+    def get_company_by_email(cls, session, email: str) -> dict:
+        company = session.query(cls).filter_by(email=email).one_or_none()
+        if company is None:
+            raise ValueError(f"Company with email:{email}, not found.")
+        return cls.to_dict(company)
