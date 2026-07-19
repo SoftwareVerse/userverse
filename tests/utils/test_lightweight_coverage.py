@@ -383,7 +383,9 @@ def test_verification_service_rejects_non_pending_accounts(monkeypatch):
         UserVerificationService(session=object()).verify_user_account("token")
 
     assert exc_info.value.status_code == 403
-    assert exc_info.value.detail["message"] == "User account is not awaiting verification"
+    assert (
+        exc_info.value.detail["message"] == "User account is not awaiting verification"
+    )
 
 
 def test_send_verification_email_logs_dispatch_failures(monkeypatch):
@@ -466,7 +468,9 @@ def test_company_user_service_sends_company_invite(monkeypatch):
 
     result = service.add_user_to_company(
         company_id=1,
-        payload=type("Payload", (), {"email": "invitee@example.com", "role": "Viewer"})(),
+        payload=type(
+            "Payload", (), {"email": "invitee@example.com", "role": "Viewer"}
+        )(),
     )
 
     assert result.email == "invitee@example.com"

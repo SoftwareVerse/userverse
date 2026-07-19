@@ -52,7 +52,10 @@ def test_remove_user_from_company_success(client, login_token):
 
     response = client.delete(
         f"/company/{company_id}/user/{user_id}",
-        headers={"Authorization": f"Bearer {login_token}", "accept": "application/json"},
+        headers={
+            "Authorization": f"Bearer {login_token}",
+            "accept": "application/json",
+        },
     )
 
     assert response.status_code == 200, response.text
@@ -89,10 +92,16 @@ def test_remove_owner_from_company_forbidden(client, login_token):
 
     response = client.delete(
         f"/company/{company_id}/user/1",
-        headers={"Authorization": f"Bearer {login_token}", "accept": "application/json"},
+        headers={
+            "Authorization": f"Bearer {login_token}",
+            "accept": "application/json",
+        },
     )
 
     assert response.status_code == 400, response.text
     json_data = response.json()
-    assert json_data["detail"]["message"] == CompanyUserResponseMessages.REMOVE_USER_FAILED.value
+    assert (
+        json_data["detail"]["message"]
+        == CompanyUserResponseMessages.REMOVE_USER_FAILED.value
+    )
     assert json_data["detail"]["error"] == "Owner cannot be removed from the company."

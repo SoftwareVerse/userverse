@@ -22,6 +22,7 @@ class UserVerificationService:
     Service for handling user account verification via JWT tokens.
     This service does not require an authenticated context to run.
     """
+
     VERIFICATION_TOKEN_EXPIRY_MINUTES = 60 * 24
     ACCOUNT_REGISTRATION_SUBJECT = "User Account Registration"
     VERIFICATION_REMINDER_SUBJECT = "Verify Your Email Address"

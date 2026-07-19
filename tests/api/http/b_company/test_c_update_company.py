@@ -1,7 +1,9 @@
 from app.models.company.response_messages import CompanyResponseMessages
 
 
-def test_a_update_company_one_success(client, login_token, test_company_data, seed_companies):
+def test_a_update_company_one_success(
+    client, login_token, test_company_data, seed_companies
+):
     """
     Test updating a company successfully.
     """
@@ -42,7 +44,9 @@ def test_a_update_company_one_success(client, login_token, test_company_data, se
     )
 
 
-def test_b_update_company_two_failure(client, login_token, test_company_data, seed_companies):
+def test_b_update_company_two_failure(
+    client, login_token, test_company_data, seed_companies
+):
     """
     Test updating a company, but the user is not an admin.
     """

@@ -4,7 +4,9 @@ from app.models.company.response_messages import (
 )
 
 
-def test_a_delete_role_success(client, login_token, test_company_data, seed_company_roles):
+def test_a_delete_role_success(
+    client, login_token, test_company_data, seed_company_roles
+):
     """
     Test deleting a role successfully and reassigning users.
     """
@@ -95,7 +97,9 @@ def test_c_delete_role_not_found(client, login_token, seed_company_roles):
     )
 
 
-def test_d_delete_role_self_replacement_forbidden(client, login_token, seed_company_roles):
+def test_d_delete_role_self_replacement_forbidden(
+    client, login_token, seed_company_roles
+):
     """
     Test rejecting deletion where role is being replaced with itself.
     """

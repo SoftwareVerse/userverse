@@ -80,7 +80,9 @@ def test_verify_user_account_is_idempotent_for_active_user(
     )
 
 
-def test_verify_user_account_rejects_wrong_token_type(client, seed_users, test_user_data):
+def test_verify_user_account_rejects_wrong_token_type(
+    client, seed_users, test_user_data
+):
     email = test_user_data["user_two"]["email"]
 
     response = client.get(f"/user/verify?token={_verification_token(email, 'refresh')}")
@@ -89,9 +91,7 @@ def test_verify_user_account_rejects_wrong_token_type(client, seed_users, test_u
     assert response.json()["detail"]["message"] == "Invalid token"
 
 
-def test_resend_verification_email_by_email_without_authentication(
-    client, monkeypatch
-):
+def test_resend_verification_email_by_email_without_authentication(client, monkeypatch):
     sent_messages = []
     monkeypatch.setattr(
         "app.services.user.verification.MailService.send_template_email",
@@ -200,5 +200,8 @@ def test_resend_verification_email_short_circuits_when_verification_disabled(
     )
 
     assert response.status_code == 200
-    assert response.json()["message"] == UserResponseMessages.VERIFICATION_EMAIL_RESENT.value
+    assert (
+        response.json()["message"]
+        == UserResponseMessages.VERIFICATION_EMAIL_RESENT.value
+    )
     assert sent_messages == []

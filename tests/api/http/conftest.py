@@ -206,7 +206,9 @@ def get_user_two_otp(test_user_data):
         db = DatabaseSessionManager()
         session = db.session_object()
         try:
-            user_row = session.query(User).filter_by(email=user["email"].lower()).first()
+            user_row = (
+                session.query(User).filter_by(email=user["email"].lower()).first()
+            )
             if user_row:
                 return user_row.primary_meta_data.get("password_reset", {}).get(
                     "password_reset_token"

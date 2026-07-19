@@ -188,7 +188,9 @@ def test_user_revoke_blocks_old_refresh_token(client, test_user_data, seed_users
     assert refresh_response.status_code == 401
 
 
-def test_user_refresh_rejects_inactive_user(client, test_user_data, seed_verified_users):
+def test_user_refresh_rejects_inactive_user(
+    client, test_user_data, seed_verified_users
+):
     user_one = test_user_data["user_one"]
     token_data = _login_for_tokens(client, user_one)
 

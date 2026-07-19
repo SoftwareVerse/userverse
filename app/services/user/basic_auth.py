@@ -158,5 +158,7 @@ class UserBasicAuthService:
         user = self.user_repository.create_user(data, account_status=account_status)
         self.context.user = user
         if self.context.configs.REQUIRE_EMAIL_VERIFICATION:
-            self.send_verification_email(mode="create", background_tasks=background_tasks)
+            self.send_verification_email(
+                mode="create", background_tasks=background_tasks
+            )
         return user

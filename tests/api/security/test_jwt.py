@@ -289,9 +289,7 @@ def test_get_current_user_from_jwt_token_rejects_inactive_database_user(monkeypa
         "app.api.security.jwt.JWTManager.decode_token",
         lambda self, token: sample_user,
     )
-    inactive_user = sample_user.model_copy(
-        update={"status": "Suspended"}
-    )
+    inactive_user = sample_user.model_copy(update={"status": "Suspended"})
     monkeypatch.setattr(
         "app.api.security.jwt.UserRepository.get_user_by_id",
         lambda self, user_id: inactive_user,
