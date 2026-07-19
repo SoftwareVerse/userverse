@@ -46,6 +46,20 @@ filterwarnings = [
     "ignore::DeprecationWarning:passlib.utils",
 ]
 
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "app/api/middleware/logging.py",
+    "app/api/middleware/otel.py",
+    "app/api/middleware/profiling.py",
+    "app/email/sender.py",
+    "app/models/configs/*",
+]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+
 
 
 [dependency-groups]

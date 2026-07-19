@@ -4,16 +4,17 @@ set -e  # Exit on error (but we'll handle test collection issues manually)
 set -o pipefail
 
 echo "========================================="
-echo "🚀 Starting HTTP Integration Test Suite"
+echo "Starting HTTP Integration Test Suite"
 echo "========================================="
 
 # Export environment variable for test mode
-export TEST_ENVIRONMENT=True
-echo "✅ TEST_ENVIRONMENT set to True"
+export ENVIRONMENT=testing
+export TESTING=true
+echo "Test runtime configured with ENVIRONMENT=testing and TESTING=true"
 
 # Optional: Clean up old test DB if exists
 if [ -f "test_environment.db" ]; then
-    echo "🗑️ Removing old test_environment.db..."
+    echo "Removing old test_environment.db..."
     rm test_environment.db
 fi
 
@@ -22,13 +23,14 @@ COVERAGE_DIR="coverage_reports"
 mkdir -p "$COVERAGE_DIR"
 
 echo "-----------------------------------------"
-echo "📄 Generating Coverage Report Summary:"
-pytest -v -s --cov=app \
+echo "Generating Coverage Report Summary:"
+pytest -v --cov=app \
     --cov-report=term-missing \
-    --cov-report=xml:"$COVERAGE_DIR/coverage.xml"
+    --cov-report=xml:"$COVERAGE_DIR/coverage.xml" \
+    --cov-fail-under=95
 
 
 echo "========================================="
-echo "✅ HTTP integration tests completed!"
-echo "📁 Coverage report saved to: $COVERAGE_DIR/coverage.xml"
+echo "HTTP integration tests completed!"
+echo "Coverage report saved to: $COVERAGE_DIR/coverage.xml"
 echo "========================================="
