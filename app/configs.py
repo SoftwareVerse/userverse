@@ -3,7 +3,6 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
-from types import SimpleNamespace
 
 from dotenv import load_dotenv
 from pydantic import AliasChoices, Field, model_validator
@@ -207,65 +206,6 @@ class Settings(BaseSettings):
     @property
     def PROJECT_ROOT(self) -> Path:
         return Path(__file__).resolve().parent.parent
-
-    @property
-    def environment(self) -> str:
-        return self.ENVIRONMENT
-
-    @property
-    def server_url(self) -> str:
-        return self.SERVER_URL
-
-    @property
-    def name(self) -> str:
-        return self.APP_NAME
-
-    @property
-    def description(self) -> str:
-        return self.APP_DESCRIPTION
-
-    @property
-    def version(self) -> str:
-        return self.APP_VERSION
-
-    @property
-    def repository(self) -> str | None:
-        return self.REPOSITORY
-
-    @property
-    def documentation(self) -> str | None:
-        return self.DOCUMENTATION
-
-    @property
-    def database_url(self) -> str:
-        return self.DATABASE_URL or self._build_database_url()
-
-    @property
-    def cor_origins(self) -> SimpleNamespace:
-        return SimpleNamespace(
-            allowed=list(self.CORS_ALLOWED),
-            blocked=list(self.CORS_BLOCKED),
-        )
-
-    @property
-    def jwt(self) -> SimpleNamespace:
-        return SimpleNamespace(
-            secret=self.JWT_SECRET,
-            algorithm=self.JWT_ALGORITHM,
-            timeout=self.JWT_TIMEOUT,
-            refresh_timeout=self.JWT_REFRESH_TIMEOUT,
-        )
-
-    @property
-    def email(self) -> SimpleNamespace:
-        return SimpleNamespace(
-            host=self.EMAIL_HOST,
-            port=self.EMAIL_PORT,
-            username=self.EMAIL_USERNAME,
-            password=self.EMAIL_PASSWORD,
-            email_tls=self.EMAIL_TLS,
-            email_ssl=self.EMAIL_SSL,
-        )
 
 
 def _settings_env_snapshot() -> tuple[tuple[str, str | None], ...]:

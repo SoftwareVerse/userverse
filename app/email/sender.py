@@ -27,6 +27,8 @@ EMAIL_SEND_FAILURES = Counter(
 )
 
 TEST_ENVIRONMENTS = {"test_environment", "testing", "test"}
+DEFAULT_SMTP_TIMEOUT_SECONDS = 3.0
+DEFAULT_SMTP_MAX_RETRIES = 1
 
 
 def _load_email_settings() -> Optional[Settings]:
@@ -93,8 +95,8 @@ def deliver_email(
     html_body: str,
     *,
     reason: str = "rendered",
-    timeout: float = 10.0,
-    max_retries: int = 3,
+    timeout: float = DEFAULT_SMTP_TIMEOUT_SECONDS,
+    max_retries: int = DEFAULT_SMTP_MAX_RETRIES,
 ) -> None:
     """
     Send the email immediately using SMTP with retries and instrumentation.
