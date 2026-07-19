@@ -4,13 +4,8 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.database import Base
-
-# Import model modules so SQLAlchemy metadata is fully registered.
-from app.database import association_user_company  # noqa: F401
-from app.database import company  # noqa: F401
-from app.database import role  # noqa: F401
-from app.database import user  # noqa: F401
+from app.repository.database import Base
+from app.repository.database import tables as database_tables  # noqa: F401
 
 
 @pytest.fixture

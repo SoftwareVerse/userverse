@@ -1,50 +1,44 @@
 from fastapi import status
+from sqlalchemy.exc import IntegrityError
 
-# utils
-from app.utils.app_error import AppError
-
-# database
-from sqlalchemy.orm import Session
-from app.database.user import User
-
-# models
 from app.models.user.account_status import UserAccountStatus
-from app.models.user.user import UserReadModel
 from app.models.user.response_messages import UserResponseMessages
-from app.utils.hash_password import verify_password, hash_password, UnknownHashError
+from app.models.user.user import UserReadModel
+from app.repository.base import BaseSQLRepository
+from app.repository.database.tables import User
+from app.utils.app_error import AppError
+from app.utils.hash_password import UnknownHashError, hash_password, verify_password
 
 
-class UserRepository:
+class UserRepository(BaseSQLRepository[User]):
+    model = User
     REFRESH_TOKEN_VERSION_KEY = "refresh_token_version"
 
-    def __init__(self, session: Session):
-        self.session = session
+    @staticmethod
+    def _to_read_model(user: User, *, status_override: str | None = None) -> UserReadModel:
+        metadata = user.primary_meta_data or {}
+        return UserReadModel(
+            id=user.id,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            email=user.email,
+            phone_number=user.phone_number,
+            status=status_override or metadata.get("status"),
+            is_superuser=user.is_superuser,
+        )
 
-    def get_user_by_id(self, user_id) -> UserReadModel:
-        session = self.session
-        user = User.get_by_id(session, user_id)
-        if not user:
+    def get_user_by_id(self, user_id: int) -> UserReadModel:
+        try:
+            user = self.get_by_id(user_id)
+        except Exception as exc:
             raise AppError(
                 status_code=status.HTTP_404_NOT_FOUND,
                 message=UserResponseMessages.USER_NOT_FOUND.value,
-            )
-        return UserReadModel(
-            id=user.get("id", -1),
-            first_name=user.get("first_name"),
-            last_name=user.get("last_name"),
-            email=user.get("email", ""),
-            phone_number=user.get("phone_number"),
-            status=user.get("primary_meta_data", {}).get("status"),
-            is_superuser=user.get("is_superuser", False),
-        )
+            ) from exc
+        return self._to_read_model(user)
 
-    def get_user_by_email(
-        self, user_email: str, password: str | None = None
-    ) -> UserReadModel:
-        session = self.session
-        user = session.query(User).filter(User.email == user_email).first()
-
-        # Avoid user enumeration: return the same error for unknown email or bad password
+    def get_user_by_email(self, user_email: str, password: str | None = None) -> UserReadModel:
+        user = self._base_query().filter(User.email == user_email).first()
         if not user:
             raise AppError(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -52,16 +46,14 @@ class UserRepository:
             )
 
         if password is not None:
-            # Validate password; gracefully handle legacy/plaintext values
             try:
                 is_valid = verify_password(password, user.password)
             except UnknownHashError:
-                # Stored password is not a recognized hash (likely plaintext)
                 is_valid = password == user.password
                 if is_valid:
-                    # Transparently upgrade to a secure hash
                     user.password = hash_password(password)
-                    session.commit()
+                    self.db_session.commit()
+                    self.db_session.refresh(user)
 
             if not is_valid:
                 raise AppError(
@@ -69,19 +61,13 @@ class UserRepository:
                     message=UserResponseMessages.INVALID_CREDENTIALS.value,
                 )
 
-        return UserReadModel(
-            id=user.id,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            email=user.email,
-            phone_number=user.phone_number,
-            status=user.primary_meta_data.get("status"),
-            is_superuser=user.is_superuser,
-        )
+        return self._to_read_model(user)
+
+    def get_user_record_by_email(self, user_email: str) -> User | None:
+        return self._base_query().filter(User.email == user_email).first()
 
     def create_user(self, data: dict) -> UserReadModel:
-        session = self.session
-        existing_user = session.query(User).filter(User.email == data["email"]).first()
+        existing_user = self._base_query().filter(User.email == data["email"]).first()
         if existing_user:
             raise AppError(
                 status_code=status.HTTP_409_CONFLICT,
@@ -89,8 +75,9 @@ class UserRepository:
             )
 
         try:
-            user = User.create(session, **data)
-        except ValueError as exc:
+            user = self.create(**data)
+        except IntegrityError as exc:
+            self.db_session.rollback()
             if "UNIQUE constraint failed: user.email" in str(exc):
                 raise AppError(
                     status_code=status.HTTP_409_CONFLICT,
@@ -98,75 +85,43 @@ class UserRepository:
                 ) from exc
             raise
 
-        if not user:
-            raise AppError(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                message=UserResponseMessages.USER_CREATION_FAILED.value,
-            )
-
-        # Set initial status
         self.update_user_status(
-            user_id=user.get("id", -1),
+            user_id=user.id,
             account_status=UserAccountStatus.AWAITING_VERIFICATION.name_value,
         )
-
-        return UserReadModel(
-            id=user.get("id", -1),
-            first_name=user.get("first_name"),
-            last_name=user.get("last_name"),
-            email=user.get("email", ""),
-            phone_number=user.get("phone_number"),
-            status=UserAccountStatus.AWAITING_VERIFICATION.name_value,
-            is_superuser=user.get("is_superuser", False),
+        self.db_session.refresh(user)
+        return self._to_read_model(
+            user,
+            status_override=UserAccountStatus.AWAITING_VERIFICATION.name_value,
         )
 
-    def update_user(self, user_id: int, data: dict):
-        """Update user details by user ID."""
-        session = self.session
-        user = User.update(session, record_id=user_id, **data)
+    def update_user(self, user_id: int, data: dict) -> UserReadModel:
+        user = self._base_query().filter(User.id == user_id).one_or_none()
         if not user:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 message=UserResponseMessages.USER_UPDATE_FAILED.value,
             )
-        return UserReadModel(
-            id=user.get("id", -1),
-            first_name=user.get("first_name"),
-            last_name=user.get("last_name"),
-            email=user.get("email", ""),
-            phone_number=user.get("phone_number"),
-            is_superuser=user.get("is_superuser", False),
-            status=user.get("primary_meta_data", {}).get("status"),
-        )
+        updated = self.update(user, **data)
+        return self._to_read_model(updated)
 
-    def update_user_status(self, user_id: int, account_status: str):
-        """Update user account status by user ID."""
-        session = self.session
-        user = User.update_json_field(
-            session=session,
-            record_id=user_id,
-            column_name="primary_meta_data",
-            key="status",
-            value=account_status,
-        )
+    def update_user_status(self, user_id: int, account_status: str) -> UserReadModel:
+        user = self._base_query().filter(User.id == user_id).one_or_none()
         if not user:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 message=UserResponseMessages.USER_ACCOUNT_STATUS_UPDATE_FAILED.value,
             )
-        return UserReadModel(
-            id=user.get("id", -1),
-            first_name=user.get("first_name"),
-            last_name=user.get("last_name"),
-            email=user.get("email", ""),
-            phone_number=user.get("phone_number"),
-            is_superuser=user.get("is_superuser", False),
-            status=account_status,
+        updated = self.update_json_field(
+            user,
+            column_name="primary_meta_data",
+            key="status",
+            value=account_status,
         )
+        return self._to_read_model(updated, status_override=account_status)
 
     def get_refresh_token_version(self, user_id: int) -> int:
-        session = self.session
-        user = session.query(User).filter(User.id == user_id).first()
+        user = self._base_query().filter(User.id == user_id).first()
         if not user:
             raise AppError(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -181,19 +136,20 @@ class UserRepository:
             return 0
 
     def increment_refresh_token_version(self, user_id: int) -> int:
-        next_version = self.get_refresh_token_version(user_id) + 1
-        updated_user = User.update_json_field(
-            self.session,
-            user_id,
-            "primary_meta_data",
-            self.REFRESH_TOKEN_VERSION_KEY,
-            next_version,
-        )
-        return int(
-            updated_user.get("primary_meta_data", {}).get(
-                self.REFRESH_TOKEN_VERSION_KEY, next_version
+        user = self._base_query().filter(User.id == user_id).first()
+        if not user:
+            raise AppError(
+                status_code=status.HTTP_404_NOT_FOUND,
+                message=UserResponseMessages.USER_NOT_FOUND.value,
             )
+        next_version = self.get_refresh_token_version(user_id) + 1
+        updated_user = self.update_json_field(
+            user,
+            column_name="primary_meta_data",
+            key=self.REFRESH_TOKEN_VERSION_KEY,
+            value=next_version,
         )
+        return int(updated_user.primary_meta_data.get(self.REFRESH_TOKEN_VERSION_KEY, next_version))
 
-    def delete_user(self, user_id):
+    def delete_user(self, user_id: int):
         raise NotImplementedError("Delete user method not implemented")

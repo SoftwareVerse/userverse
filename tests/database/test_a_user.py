@@ -1,6 +1,6 @@
 import pytest
-from app.database.user import User
-from app.database.base_model import RecordNotFoundError
+from app.repository.database.tables import User
+from app.repository.database.base_model import RecordNotFoundError
 from app.models.user.response_messages import UserResponseMessages
 from app.repository.user import UserRepository
 from app.utils.app_error import AppError

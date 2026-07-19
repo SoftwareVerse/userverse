@@ -7,12 +7,12 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch
 
 from app.main import create_app
-import app.database.session_manager as session_manager
-from app.database.session_manager import DatabaseSessionManager
-from app.database.user import User
-from app.database.company import Company
-from app.database.role import Role
-from app.database.association_user_company import AssociationUserCompany
+import app.repository.database.session_manager as session_manager
+from app.repository.database.session_manager import DatabaseSessionManager
+from app.repository.database.tables import User
+from app.repository.database.tables import Company
+from app.repository.database.tables import Role
+from app.repository.database.tables import AssociationUserCompany
 from app.models.user.account_status import UserAccountStatus
 from tests.utils.basic_auth import get_basic_auth_header
 from app.security.jwt import JWTManager

@@ -1,198 +1,147 @@
 from fastapi import status
 
-# utils
+from app.models.company.response_messages import CompanyRoleResponseMessages, CompanyUserResponseMessages
+from app.models.company.roles import RoleCreateModel, RoleDeleteModel, RoleQueryParamsModel, RoleReadModel, RoleUpdateModel
+from app.models.user.user import UserReadModel
+from app.repository.base import BaseSQLRepository
+from app.repository.database.tables import Role
 from app.utils.app_error import AppError
 
-# database
-from sqlalchemy.orm import Session
-from app.database.role import Role
 
-# models
-from app.models.user.user import UserReadModel
-from app.models.company.roles import (
-    RoleCreateModel,
-    RoleQueryParamsModel,
-    RoleReadModel,
-    RoleUpdateModel,
-    RoleDeleteModel,
-)
-from app.models.company.response_messages import (
-    CompanyRoleResponseMessages,
-)
+class RoleRepository(BaseSQLRepository[Role]):
+    model = Role
 
-
-class RoleRepository:
-
-    def __init__(self, company_id: int, session: Session):
+    def __init__(self, company_id: int, session):
+        super().__init__(session)
         self.company_id = company_id
-        self.session = session
 
-    def get_roles(
-        self,
-        payload: RoleQueryParamsModel,
-    ) -> dict:
-        """
-        Get paginated roles for the company with optional filtering.
-        Excludes soft-deleted roles (_closed_at is not null).
-        """
-        session = self.session
+    @staticmethod
+    def _to_read_model(role: Role) -> RoleReadModel:
+        data = BaseSQLRepository.serialize(role)
+        return RoleReadModel(**data)
+
+    def get_roles(self, payload: RoleQueryParamsModel) -> dict:
         try:
-            filters = {
-                "company_id": Role.company_id == self.company_id,
-                "_closed_at": Role._closed_at.is_(None),
-            }
-            if payload.name:
-                filters["name"] = Role.name.ilike(f"%{payload.name}%")
-            if payload.description:
-                filters["description"] = Role.description.ilike(
-                    f"%{payload.description}%"
-                )
-
-            return Role.get_all(
-                session=session,
-                filters=filters,
-                limit=payload.limit,
-                page=payload.page,
+            query = self._base_query().filter(
+                Role.company_id == self.company_id,
+                Role._closed_at.is_(None),
             )
-        except Exception as e:
+            if payload.name:
+                query = query.filter(Role.name.ilike(f"%{payload.name}%"))
+            if payload.description:
+                query = query.filter(Role.description.ilike(f"%{payload.description}%"))
+            return self.paginate(
+                query,
+                page=payload.page,
+                limit=payload.limit,
+                order_by=[Role.name.asc()],
+            )
+        except Exception as exc:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 message=CompanyRoleResponseMessages.ROLE_NOT_FOUND.value,
-                error=str(e),
+                error=str(exc),
+            ) from exc
+
+    def get_role_record(self, role_name: str) -> Role | None:
+        return (
+            self._base_query()
+            .filter(
+                Role.company_id == self.company_id,
+                Role.name == role_name,
+                Role._closed_at.is_(None),
             )
+            .one_or_none()
+        )
+
+    def ensure_role_belongs_to_company(self, role_name: str) -> Role:
+        role = self.get_role_record(role_name)
+        if not role:
+            raise AppError(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                message=CompanyUserResponseMessages.ADD_USER_FAILED.value,
+                error=f"Role: {role_name} is not linked to the company",
+            )
+        return role
 
     def delete_role(self, payload: RoleDeleteModel, deleted_by: UserReadModel) -> dict:
-        """
-        Delete role from a company
-        """
-        session = self.session
         try:
-            updated = Role.delete_role_and_reassign_users(
-                session=session,
-                company_id=self.company_id,
-                name_to_delete=payload.role_name_to_delete,
-                replacement_name=payload.replacement_role_name,
-                deleted_by=deleted_by,
+            if payload.role_name_to_delete == payload.replacement_role_name:
+                raise ValueError("Cannot replace a role with itself.")
+
+            role_to_delete = self.get_role_record(payload.role_name_to_delete)
+            if not role_to_delete:
+                raise ValueError(f"Role '{payload.role_name_to_delete}' not found.")
+
+            replacement_role = self.get_role_record(payload.replacement_role_name)
+            if not replacement_role:
+                raise ValueError(f"Replacement role '{payload.replacement_role_name}' not found.")
+
+            reassigned_count = 0
+            for user_link in role_to_delete.users:
+                user_link.role = replacement_role
+                reassigned_count += 1
+
+            role_to_delete._closed_at = self._now_sql()
+            self.db_session.add(role_to_delete)
+            self.db_session.commit()
+            self.update_json_field(
+                role_to_delete,
+                column_name="primary_meta_data",
+                key="deleted_by",
+                value=deleted_by.model_dump(),
             )
-            return updated
-        except Exception as e:
+
+            return {
+                "message": (
+                    f"Role '{payload.role_name_to_delete}' soft deleted and users reassigned "
+                    f"to '{payload.replacement_role_name}'."
+                ),
+                "users_reassigned": reassigned_count,
+            }
+        except Exception as exc:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 message=CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value,
-                error=str(e),
-            )
+                error=str(exc),
+            ) from exc
 
     def update_role(self, name: str, payload: RoleUpdateModel) -> RoleReadModel:
-        """
-        Update the description of a role for this company.
-        """
-        session = self.session
         try:
-            updated = Role.update_role(
-                session,
-                company_id=self.company_id,
-                name=name,
-                new_description=payload.description,
-                new_name=payload.name,
-            )
-            return RoleReadModel(**updated)
-        except Exception as e:
+            role = self.get_role_record(name)
+            if not role:
+                raise ValueError(f"Role with company_id={self.company_id} and name='{name}' not found.")
+            if payload.name:
+                role.name = payload.name
+            if payload.description is not None:
+                role.description = payload.description
+            self.db_session.commit()
+            self.db_session.refresh(role)
+            return self._to_read_model(role)
+        except Exception as exc:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 message=CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value,
-                error=str(e),
-            )
+                error=str(exc),
+            ) from exc
 
-    def create_role(
-        self,
-        payload: RoleCreateModel,
-        created_by: UserReadModel,
-    ) -> RoleReadModel:
-        """
-        Create a new role for a company.
-
-        Args:
-            payload: The role data to be created
-            created_by: The user who is creating the role
-            company_id: The ID of the company
-
-        Returns:
-            RoleRead: The created role data
-
-        Raises:
-            AppError: If role creation fails
-        """
-        session = self.session
-        # 1. Create the role
-        role = self._create_role_record(session, payload, created_by)
-
-        # 2. Get the registered role with complete data
-        registered_role = self._get_registered_role(session, role["name"])
-
-        return RoleReadModel(**registered_role)
-
-    def _create_role_record(
-        self, session, payload: RoleCreateModel, created_by: UserReadModel
-    ) -> dict:
-        """
-        Create a new role record in the database.
-
-        Args:
-            session: The database session
-            payload: The role data to be created
-            created_by: The user who is creating the role
-            company_id: The ID of the company
-
-        Returns:
-            dict: The created role data
-        """
+    def create_role(self, payload: RoleCreateModel, created_by: UserReadModel) -> RoleReadModel:
         try:
-            new_role = Role(
+            role = self.create(
                 name=payload.name,
                 description=payload.description,
                 company_id=self.company_id,
             )
-            session.add(new_role)
-            session.commit()
-            new_role.update_json_field(
-                session=session,
-                company_id=new_role.company_id,
-                name=new_role.name,
+            role = self.update_json_field(
+                role,
                 column_name="primary_meta_data",
                 key="created_by",
                 value=created_by.model_dump(),
             )
-            session.refresh(new_role)
-            return new_role.to_dict(new_role)
-        except Exception as e:
+            return self._to_read_model(role)
+        except Exception as exc:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 message=CompanyRoleResponseMessages.ROLE_CREATION_FAILED.value,
-                error=str(e),
-            ) from e
-
-    def _get_registered_role(self, session, role_name: str) -> dict:
-        """
-        Get the registered role with complete data.
-
-        Args:
-            session: The database session
-            role_id: The ID of the role
-
-        Returns:
-            dict: The registered role data
-        """
-        try:
-
-            role = session.query(Role).filter(Role.name == role_name).first()
-            if not role:
-                raise AppError(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    message=CompanyRoleResponseMessages.ROLE_NOT_FOUND.value,
-                )
-            return role.to_dict(role)
-        except Exception as e:
-            raise AppError(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                message=str(e),
-            ) from e
+                error=str(exc),
+            ) from exc

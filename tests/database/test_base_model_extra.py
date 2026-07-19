@@ -1,8 +1,8 @@
 import pytest
 
-from app.database.base_model import BaseModel, RecordNotFoundError
-from app.database.company import Company
-from app.database.user import User
+from app.repository.database.base_model import BaseModel, RecordNotFoundError
+from app.repository.database.tables import Company
+from app.repository.database.tables import User
 
 
 def test_to_dict_handles_none_and_model_lists(test_session, test_user_data):

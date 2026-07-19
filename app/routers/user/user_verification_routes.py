@@ -13,7 +13,7 @@ from app.services.user.basic_auth import UserBasicAuthService
 from app.utils.shared_context import SharedContext
 from app.dependencies.common import CommonJWTRouteDependencies
 from sqlalchemy.orm import Session
-from app.database.session_manager import get_session
+from app.repository.database.session_manager import get_session
 
 router = APIRouter(
     prefix="/user",

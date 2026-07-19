@@ -1,6 +1,6 @@
 import pytest
 
-from app.database.company import Company
+from app.repository.database.tables import Company
 
 
 def test_get_company_by_email_returns_company(test_session, test_company_data):

@@ -1,34 +1,25 @@
 import socket
 import smtplib
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.configs import CorsSettings, EmailSettings, JwtSettings, RuntimeSettings
 from app.email.sender import deliver_email, send_email
 
 
 def _runtime_settings(
     environment: str = "prod", email: dict | None = None
-) -> RuntimeSettings:
+):
     email = email or {}
-    return RuntimeSettings(
-        environment=environment,
-        database_url="sqlite:///test.db",
-        server_url="http://localhost:8000",
-        cor_origins=CorsSettings(),
-        jwt=JwtSettings(),
-        email=EmailSettings(
-            host=email.get("HOST"),
-            port=email.get("PORT"),
-            username=email.get("USERNAME"),
-            password=email.get("PASSWORD"),
-            use_ssl=email.get("USE_SSL"),
-            use_starttls=email.get("USE_STARTTLS"),
-        ),
-        name="userverse",
-        version="0.1.0",
-        description="test",
+    return SimpleNamespace(
+        ENVIRONMENT=environment,
+        EMAIL_HOST=email.get("HOST"),
+        EMAIL_PORT=email.get("PORT"),
+        EMAIL_USERNAME=email.get("USERNAME"),
+        EMAIL_PASSWORD=email.get("PASSWORD"),
+        EMAIL_SSL=email.get("USE_SSL"),
+        EMAIL_TLS=email.get("USE_STARTTLS"),
     )
 
 
@@ -60,7 +51,7 @@ def test_send_email_default_reason_when_empty_string():
 def test_deliver_email_in_test_environment(capfd):
     fake_settings = _runtime_settings(environment="test_environment")
 
-    with patch("app.email.sender.get_settings", return_value=fake_settings):
+    with patch("app.email.sender.settings", fake_settings):
         deliver_email(
             "test@example.com", "Test Subject", "<h1>Hello</h1><p>This is a test</p>"
         )
@@ -74,7 +65,7 @@ def test_deliver_email_missing_username(capfd):
         email={"PASSWORD": "pass", "HOST": "smtp.test.com", "PORT": 465}
     )
 
-    with patch("app.email.sender.get_settings", return_value=fake_settings):
+    with patch("app.email.sender.settings", fake_settings):
         deliver_email("to@example.com", "Subject", "<h1>Missing</h1><p>User field</p>")
         out, _ = capfd.readouterr()
         assert "Email config not available" in out
@@ -86,7 +77,7 @@ def test_deliver_email_missing_password(capfd):
         email={"USERNAME": "user@test.com", "HOST": "smtp.test.com", "PORT": 465}
     )
 
-    with patch("app.email.sender.get_settings", return_value=fake_settings):
+    with patch("app.email.sender.settings", fake_settings):
         deliver_email("to@example.com", "Subject", "<h1>Missing</h1><p>Password</p>")
         out, _ = capfd.readouterr()
         assert "Email config not available" in out
@@ -98,7 +89,7 @@ def test_deliver_email_missing_host_or_port(capfd):
         email={"USERNAME": "user@test.com", "PASSWORD": "secure"}
     )
 
-    with patch("app.email.sender.get_settings", return_value=fake_settings):
+    with patch("app.email.sender.settings", fake_settings):
         deliver_email("to@example.com", "Subject", "<h1>Missing</h1><p>SMTP config</p>")
         out, _ = capfd.readouterr()
         assert "Email config not available" in out
@@ -115,7 +106,7 @@ def test_deliver_email_success():
         }
     )
 
-    with patch("app.email.sender.get_settings", return_value=fake_settings):
+    with patch("app.email.sender.settings", fake_settings):
         with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
             mock_server = MagicMock()
             mock_smtp_ssl.return_value.__enter__.return_value = mock_server
@@ -136,7 +127,7 @@ def test_deliver_email_dns_failure(capfd):
         }
     )
 
-    with patch("app.email.sender.get_settings", return_value=fake_settings):
+    with patch("app.email.sender.settings", fake_settings):
         with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
             mock_smtp_ssl.side_effect = socket.gaierror(
                 socket.EAI_NONAME, "Name or service not known"
@@ -160,7 +151,7 @@ def test_deliver_email_socket_timeout():
         }
     )
 
-    with patch("app.email.sender.get_settings", return_value=fake_settings):
+    with patch("app.email.sender.settings", fake_settings):
         with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
             mock_smtp_ssl.side_effect = socket.timeout("Connection timed out")
 
@@ -178,7 +169,7 @@ def test_deliver_email_smtp_server_disconnected():
         }
     )
 
-    with patch("app.email.sender.get_settings", return_value=fake_settings):
+    with patch("app.email.sender.settings", fake_settings):
         with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
             mock_smtp_ssl.side_effect = smtplib.SMTPServerDisconnected(
                 "Server disconnected"
@@ -198,7 +189,7 @@ def test_deliver_email_smtp_exception():
         }
     )
 
-    with patch("app.email.sender.get_settings", return_value=fake_settings):
+    with patch("app.email.sender.settings", fake_settings):
         with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
             mock_server = MagicMock()
             mock_smtp_ssl.return_value.__enter__.return_value = mock_server
@@ -220,7 +211,7 @@ def test_deliver_email_general_exception():
         }
     )
 
-    with patch("app.email.sender.get_settings", return_value=fake_settings):
+    with patch("app.email.sender.settings", fake_settings):
         with patch("smtplib.SMTP_SSL") as mock_smtp_ssl:
             mock_server = MagicMock()
             mock_smtp_ssl.return_value.__enter__.return_value = mock_server

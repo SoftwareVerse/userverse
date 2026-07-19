@@ -4,7 +4,7 @@ from fastapi import status, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 # app imports
-from app.configs import get_settings
+from app.configs import settings
 from app.models.security_messages import SecurityResponseMessages
 from app.models.user.user import TokenResponseModel, UserReadModel
 from app.utils.app_error import AppError
@@ -19,11 +19,10 @@ class JWTManager:
     """
 
     def __init__(self):
-        settings = get_settings()
-        self.JWT_SECRET = settings.jwt.secret
-        self.JWT_ALGORITHM = settings.jwt.algorithm
-        self.SESSION_TIMEOUT = int(settings.jwt.timeout)
-        self.REFRESH_TIMEOUT = int(settings.jwt.refresh_timeout)
+        self.JWT_SECRET = settings.JWT_SECRET
+        self.JWT_ALGORITHM = settings.JWT_ALGORITHM
+        self.SESSION_TIMEOUT = int(settings.JWT_TIMEOUT)
+        self.REFRESH_TIMEOUT = int(settings.JWT_REFRESH_TIMEOUT)
 
     def sign_jwt(
         self, user: UserReadModel, *, refresh_token_version: int = 0

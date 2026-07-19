@@ -11,8 +11,7 @@ from typing import Optional
 from bs4 import BeautifulSoup
 from prometheus_client import Counter
 
-from app.configs import get_settings
-from app.models.configs import EmailSettings
+from app.configs import Settings, settings
 
 logger = logging.getLogger(__name__)
 
@@ -30,24 +29,29 @@ EMAIL_SEND_FAILURES = Counter(
 TEST_ENVIRONMENTS = {"test_environment", "testing", "test"}
 
 
-def _load_email_settings() -> Optional[EmailSettings]:
-    settings = get_settings()
-    if settings.environment in TEST_ENVIRONMENTS:
+def _load_email_settings() -> Optional[Settings]:
+    if settings.ENVIRONMENT in TEST_ENVIRONMENTS:
         logger.warning("Skipping email config in test environment.")
         return None
 
-    email_settings = settings.email
-    if not email_settings.model_dump(exclude_none=True):
+    if not any(
+        [
+            settings.EMAIL_HOST,
+            settings.EMAIL_PORT,
+            settings.EMAIL_USERNAME,
+            settings.EMAIL_PASSWORD,
+        ]
+    ):
         logger.warning("Email configuration section is missing.")
         return None
 
     missing = [
         field
         for field, value in {
-            "HOST": email_settings.host,
-            "PORT": email_settings.port,
-            "USERNAME": email_settings.username,
-            "PASSWORD": email_settings.password,
+            "HOST": settings.EMAIL_HOST,
+            "PORT": settings.EMAIL_PORT,
+            "USERNAME": settings.EMAIL_USERNAME,
+            "PASSWORD": settings.EMAIL_PASSWORD,
         }.items()
         if not value
     ]
@@ -55,7 +59,7 @@ def _load_email_settings() -> Optional[EmailSettings]:
         logger.warning("Missing email config fields: %s", missing)
         return None
 
-    return email_settings
+    return settings
 
 
 def _render_plain_text(
@@ -126,7 +130,7 @@ def deliver_email(
 
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = email_settings.username
+    msg["From"] = email_settings.EMAIL_USERNAME
     msg["To"] = to
     msg.set_content("This email requires an HTML-compatible client.")
     msg.add_alternative(html_body, subtype="html")
@@ -148,21 +152,21 @@ def deliver_email(
     # Prefer configured flags from settings (`email_ssl` / `email_tls`) and keep
     # legacy fallbacks (`use_ssl` / `use_starttls`) for compatibility.
     use_implicit_ssl = bool(
-        getattr(email_settings, "email_ssl", getattr(email_settings, "use_ssl", False))
+        getattr(email_settings, "EMAIL_SSL", False)
     )
     use_starttls = bool(
         getattr(
             email_settings,
-            "email_tls",
-            getattr(email_settings, "use_starttls", False),
+            "EMAIL_TLS",
+            False,
         )
     )
 
     if not (use_implicit_ssl or use_starttls):
         # Infer from port if flags not provided
-        if email_settings.port == 465:
+        if email_settings.EMAIL_PORT == 465:
             use_implicit_ssl = True
-        elif email_settings.port in (587, 25):
+        elif email_settings.EMAIL_PORT in (587, 25):
             use_starttls = True
 
     last_error: Optional[BaseException] = None
@@ -180,8 +184,8 @@ def deliver_email(
                         "reason": reason,
                         "attempt": attempt,
                         "stage": stage,
-                        "host": email_settings.host,
-                        "port": email_settings.port,
+                        "host": email_settings.EMAIL_HOST,
+                        "port": email_settings.EMAIL_PORT,
                         "mode": (
                             "implicit_ssl"
                             if use_implicit_ssl
@@ -196,8 +200,8 @@ def deliver_email(
             if use_implicit_ssl:
                 # Implicit SSL (port 465)
                 with smtplib.SMTP_SSL(
-                    email_settings.host,
-                    email_settings.port,
+                    email_settings.EMAIL_HOST,
+                    email_settings.EMAIL_PORT,
                     timeout=timeout,
                     context=tls_ctx,
                 ) as smtp:
@@ -213,7 +217,7 @@ def deliver_email(
                         },
                     )
                     stage = "auth"
-                    smtp.login(email_settings.username, email_settings.password)
+                    smtp.login(email_settings.EMAIL_USERNAME, email_settings.EMAIL_PASSWORD)
                     logger.info(
                         "SMTP authenticated",
                         extra={"extra": {"attempt": attempt, "stage": stage}},
@@ -228,7 +232,7 @@ def deliver_email(
 
             # Plain connect, then optionally STARTTLS
             with smtplib.SMTP(
-                email_settings.host, email_settings.port, timeout=timeout
+                email_settings.EMAIL_HOST, email_settings.EMAIL_PORT, timeout=timeout
             ) as smtp:
                 logger.info(
                     "SMTP connected (plain)",
@@ -252,7 +256,7 @@ def deliver_email(
                     )
 
                 stage = "auth"
-                smtp.login(email_settings.username, email_settings.password)
+                smtp.login(email_settings.EMAIL_USERNAME, email_settings.EMAIL_PASSWORD)
                 logger.info(
                     "SMTP authenticated",
                     extra={"extra": {"attempt": attempt, "stage": stage}},
@@ -277,14 +281,14 @@ def deliver_email(
                         "reason": reason,
                         "stage": stage,
                         "error": str(exc),
-                        "host": email_settings.host,
-                        "port": email_settings.port,
+                        "host": email_settings.EMAIL_HOST,
+                        "port": email_settings.EMAIL_PORT,
                     }
                 },
             )
             _render_plain_text(
                 html_body,
-                header=f"Unable to reach SMTP host {email_settings.host}. Showing plain text:",
+                header=f"Unable to reach SMTP host {email_settings.EMAIL_HOST}. Showing plain text:",
                 to=to,
                 subject=subject,
             )

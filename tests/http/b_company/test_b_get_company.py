@@ -1,6 +1,6 @@
 import pytest
 from app.models.company.response_messages import CompanyResponseMessages
-from app.database.base_model import RecordNotFoundError
+from app.repository.database.base_model import RecordNotFoundError
 
 
 def test_a_get_company_one_by_id_success(client, login_token):

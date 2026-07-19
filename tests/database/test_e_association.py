@@ -1,8 +1,8 @@
 import pytest
-from app.database.user import User
-from app.database.company import Company
-from app.database.role import Role
-from app.database.association_user_company import AssociationUserCompany
+from app.repository.database.tables import User
+from app.repository.database.tables import Company
+from app.repository.database.tables import Role
+from app.repository.database.tables import AssociationUserCompany
 
 
 def test_create_association(

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 # Dependencies
 from app.dependencies.common import CommonBasicAuthRouteDependencies
-from app.database.session_manager import get_session
+from app.repository.database.session_manager import get_session
 from app.utils.shared_context import SharedContext
 
 # Tags & Models

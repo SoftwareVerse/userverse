@@ -23,7 +23,6 @@ from app.utils.rate_limiter import (
     PASSWORD_RESET_RATE_LIMITER,
     RateLimitExceeded,
 )
-from app.database.user import User
 from app.repository.user import UserRepository
 
 
@@ -72,7 +71,7 @@ class UserPasswordService:
             ) from exc
 
         # check if user exists without leaking enumeration through HTTP response
-        session_user = self.session.query(User).filter(User.email == user_email).first()
+        session_user = UserRepository(self.session).get_user_record_by_email(user_email)
         if not session_user:
             logger.info(
                 "Password reset requested for unknown email",
