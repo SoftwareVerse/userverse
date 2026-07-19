@@ -1,8 +1,13 @@
 import pytest
 
 from app.repository.database.base_model import BaseModel, RecordNotFoundError
+from app.repository.base import BaseSQLRepository
 from app.repository.database.tables import Company
 from app.repository.database.tables import User
+
+
+class UserSQLRepository(BaseSQLRepository[User]):
+    model = User
 
 
 def test_to_dict_handles_none_and_model_lists(test_session, test_user_data):
@@ -131,6 +136,64 @@ def test_bulk_update_json_field_initializes_none_json_column(
     )
 
     assert updated["secondary_meta_data"]["source"] == "tests"
+
+
+def test_base_sql_repository_crud_helpers(test_session):
+    repository = UserSQLRepository(test_session)
+
+    user = repository.create(
+        email="repo-user@example.com",
+        password="secret",
+        first_name="Repo",
+    )
+    assert repository.get_by_id(user.id).email == "repo-user@example.com"
+
+    updated = repository.update(user, first_name="Updated")
+    assert updated.first_name == "Updated"
+
+    repository.soft_delete(updated)
+    assert updated._closed_at is not None
+
+
+def test_base_sql_repository_get_by_id_raises_for_missing_record(test_session):
+    repository = UserSQLRepository(test_session)
+
+    with pytest.raises(RecordNotFoundError):
+        repository.get_by_id(999)
+
+
+def test_base_sql_repository_update_json_field_branches(test_session):
+    repository = UserSQLRepository(test_session)
+    user = repository.create(
+        email="repo-json@example.com",
+        password="secret",
+        first_name="Json",
+    )
+
+    user.primary_meta_data = None
+    updated = repository.update_json_field(
+        user,
+        column_name="primary_meta_data",
+        key="status",
+        value="Active",
+    )
+    assert updated.primary_meta_data == {"status": "Active"}
+
+    with pytest.raises(ValueError, match="Column missing does not exist"):
+        repository.update_json_field(
+            user,
+            column_name="missing",
+            key="status",
+            value="Active",
+        )
+
+    with pytest.raises(ValueError, match="Column email is not a JSON field"):
+        repository.update_json_field(
+            user,
+            column_name="email",
+            key="status",
+            value="Active",
+        )
 
 
 def test_bulk_update_json_field_rejects_invalid_column(test_session, test_user_data):
