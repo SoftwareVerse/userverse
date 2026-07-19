@@ -118,10 +118,45 @@ def test_settings_builds_database_urls_for_supported_backends(monkeypatch):
     fallback_settings = Settings(
         ENVIRONMENT="review",
         DB_TYPE="postgresql",
+        JWT_SECRET="review-secret",
         _env_file=None,
     )
     assert fallback_settings.DATABASE_URL == "sqlite:///./review.db"
     assert fallback_settings.PROJECT_ROOT.name == "userverse"
+
+
+def test_settings_rejects_default_jwt_secret_outside_safe_environments():
+    with pytest.raises(
+        ValidationError,
+        match="JWT_SECRET must be explicitly set outside development/testing environments",
+    ):
+        Settings(
+            ENVIRONMENT="production",
+            JWT_SECRET="secret1234",
+            _env_file=None,
+        )
+
+    production_settings = Settings(
+        ENVIRONMENT="production",
+        JWT_SECRET="strong-production-secret",
+        _env_file=None,
+    )
+    assert production_settings.JWT_SECRET == "strong-production-secret"
+
+    development_settings = Settings(
+        ENVIRONMENT="development",
+        JWT_SECRET="secret1234",
+        _env_file=None,
+    )
+    assert development_settings.JWT_SECRET == "secret1234"
+
+    testing_settings = Settings(
+        ENVIRONMENT="production",
+        TESTING=True,
+        JWT_SECRET="secret1234",
+        _env_file=None,
+    )
+    assert testing_settings.JWT_SECRET == "secret1234"
 
 
 def test_settings_proxy_tracks_overrides_and_missing_deletes(monkeypatch):

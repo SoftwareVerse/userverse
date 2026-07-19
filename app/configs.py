@@ -13,6 +13,8 @@ from app.utils.project_metadata import load_project_defaults
 
 load_dotenv()
 _PROJECT_DEFAULTS = load_project_defaults(Path(__file__).resolve().parent.parent)
+DEFAULT_JWT_SECRET = "secret1234"
+INSECURE_JWT_SECRET_ALLOWED_ENVIRONMENTS = {"development", "testing", "test"}
 
 
 class Settings(BaseSettings):
@@ -124,7 +126,7 @@ class Settings(BaseSettings):
     )
 
     JWT_SECRET: str = Field(
-        default="secret1234",
+        default=DEFAULT_JWT_SECRET,
         validation_alias=AliasChoices("JWT_SECRET", "JWT__SECRET"),
     )
     JWT_ALGORITHM: str = Field(
@@ -178,6 +180,15 @@ class Settings(BaseSettings):
         object.__setattr__(self, "SERVER_URL", self.SERVER_URL.rstrip("/"))
         object.__setattr__(self, "CORS_ALLOWED", normalize_origins(self.CORS_ALLOWED))
         object.__setattr__(self, "CORS_BLOCKED", normalize_origins(self.CORS_BLOCKED))
+
+        if (
+            self.JWT_SECRET == DEFAULT_JWT_SECRET
+            and not self.TESTING
+            and self.ENVIRONMENT not in INSECURE_JWT_SECRET_ALLOWED_ENVIRONMENTS
+        ):
+            raise ValueError(
+                "JWT_SECRET must be explicitly set outside development/testing environments"
+            )
 
         if not self.DATABASE_URL:
             object.__setattr__(self, "DATABASE_URL", self._build_database_url())
