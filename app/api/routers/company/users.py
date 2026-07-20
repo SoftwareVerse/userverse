@@ -3,7 +3,11 @@ from fastapi import APIRouter, Depends, status, Path
 from fastapi.responses import JSONResponse
 
 # Models
-from app.models.company.user import CompanyUserAddModel, CompanyUserReadModel
+from app.models.company.user import (
+    CompanyUserAddModel,
+    CompanyUserReadModel,
+    CompanyUserRoleUpdateModel,
+)
 from app.models.generic_pagination import PaginatedResponse
 from app.models.generic_response import GenericResponseModel
 from app.models.company.company import CompanyReadModel
@@ -18,7 +22,6 @@ from app.models.user.user import UserQueryParams
 from app.services.company.user import CompanyUserService
 
 # Utilities
-from app.utils.app_error import AppError
 from app.utils.shared_context import SharedContext
 
 router = APIRouter()
@@ -140,6 +143,49 @@ def delete_user_from_company_api(
         status_code=status.HTTP_200_OK,
         content=GenericResponseModel(
             message=CompanyUserResponseMessages.REMOVE_USER_SUCCESS.value,
+            data=response.model_dump(),
+        ).model_dump(),
+    )
+
+
+@router.patch(
+    "/company/{company_id}/user/{user_id}",
+    tags=[tag],
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"model": GenericResponseModel[CompanyUserReadModel]},
+        400: {"model": AppErrorResponseModel},
+        403: {"model": AppErrorResponseModel},
+        404: {"model": AppErrorResponseModel},
+        500: {"model": AppErrorResponseModel},
+    },
+)
+def update_user_role_api(
+    payload: CompanyUserRoleUpdateModel,
+    company_id: int = Path(..., description=company_id_description),
+    user_id: int = Path(..., description="The ID of the user to update"),
+    common_dependencies: CommonJWTRouteDependencies = Depends(),
+):
+    """
+    Update a specific user's role within a company.
+
+    - **Requires**: Authenticated user with company admin or owner access
+    - **Returns**: The updated company user data
+    """
+    context = SharedContext(
+        user=common_dependencies.user,
+        db_session=common_dependencies.session,
+    )
+    response = CompanyUserService(context).update_user_role(
+        company_id=company_id,
+        user_id=user_id,
+        payload=payload,
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=GenericResponseModel(
+            message=CompanyUserResponseMessages.UPDATE_USER_ROLE_SUCCESS.value,
             data=response.model_dump(),
         ).model_dump(),
     )
