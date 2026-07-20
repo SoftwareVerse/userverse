@@ -10,9 +10,11 @@ import app.services.mailer as mailer_module
 from app.configs import Settings, _SettingsProxy
 import app.repository.database.session_manager as session_manager
 from app.services.company.user import CompanyUserService
+from app.models.company.company import CompanyQueryParamsModel
 from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import UserReadModel
 from app.services.user.basic_auth import UserBasicAuthService
+from app.services.user.profile import UserProfileService
 from app.services.user.verification import UserVerificationService
 from app.utils.app_error import AppError
 from app.utils.shared_context import SharedContext
@@ -556,6 +558,338 @@ def test_company_user_repository_ensure_user_linked_to_company_returns_true(
     )
 
     assert repository.ensure_user_linked_to_company(user_id=1, company_id=1) is True
+
+
+def test_user_repository_get_user_by_id_wraps_unexpected_errors(monkeypatch):
+    from app.repository.user import UserRepository
+
+    repository = UserRepository(db_session=object())
+
+    class FailingQuery:
+        def filter(self, *args, **kwargs):
+            raise RuntimeError("db blew up")
+
+    monkeypatch.setattr(repository, "_active_user_query", lambda: FailingQuery())
+
+    with pytest.raises(AppError) as exc_info:
+        repository.get_user_by_id(1)
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail["message"] == UserResponseMessages.USER_NOT_FOUND.value
+
+
+def test_user_repository_get_user_by_email_rehashes_plaintext_password(monkeypatch):
+    from app.repository.user import UserRepository
+
+    class FakeUser:
+        id = 1
+        first_name = "Jane"
+        last_name = "Doe"
+        email = "user@example.com"
+        phone_number = "+27123456789"
+        is_superuser = False
+        password = "plain-secret"
+        primary_meta_data = {"status": UserAccountStatus.ACTIVE.name_value}
+
+    fake_user = FakeUser()
+    session = Mock()
+    repository = UserRepository(db_session=session)
+
+    class FakeQuery:
+        def filter(self, *args, **kwargs):
+            return self
+
+        def first(self):
+            return fake_user
+
+    monkeypatch.setattr(repository, "_active_user_query", lambda: FakeQuery())
+    monkeypatch.setattr(
+        "app.repository.user.verify_password",
+        lambda password, hashed: (_ for _ in ()).throw(UnknownHashError("bad hash")),
+    )
+    monkeypatch.setattr(
+        "app.repository.user.hash_password",
+        lambda password: f"rehash::{password}",
+    )
+
+    user = repository.get_user_by_email("user@example.com", "plain-secret")
+
+    assert user.email == "user@example.com"
+    assert fake_user.password == "rehash::plain-secret"
+    session.commit.assert_called_once()
+    session.refresh.assert_called_once_with(fake_user)
+
+
+def test_user_repository_create_user_handles_unique_constraint_integrity_error(
+    monkeypatch,
+):
+    from sqlalchemy.exc import IntegrityError
+    from app.repository.user import UserRepository
+
+    session = Mock()
+    repository = UserRepository(db_session=session)
+    monkeypatch.setattr(
+        repository,
+        "_active_user_query",
+        lambda: Mock(filter=lambda *a, **k: Mock(first=lambda: None)),
+    )
+
+    def raise_integrity(**kwargs):
+        raise IntegrityError(
+            "insert", {}, Exception("UNIQUE constraint failed: user.email")
+        )
+
+    monkeypatch.setattr(repository, "create", raise_integrity)
+
+    with pytest.raises(AppError) as exc_info:
+        repository.create_user({"email": "user@example.com", "password": "secret"})
+
+    assert exc_info.value.status_code == 409
+    assert (
+        exc_info.value.detail["message"]
+        == UserResponseMessages.USER_ALREADY_EXISTS.value
+    )
+    session.rollback.assert_called_once()
+
+
+def test_user_repository_update_user_raises_when_missing(monkeypatch):
+    from app.repository.user import UserRepository
+
+    repository = UserRepository(db_session=object())
+
+    class FakeQuery:
+        def filter(self, *args, **kwargs):
+            return self
+
+        def one_or_none(self):
+            return None
+
+    monkeypatch.setattr(repository, "_active_user_query", lambda: FakeQuery())
+
+    with pytest.raises(AppError) as exc_info:
+        repository.update_user(1, {"first_name": "Updated"})
+
+    assert exc_info.value.status_code == 400
+    assert (
+        exc_info.value.detail["message"]
+        == UserResponseMessages.USER_UPDATE_FAILED.value
+    )
+
+
+def test_user_repository_update_user_status_raises_when_missing(monkeypatch):
+    from app.repository.user import UserRepository
+
+    repository = UserRepository(db_session=object())
+
+    class FakeQuery:
+        def filter(self, *args, **kwargs):
+            return self
+
+        def one_or_none(self):
+            return None
+
+    monkeypatch.setattr(repository, "_active_user_query", lambda: FakeQuery())
+
+    with pytest.raises(AppError) as exc_info:
+        repository.update_user_status(1, UserAccountStatus.ACTIVE.name_value)
+
+    assert exc_info.value.status_code == 400
+    assert (
+        exc_info.value.detail["message"]
+        == UserResponseMessages.USER_ACCOUNT_STATUS_UPDATE_FAILED.value
+    )
+
+
+def test_user_repository_increment_refresh_token_version_raises_when_missing(
+    monkeypatch,
+):
+    from app.repository.user import UserRepository
+
+    repository = UserRepository(db_session=object())
+
+    class FakeQuery:
+        def filter(self, *args, **kwargs):
+            return self
+
+        def first(self):
+            return None
+
+    monkeypatch.setattr(repository, "_active_user_query", lambda: FakeQuery())
+
+    with pytest.raises(AppError) as exc_info:
+        repository.increment_refresh_token_version(1)
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail["message"] == UserResponseMessages.USER_NOT_FOUND.value
+
+
+def test_user_repository_delete_user_raises_when_missing(monkeypatch):
+    from app.repository.user import UserRepository
+
+    repository = UserRepository(db_session=object())
+
+    class FakeQuery:
+        def filter(self, *args, **kwargs):
+            return self
+
+        def one_or_none(self):
+            return None
+
+    monkeypatch.setattr(repository, "_active_user_query", lambda: FakeQuery())
+
+    with pytest.raises(AppError) as exc_info:
+        repository.delete_user(1)
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail["message"] == UserResponseMessages.USER_NOT_FOUND.value
+
+
+def test_user_profile_service_get_user_prefers_id(monkeypatch):
+    acting_user = UserReadModel(
+        id=9,
+        email="admin@example.com",
+        first_name="Admin",
+        last_name="User",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    service = UserProfileService(SharedContext(db_session=object(), user=acting_user))
+    expected = UserReadModel(
+        id=1,
+        email="target@example.com",
+        first_name="Target",
+        last_name="User",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    monkeypatch.setattr(
+        service.user_repository, "get_user_by_id", lambda user_id: expected
+    )
+    monkeypatch.setattr(
+        service.user_repository,
+        "get_user_by_email",
+        lambda email: (_ for _ in ()).throw(
+            AssertionError("email path should not be used")
+        ),
+    )
+
+    result = service.get_user(user_id=1, user_email="ignored@example.com")
+
+    assert result == expected
+
+
+def test_user_profile_service_get_user_raises_without_identifier():
+    acting_user = UserReadModel(
+        id=9,
+        email="admin@example.com",
+        first_name="Admin",
+        last_name="User",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    service = UserProfileService(SharedContext(db_session=object(), user=acting_user))
+
+    with pytest.raises(AppError) as exc_info:
+        service.get_user()
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail["message"] == UserResponseMessages.USER_NOT_FOUND.value
+
+
+def test_user_profile_service_update_user_handles_phone_and_invalid_request(
+    monkeypatch,
+):
+    acting_user = UserReadModel(
+        id=9,
+        email="admin@example.com",
+        first_name="Admin",
+        last_name="User",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    service = UserProfileService(SharedContext(db_session=object(), user=acting_user))
+    captured = {}
+    expected = UserReadModel(
+        id=9,
+        email="admin@example.com",
+        first_name="Admin",
+        last_name="User",
+        phone_number="011 222 3333",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+
+    def fake_update_user(user_id, data):
+        captured["user_id"] = user_id
+        captured["data"] = data
+        return expected
+
+    monkeypatch.setattr(service.user_repository, "update_user", fake_update_user)
+    monkeypatch.setattr(
+        "app.services.user.profile.hash_password",
+        lambda password: f"hashed::{password}",
+    )
+
+    result = service.update_user(
+        9,
+        UserUpdateModel(phone_number="011 222 3333", password="secret"),
+    )
+
+    assert result == expected
+    assert captured == {
+        "user_id": 9,
+        "data": {"phone_number": "011 222 3333", "password": "hashed::secret"},
+    }
+
+    with pytest.raises(AppError) as exc_info:
+        service.update_user(9, UserUpdateModel())
+
+    assert exc_info.value.status_code == 400
+    assert (
+        exc_info.value.detail["message"]
+        == UserResponseMessages.INVALID_REQUEST_MESSAGE.value
+    )
+
+
+def test_user_profile_service_get_user_companies_and_delete_user(monkeypatch):
+    acting_user = UserReadModel(
+        id=9,
+        email="admin@example.com",
+        first_name="Admin",
+        last_name="User",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    service = UserProfileService(SharedContext(db_session=object(), user=acting_user))
+    params = CompanyQueryParamsModel(limit=10, page=1)
+    expected = {"records": [], "pagination": {"limit": 10, "current_page": 1}}
+    captured = {}
+
+    def fake_get_user_companies(user_id, params):
+        captured["companies"] = (user_id, params)
+        return expected
+
+    monkeypatch.setattr(
+        service.company_repository,
+        "get_user_companies",
+        fake_get_user_companies,
+    )
+    monkeypatch.setattr(
+        service.user_repository,
+        "delete_user",
+        lambda user_id: captured.setdefault("deleted", user_id),
+    )
+
+    service.get_user_companies(params)
+    service.delete_user(9)
+
+    assert captured["companies"] == (9, params)
+    assert captured["deleted"] == 9
 
 
 def test_shared_context_safe_json_returns_scalars_unchanged():
