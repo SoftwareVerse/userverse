@@ -16,3 +16,10 @@ class CompanyUserAddModel(BaseModel):
         default=CompanyDefaultRoles.VIEWER.name_value,
         json_schema_extra={"example": "Viewer"},
     )
+
+
+class CompanyUserRoleUpdateModel(BaseModel):
+    role: str = Field(
+        ...,
+        json_schema_extra={"example": "Administrator"},
+    )

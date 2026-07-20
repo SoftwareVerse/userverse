@@ -4,7 +4,11 @@ from fastapi import status
 from app.services.mailer import MailService
 from app.repository.company import CompanyRepository
 from app.repository.company_user import CompanyUserRepository
-from app.models.company.user import CompanyUserAddModel, CompanyUserReadModel
+from app.models.company.user import (
+    CompanyUserAddModel,
+    CompanyUserReadModel,
+    CompanyUserRoleUpdateModel,
+)
 from app.models.generic_pagination import PaginatedResponse
 from app.utils.app_error import AppError
 
@@ -94,6 +98,35 @@ class CompanyUserService:
             role_name=user.role_name,
         )
         return user
+
+    def update_user_role(
+        self,
+        company_id: int,
+        user_id: int,
+        payload: CompanyUserRoleUpdateModel,
+    ) -> CompanyUserReadModel:
+        if not (
+            self.company_user_repository.is_user_linked_to_company(
+                user_id=self.context.user.id,
+                company_id=company_id,
+                role_name=CompanyDefaultRoles.ADMINISTRATOR.name_value,
+            )
+            or self.company_user_repository.is_user_linked_to_company(
+                user_id=self.context.user.id,
+                company_id=company_id,
+                role_name=CompanyDefaultRoles.OWNER.name_value,
+            )
+        ):
+            raise AppError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                message=CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value,
+            )
+        return self.company_user_repository.update_user_role(
+            company_id=company_id,
+            user_id=user_id,
+            role_name=payload.role,
+            updated_by=self.context.user,
+        )
 
     def remove_user_from_company(
         self,
