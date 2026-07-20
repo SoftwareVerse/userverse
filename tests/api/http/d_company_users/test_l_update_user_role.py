@@ -1,4 +1,4 @@
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from app.repository.database.session_manager import DatabaseSessionManager
 from app.repository.database.tables import AssociationUserCompany, User
@@ -22,7 +22,7 @@ def _build_company_payload() -> dict:
     }
 
 
-def _create_company(client, token: str) -> int:
+def _create_company(client, token: str) -> str:
     response = client.post(
         "/company",
         json=_build_company_payload(),
@@ -32,7 +32,7 @@ def _create_company(client, token: str) -> int:
     return response.json()["data"]["id"]
 
 
-def _create_role(client, token: str, company_id: int, payload: dict) -> None:
+def _create_role(client, token: str, company_id: str, payload: dict) -> None:
     response = client.post(
         f"/company/{company_id}/role",
         json=payload,
@@ -41,7 +41,7 @@ def _create_role(client, token: str, company_id: int, payload: dict) -> None:
     assert response.status_code in [200, 201], response.text
 
 
-def _add_user_to_company(client, token: str, company_id: int, email: str) -> int:
+def _add_user_to_company(client, token: str, company_id: str, email: str) -> str:
     response = client.post(
         f"/company/{company_id}/users",
         json={"email": email, "role": "Viewer"},
@@ -51,7 +51,7 @@ def _add_user_to_company(client, token: str, company_id: int, email: str) -> int
     return response.json()["data"]["id"]
 
 
-def _get_user_id(email: str) -> int:
+def _get_user_id(email: str) -> UUID:
     db = DatabaseSessionManager()
     session = db.session_object()
     try:
@@ -61,13 +61,15 @@ def _get_user_id(email: str) -> int:
         session.close()
 
 
-def _get_link_row(company_id: int, user_id: int):
+def _get_link_row(company_id: str, user_id: str):
     db = DatabaseSessionManager()
     session = db.session_object()
     try:
+        company_uuid = UUID(company_id)
+        user_uuid = UUID(user_id)
         return (
             session.query(AssociationUserCompany)
-            .filter_by(company_id=company_id, user_id=user_id, _closed_at=None)
+            .filter_by(company_id=company_uuid, user_id=user_uuid, _closed_at=None)
             .first()
         )
     finally:

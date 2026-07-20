@@ -24,10 +24,10 @@ def _set_user_status(email: str, status: str) -> None:
 @pytest.mark.parametrize(
     "login_token_key, query_params, expected_company_ids, expected_status",
     [
-        ("login_token", "limit=10&page=1", {1}, 200),
+        ("login_token", "limit=10&page=1", {"company_one"}, 200),
         ("login_token", "limit=10&page=1&name=Test", set(), 200),  # updated
         ("login_token", "limit=10&page=1&email=notfound@example.com", set(), 200),
-        ("login_token_user_two", "limit=10&page=1", {2}, 200),
+        ("login_token_user_two", "limit=10&page=1", {"company_two"}, 200),
         ("login_token_user_two", "limit=10&page=1&role_name=Admin", set(), 200),
         (
             "login_token_user_two",
@@ -69,6 +69,9 @@ def test_get_user_companies(
         assert (
             json_data["message"] == CompanyUserResponseMessages.GET_COMPANY_USERS.value
         )
+        expected_company_ids = {
+            str(seed_companies[company_id]) for company_id in expected_company_ids
+        }
         company_ids = {company["id"] for company in json_data["data"]["records"]}
         assert company_ids == expected_company_ids
 

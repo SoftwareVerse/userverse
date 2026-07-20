@@ -54,7 +54,7 @@ def user_login_api(
         status_code=status.HTTP_202_ACCEPTED,
         content={
             "message": UserResponseMessages.USER_LOGGED_IN.value,
-            "data": response.model_dump(),
+            "data": response.model_dump(mode="json"),
         },
     )
 
@@ -80,7 +80,7 @@ def refresh_user_token_api(
         status_code=status.HTTP_202_ACCEPTED,
         content={
             "message": UserResponseMessages.USER_TOKEN_REFRESHED.value,
-            "data": response.model_dump(),
+            "data": response.model_dump(mode="json"),
         },
     )
 
@@ -107,7 +107,7 @@ def revoke_refresh_token_api(
         status_code=status.HTTP_200_OK,
         content={
             "message": UserResponseMessages.USER_REFRESH_TOKEN_REVOKED.value,
-            "data": response.model_dump(),
+            "data": response.model_dump(mode="json"),
         },
     )
 
@@ -138,6 +138,6 @@ def create_user_api(
         status_code=status.HTTP_201_CREATED,
         content={
             "message": UserResponseMessages.USER_CREATED.value,
-            "data": response.model_dump(),
+            "data": response.model_dump(mode="json"),
         },
     )

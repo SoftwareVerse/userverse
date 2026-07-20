@@ -9,41 +9,47 @@ from app.models.company.response_messages import (
     "login_token_key, company_id, query_params, expected_emails, expected_status",
     [
         # ✅ User 1 accessing own company
-        ("login_token", 1, "limit=10&page=1", {"user.one@email.com"}, 200),
+        ("login_token", "company_one", "limit=10&page=1", {"user.one@email.com"}, 200),
         (
             "login_token",
-            1,
+            "company_one",
             "limit=10&page=1&role_name=Admin",
             set(),
             200,
         ),
         (
             "login_token",
-            1,
+            "company_one",
             "limit=10&page=1&email=user.one@email.com",
             {"user.one@email.com"},
             200,
         ),
         # ❌ User 1 accessing company 2
-        ("login_token", 2, "limit=10&page=1", set(), 403),
+        ("login_token", "company_two", "limit=10&page=1", set(), 403),
         # ✅ User 2 accessing own company
-        ("login_token_user_two", 2, "limit=10&page=1", {"user.two@email.com"}, 200),
         (
             "login_token_user_two",
-            2,
+            "company_two",
+            "limit=10&page=1",
+            {"user.two@email.com"},
+            200,
+        ),
+        (
+            "login_token_user_two",
+            "company_two",
             "limit=10&page=1&first_name=Jane",
             {"user.two@email.com"},
             200,
         ),
         (
             "login_token_user_two",
-            2,
+            "company_two",
             "limit=10&page=1&last_name=Smith",
             {"user.two@email.com"},
             200,
         ),
         # ❌ User 2 accessing company 1
-        ("login_token_user_two", 1, "limit=10&page=1", set(), 403),
+        ("login_token_user_two", "company_one", "limit=10&page=1", set(), 403),
     ],
 )
 def test_get_users_for_company(
@@ -72,6 +78,7 @@ def test_get_users_for_company(
         "Authorization": f"Bearer {token_map[login_token_key]}",
         "accept": "application/json",
     }
+    company_id = seed_companies[company_id]
 
     response = client.get(
         f"/company/{company_id}/users?{query_params}", headers=headers

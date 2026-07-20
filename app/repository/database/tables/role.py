@@ -1,4 +1,6 @@
-from sqlalchemy import ForeignKey, Integer, String
+from uuid import UUID
+
+from sqlalchemy import ForeignKey, String, Uuid
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import func
@@ -14,8 +16,8 @@ from fastapi import status
 class Role(BaseModel):
     __tablename__ = "role"
 
-    company_id: Mapped[int] = mapped_column(
-        Integer,
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid,
         ForeignKey("company.id", ondelete="CASCADE"),
         primary_key=True,
     )
@@ -31,7 +33,7 @@ class Role(BaseModel):
 
     @classmethod
     def role_belongs_to_company(
-        cls, session: Session, company_id: int, role_name: str
+        cls, session: Session, company_id: UUID, role_name: str
     ) -> dict:
         role = (
             session.query(cls)
@@ -50,7 +52,7 @@ class Role(BaseModel):
     def update_role(
         cls,
         session: Session,
-        company_id: int,
+        company_id: UUID,
         name: str,
         new_name: str | None = None,
         new_description: str | None = None,
@@ -73,7 +75,7 @@ class Role(BaseModel):
     def update_json_field(
         cls,
         session: Session,
-        company_id: int,
+        company_id: UUID,
         name: str,
         column_name: str,
         key: str,
@@ -101,7 +103,7 @@ class Role(BaseModel):
     def delete_role_and_reassign_users(
         cls,
         session: Session,
-        company_id: int,
+        company_id: UUID,
         name_to_delete: str,
         replacement_name: str,
         deleted_by: UserReadModel,
@@ -139,7 +141,7 @@ class Role(BaseModel):
             name=name_to_delete,
             column_name="primary_meta_data",
             key="deleted_by",
-            value=deleted_by.model_dump(),
+            value=deleted_by.model_dump(mode="json"),
         )
         session.refresh(role_to_delete)
         return {

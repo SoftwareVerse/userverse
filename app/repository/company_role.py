@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import status
 
 from app.models.company.response_messages import (
@@ -20,7 +22,7 @@ from app.utils.app_error import AppError
 class RoleRepository(BaseSQLRepository[Role]):
     model = Role
 
-    def __init__(self, company_id: int, session):
+    def __init__(self, company_id: UUID, session):
         super().__init__(session)
         self.company_id = company_id
 
@@ -100,7 +102,7 @@ class RoleRepository(BaseSQLRepository[Role]):
                 role_to_delete,
                 column_name="primary_meta_data",
                 key="deleted_by",
-                value=deleted_by.model_dump(),
+                value=deleted_by.model_dump(mode="json"),
             )
 
             return {
@@ -151,7 +153,7 @@ class RoleRepository(BaseSQLRepository[Role]):
                 role,
                 column_name="primary_meta_data",
                 key="created_by",
-                value=created_by.model_dump(),
+                value=created_by.model_dump(mode="json"),
             )
             return self._to_read_model(role)
         except Exception as exc:

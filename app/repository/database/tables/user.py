@@ -1,4 +1,6 @@
-from sqlalchemy import Boolean, Integer, String
+from uuid import UUID, uuid4
+
+from sqlalchemy import Boolean, String, Uuid
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -9,7 +11,11 @@ from app.repository.database.base_model import BaseModel
 class User(BaseModel):
     __tablename__ = "user"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid4,
+    )
     first_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     last_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)

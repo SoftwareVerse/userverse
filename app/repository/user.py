@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import status
 from sqlalchemy.exc import IntegrityError
 
@@ -32,7 +34,7 @@ class UserRepository(BaseSQLRepository[User]):
             is_superuser=user.is_superuser,
         )
 
-    def get_user_by_id(self, user_id: int) -> UserReadModel:
+    def get_user_by_id(self, user_id: UUID) -> UserReadModel:
         try:
             user = self._active_user_query().filter(User.id == user_id).one_or_none()
             if user is None:
@@ -110,7 +112,7 @@ class UserRepository(BaseSQLRepository[User]):
         self.db_session.refresh(user)
         return self._to_read_model(user, status_override=account_status)
 
-    def update_user(self, user_id: int, data: dict) -> UserReadModel:
+    def update_user(self, user_id: UUID, data: dict) -> UserReadModel:
         user = self._active_user_query().filter(User.id == user_id).one_or_none()
         if not user:
             raise AppError(
@@ -120,7 +122,7 @@ class UserRepository(BaseSQLRepository[User]):
         updated = self.update(user, **data)
         return self._to_read_model(updated)
 
-    def update_user_status(self, user_id: int, account_status: str) -> UserReadModel:
+    def update_user_status(self, user_id: UUID, account_status: str) -> UserReadModel:
         user = self._active_user_query().filter(User.id == user_id).one_or_none()
         if not user:
             raise AppError(
@@ -135,7 +137,7 @@ class UserRepository(BaseSQLRepository[User]):
         )
         return self._to_read_model(updated, status_override=account_status)
 
-    def get_refresh_token_version(self, user_id: int) -> int:
+    def get_refresh_token_version(self, user_id: UUID) -> int:
         user = self._active_user_query().filter(User.id == user_id).first()
         if not user:
             raise AppError(
@@ -150,7 +152,7 @@ class UserRepository(BaseSQLRepository[User]):
         except (TypeError, ValueError):
             return 0
 
-    def increment_refresh_token_version(self, user_id: int) -> int:
+    def increment_refresh_token_version(self, user_id: UUID) -> int:
         user = self._active_user_query().filter(User.id == user_id).first()
         if not user:
             raise AppError(
@@ -170,7 +172,7 @@ class UserRepository(BaseSQLRepository[User]):
             )
         )
 
-    def delete_user(self, user_id: int):
+    def delete_user(self, user_id: UUID):
         user = self._active_user_query().filter(User.id == user_id).one_or_none()
         if not user:
             raise AppError(

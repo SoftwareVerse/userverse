@@ -2,6 +2,7 @@ import importlib
 from pathlib import Path
 from textwrap import dedent
 from unittest.mock import Mock
+from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
@@ -367,7 +368,7 @@ def test_verification_service_rejects_non_pending_accounts(monkeypatch):
 
         def get_user_by_email(self, email):
             return UserReadModel(
-                id=1,
+                id=uuid4(),
                 email=email,
                 first_name="Jane",
                 last_name="Doe",
@@ -402,7 +403,7 @@ def test_send_verification_email_logs_dispatch_failures(monkeypatch):
     )
 
     user = UserReadModel(
-        id=1,
+        id=uuid4(),
         email="user@example.com",
         first_name="Jane",
         last_name="Doe",
@@ -426,7 +427,7 @@ def test_company_user_service_sends_company_invite(monkeypatch):
     )
 
     acting_user = UserReadModel(
-        id=99,
+        id=uuid4(),
         email="admin@example.com",
         first_name="Admin",
         last_name="User",
@@ -435,7 +436,7 @@ def test_company_user_service_sends_company_invite(monkeypatch):
         is_superuser=False,
     )
     added_user = UserReadModel(
-        id=2,
+        id=uuid4(),
         email="invitee@example.com",
         first_name="Invited",
         last_name="Member",
@@ -446,7 +447,7 @@ def test_company_user_service_sends_company_invite(monkeypatch):
     added_company_user = type(
         "AddedCompanyUser",
         (),
-        {**added_user.model_dump(), "role_name": "Viewer"},
+        {**added_user.model_dump(mode="json"), "role_name": "Viewer"},
     )()
     company = type("Company", (), {"name": "Acme Co"})()
 
@@ -469,7 +470,7 @@ def test_company_user_service_sends_company_invite(monkeypatch):
     )
 
     result = service.add_user_to_company(
-        company_id=1,
+        company_id=uuid4(),
         payload=type(
             "Payload", (), {"email": "invitee@example.com", "role": "Viewer"}
         )(),
@@ -503,7 +504,7 @@ def test_company_user_service_logs_invite_failures(monkeypatch):
     )
 
     acting_user = UserReadModel(
-        id=99,
+        id=uuid4(),
         email="admin@example.com",
         first_name="Admin",
         last_name="User",
@@ -537,7 +538,7 @@ def test_company_user_repository_ensure_user_linked_to_company_raises(monkeypatc
     )
 
     with pytest.raises(AppError) as exc_info:
-        repository.ensure_user_linked_to_company(user_id=1, company_id=1)
+        repository.ensure_user_linked_to_company(user_id=uuid4(), company_id=uuid4())
 
     assert (
         exc_info.value.detail["message"]
@@ -557,7 +558,10 @@ def test_company_user_repository_ensure_user_linked_to_company_returns_true(
         lambda user_id, company_id, role_name=None: True,
     )
 
-    assert repository.ensure_user_linked_to_company(user_id=1, company_id=1) is True
+    assert (
+        repository.ensure_user_linked_to_company(user_id=uuid4(), company_id=uuid4())
+        is True
+    )
 
 
 def test_user_repository_get_user_by_id_wraps_unexpected_errors(monkeypatch):
@@ -572,7 +576,7 @@ def test_user_repository_get_user_by_id_wraps_unexpected_errors(monkeypatch):
     monkeypatch.setattr(repository, "_active_user_query", lambda: FailingQuery())
 
     with pytest.raises(AppError) as exc_info:
-        repository.get_user_by_id(1)
+        repository.get_user_by_id(uuid4())
 
     assert exc_info.value.status_code == 404
     assert exc_info.value.detail["message"] == UserResponseMessages.USER_NOT_FOUND.value
@@ -582,7 +586,7 @@ def test_user_repository_get_user_by_email_rehashes_plaintext_password(monkeypat
     from app.repository.user import UserRepository
 
     class FakeUser:
-        id = 1
+        id = uuid4()
         first_name = "Jane"
         last_name = "Doe"
         email = "user@example.com"
@@ -667,7 +671,7 @@ def test_user_repository_update_user_raises_when_missing(monkeypatch):
     monkeypatch.setattr(repository, "_active_user_query", lambda: FakeQuery())
 
     with pytest.raises(AppError) as exc_info:
-        repository.update_user(1, {"first_name": "Updated"})
+        repository.update_user(uuid4(), {"first_name": "Updated"})
 
     assert exc_info.value.status_code == 400
     assert (
@@ -691,7 +695,7 @@ def test_user_repository_update_user_status_raises_when_missing(monkeypatch):
     monkeypatch.setattr(repository, "_active_user_query", lambda: FakeQuery())
 
     with pytest.raises(AppError) as exc_info:
-        repository.update_user_status(1, UserAccountStatus.ACTIVE.name_value)
+        repository.update_user_status(uuid4(), UserAccountStatus.ACTIVE.name_value)
 
     assert exc_info.value.status_code == 400
     assert (
@@ -717,7 +721,7 @@ def test_user_repository_increment_refresh_token_version_raises_when_missing(
     monkeypatch.setattr(repository, "_active_user_query", lambda: FakeQuery())
 
     with pytest.raises(AppError) as exc_info:
-        repository.increment_refresh_token_version(1)
+        repository.increment_refresh_token_version(uuid4())
 
     assert exc_info.value.status_code == 404
     assert exc_info.value.detail["message"] == UserResponseMessages.USER_NOT_FOUND.value
@@ -738,7 +742,7 @@ def test_user_repository_delete_user_raises_when_missing(monkeypatch):
     monkeypatch.setattr(repository, "_active_user_query", lambda: FakeQuery())
 
     with pytest.raises(AppError) as exc_info:
-        repository.delete_user(1)
+        repository.delete_user(uuid4())
 
     assert exc_info.value.status_code == 404
     assert exc_info.value.detail["message"] == UserResponseMessages.USER_NOT_FOUND.value
@@ -746,7 +750,7 @@ def test_user_repository_delete_user_raises_when_missing(monkeypatch):
 
 def test_user_profile_service_get_user_prefers_id(monkeypatch):
     acting_user = UserReadModel(
-        id=9,
+        id=uuid4(),
         email="admin@example.com",
         first_name="Admin",
         last_name="User",
@@ -756,7 +760,7 @@ def test_user_profile_service_get_user_prefers_id(monkeypatch):
     )
     service = UserProfileService(SharedContext(db_session=object(), user=acting_user))
     expected = UserReadModel(
-        id=1,
+        id=uuid4(),
         email="target@example.com",
         first_name="Target",
         last_name="User",
@@ -775,14 +779,14 @@ def test_user_profile_service_get_user_prefers_id(monkeypatch):
         ),
     )
 
-    result = service.get_user(user_id=1, user_email="ignored@example.com")
+    result = service.get_user(user_id=expected.id, user_email="ignored@example.com")
 
     assert result == expected
 
 
 def test_user_profile_service_get_user_raises_without_identifier():
     acting_user = UserReadModel(
-        id=9,
+        id=uuid4(),
         email="admin@example.com",
         first_name="Admin",
         last_name="User",
@@ -803,7 +807,7 @@ def test_user_profile_service_update_user_handles_phone_and_invalid_request(
     monkeypatch,
 ):
     acting_user = UserReadModel(
-        id=9,
+        id=uuid4(),
         email="admin@example.com",
         first_name="Admin",
         last_name="User",
@@ -814,7 +818,7 @@ def test_user_profile_service_update_user_handles_phone_and_invalid_request(
     service = UserProfileService(SharedContext(db_session=object(), user=acting_user))
     captured = {}
     expected = UserReadModel(
-        id=9,
+        id=uuid4(),
         email="admin@example.com",
         first_name="Admin",
         last_name="User",
@@ -835,18 +839,18 @@ def test_user_profile_service_update_user_handles_phone_and_invalid_request(
     )
 
     result = service.update_user(
-        9,
+        acting_user.id,
         UserUpdateModel(phone_number="011 222 3333", password="secret"),
     )
 
     assert result == expected
     assert captured == {
-        "user_id": 9,
+        "user_id": acting_user.id,
         "data": {"phone_number": "011 222 3333", "password": "hashed::secret"},
     }
 
     with pytest.raises(AppError) as exc_info:
-        service.update_user(9, UserUpdateModel())
+        service.update_user(acting_user.id, UserUpdateModel())
 
     assert exc_info.value.status_code == 400
     assert (
@@ -857,7 +861,7 @@ def test_user_profile_service_update_user_handles_phone_and_invalid_request(
 
 def test_user_profile_service_get_user_companies_and_delete_user(monkeypatch):
     acting_user = UserReadModel(
-        id=9,
+        id=uuid4(),
         email="admin@example.com",
         first_name="Admin",
         last_name="User",
@@ -886,11 +890,12 @@ def test_user_profile_service_get_user_companies_and_delete_user(monkeypatch):
     )
 
     service.get_user_companies(params)
-    service.delete_user(9)
+    service.delete_user(acting_user.id)
 
-    assert captured["companies"] == (9, params)
-    assert captured["deleted"] == 9
+    assert captured["companies"] == (acting_user.id, params)
+    assert captured["deleted"] == acting_user.id
 
 
 def test_shared_context_safe_json_returns_scalars_unchanged():
     assert SharedContext.safe_json("plain") == "plain"
+from uuid import uuid4

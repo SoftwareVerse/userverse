@@ -24,7 +24,7 @@ def _build_company_payload() -> dict:
     }
 
 
-def _create_company(client, token: str) -> int:
+def _create_company(client, token: str) -> str:
     response = client.post(
         "/company",
         json=_build_company_payload(),
@@ -35,8 +35,8 @@ def _create_company(client, token: str) -> int:
 
 
 def _add_user_to_company(
-    client, token: str, company_id: int, email: str, role: str = "Viewer"
-) -> int:
+    client, token: str, company_id: str, email: str, role: str = "Viewer"
+) -> str:
     response = client.post(
         f"/company/{company_id}/users",
         json={"email": email, "role": role},
@@ -91,9 +91,15 @@ def test_remove_user_from_company_forbidden_for_non_owner(
 
 def test_remove_owner_from_company_forbidden(client, login_token):
     company_id = _create_company(client, login_token)
+    owner_response = client.get(
+        "/user/get",
+        headers={"Authorization": f"Bearer {login_token}"},
+    )
+    assert owner_response.status_code == 200, owner_response.text
+    owner_id = owner_response.json()["data"]["id"]
 
     response = client.delete(
-        f"/company/{company_id}/user/1",
+        f"/company/{company_id}/user/{owner_id}",
         headers={
             "Authorization": f"Bearer {login_token}",
             "accept": "application/json",

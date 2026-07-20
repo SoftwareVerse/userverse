@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import status
 
 # utils
@@ -27,7 +29,7 @@ class RoleService:
     def __init__(self, context: SharedContext):
         self.context = context
 
-    def _ensure_company_manager(self, company_id: int) -> None:
+    def _ensure_company_manager(self, company_id: UUID) -> None:
         company_user_service = CompanyUserService(self.context)
         if not (
             company_user_service.company_user_repository.is_user_linked_to_company(
@@ -47,7 +49,7 @@ class RoleService:
             )
 
     def update_role(
-        self, company_id: int, name: str, payload: RoleUpdateModel
+        self, company_id: UUID, name: str, payload: RoleUpdateModel
     ) -> RoleReadModel:
         """
         Update the description or name of a role for a company.
@@ -67,7 +69,7 @@ class RoleService:
             )
         return role
 
-    def create_role(self, payload: RoleCreateModel, company_id: int) -> RoleReadModel:
+    def create_role(self, payload: RoleCreateModel, company_id: UUID) -> RoleReadModel:
         """
         Create a new company role and store its creator in primary_meta_data.
         """
@@ -83,7 +85,7 @@ class RoleService:
             )
         return role
 
-    def delete_role(self, payload: RoleDeleteModel, company_id: int) -> dict:
+    def delete_role(self, payload: RoleDeleteModel, company_id: UUID) -> dict:
         self._ensure_company_manager(company_id)
         role_repository = RoleRepository(
             company_id=company_id, session=self.context.db_session
@@ -93,7 +95,7 @@ class RoleService:
         )
 
     def get_company_roles(
-        self, payload: RoleQueryParamsModel, company_id: int
+        self, payload: RoleQueryParamsModel, company_id: UUID
     ) -> PaginatedResponse[RoleReadModel]:
         """
         Get company roles with pagination and optional filtering.

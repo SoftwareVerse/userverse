@@ -1,3 +1,5 @@
+from uuid import UUID, uuid4
+
 import pytest
 
 from app.repository.database.tables import AssociationUserCompany
@@ -9,7 +11,7 @@ from app.models.user.user import UserReadModel
 from app.utils.app_error import AppError
 
 
-def _acting_user(*, user_id: int) -> UserReadModel:
+def _acting_user(*, user_id: UUID) -> UserReadModel:
     return UserReadModel(
         id=user_id,
         first_name="Admin",
@@ -64,7 +66,7 @@ def test_link_user_rejects_duplicate_active_link(
         name=test_role_data["admin_role"]["name"],
         description=test_role_data["admin_role"]["description"],
     )
-    acting_user = _acting_user(user_id=999)
+    acting_user = _acting_user(user_id=uuid4())
     AssociationUserCompany.link_user(
         test_session, company["id"], user["id"], role["name"], acting_user
     )
@@ -80,7 +82,7 @@ def test_unlink_user_rejects_missing_link(test_session, test_company_data):
 
     with pytest.raises(AppError, match="User has already been removed"):
         AssociationUserCompany.unlink_user(
-            test_session, company["id"], 1, _acting_user(user_id=999)
+            test_session, company["id"], uuid4(), _acting_user(user_id=uuid4())
         )
 
 
@@ -96,7 +98,11 @@ def test_unlink_user_rejects_self_removal_for_administrator(
         description=test_role_data["admin_role"]["description"],
     )
     AssociationUserCompany.link_user(
-        test_session, company["id"], user["id"], role["name"], _acting_user(user_id=999)
+        test_session,
+        company["id"],
+        user["id"],
+        role["name"],
+        _acting_user(user_id=uuid4()),
     )
 
     with pytest.raises(AppError, match="You cannot remove super admin from company."):

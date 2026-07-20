@@ -70,7 +70,10 @@ class BaseModel(TimestampMixin, Base):
             for condition in filters.values():
                 query = query.filter(condition)
         total_records = query.count()
-        ordering = order_by or list(cls.__table__.primary_key.columns)
+        ordering = order_by or [
+            cls._created_at.asc(),
+            *[column.asc() for column in cls.__table__.primary_key.columns],
+        ]
         records = apply_pagination(
             query,
             page=page,

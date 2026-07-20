@@ -2,6 +2,9 @@
 import os
 import json
 import logging
+from datetime import timedelta
+from uuid import UUID
+
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch
@@ -18,7 +21,6 @@ from app.models.company.roles import CompanyDefaultRoles
 from app.models.user.user import UserReadModel
 from tests.utils.basic_auth import get_basic_auth_header
 from app.api.security.jwt import JWTManager
-from datetime import timedelta
 
 TEST_DATA_BASE_PATH = "tests/data/http/"
 
@@ -109,7 +111,7 @@ def _get_company_row(email: str):
         session.close()
 
 
-def _get_role_row(company_id: int, name: str):
+def _get_role_row(company_id: UUID, name: str):
     db = DatabaseSessionManager()
     session = db.session_object()
     try:
@@ -122,7 +124,7 @@ def _get_role_row(company_id: int, name: str):
         session.close()
 
 
-def _get_link_row(company_id: int, user_id: int):
+def _get_link_row(company_id: UUID, user_id: UUID):
     db = DatabaseSessionManager()
     session = db.session_object()
     try:
@@ -277,6 +279,10 @@ def seed_companies(client, test_company_data, login_token, login_token_user_two)
     _create_company_if_missing(
         client, login_token_user_two, test_company_data["company_two"]
     )
+    return {
+        "company_one": _get_company_row(test_company_data["company_one"]["email"]).id,
+        "company_two": _get_company_row(test_company_data["company_two"]["email"]).id,
+    }
 
 
 @pytest.fixture(scope="session")
@@ -286,16 +292,17 @@ def seed_company_roles(
     for role_payload in test_company_data["roles"].values():
         _create_role_if_missing(
             client,
-            company_id=1,
+            company_id=seed_companies["company_one"],
             token=login_token,
             role_payload=role_payload,
         )
         _create_role_if_missing(
             client,
-            company_id=2,
+            company_id=seed_companies["company_two"],
             token=login_token_user_two,
             role_payload=role_payload,
         )
+    return seed_companies
 
 
 @pytest.fixture(scope="session")

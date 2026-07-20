@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from app.api.dependencies.common import CommonJWTRouteDependencies
 from fastapi import APIRouter, Depends, status, Path
 from fastapi.responses import JSONResponse
@@ -41,7 +43,7 @@ company_id_description = "The ID of the company"
     },
 )
 def get_company_users_api(
-    company_id: int = Path(..., description=company_id_description),
+    company_id: UUID = Path(..., description=company_id_description),
     params: UserQueryParams = Depends(),
     common_dependencies: CommonJWTRouteDependencies = Depends(),
 ):
@@ -65,8 +67,8 @@ def get_company_users_api(
         status_code=status.HTTP_200_OK,
         content=GenericResponseModel(
             message=CompanyUserResponseMessages.GET_COMPANY_USERS.value,
-            data=response.model_dump(),
-        ).model_dump(),
+            data=response.model_dump(mode="json"),
+        ).model_dump(mode="json"),
     )
 
 
@@ -82,7 +84,7 @@ def get_company_users_api(
 )
 def add_user_to_company_api(
     payload: CompanyUserAddModel,
-    company_id: int = Path(..., description=company_id_description),
+    company_id: UUID = Path(..., description=company_id_description),
     common_dependencies: CommonJWTRouteDependencies = Depends(),
 ):
     """
@@ -104,8 +106,8 @@ def add_user_to_company_api(
         status_code=status.HTTP_201_CREATED,
         content=GenericResponseModel(
             message=CompanyUserResponseMessages.ADD_USER_SUCCESS.value,
-            data=response.model_dump(),
-        ).model_dump(),
+            data=response.model_dump(mode="json"),
+        ).model_dump(mode="json"),
     )
 
 
@@ -120,8 +122,8 @@ def add_user_to_company_api(
     },
 )
 def delete_user_from_company_api(
-    company_id: int = Path(..., description=company_id_description),
-    user_id: int = Path(..., description="The ID of the user to remove"),
+    company_id: UUID = Path(..., description=company_id_description),
+    user_id: UUID = Path(..., description="The ID of the user to remove"),
     common_dependencies: CommonJWTRouteDependencies = Depends(),
 ):
     """
@@ -143,8 +145,8 @@ def delete_user_from_company_api(
         status_code=status.HTTP_200_OK,
         content=GenericResponseModel(
             message=CompanyUserResponseMessages.REMOVE_USER_SUCCESS.value,
-            data=response.model_dump(),
-        ).model_dump(),
+            data=response.model_dump(mode="json"),
+        ).model_dump(mode="json"),
     )
 
 
@@ -162,8 +164,8 @@ def delete_user_from_company_api(
 )
 def update_user_role_api(
     payload: CompanyUserRoleUpdateModel,
-    company_id: int = Path(..., description=company_id_description),
-    user_id: int = Path(..., description="The ID of the user to update"),
+    company_id: UUID = Path(..., description=company_id_description),
+    user_id: UUID = Path(..., description="The ID of the user to update"),
     common_dependencies: CommonJWTRouteDependencies = Depends(),
 ):
     """
@@ -186,6 +188,6 @@ def update_user_role_api(
         status_code=status.HTTP_200_OK,
         content=GenericResponseModel(
             message=CompanyUserResponseMessages.UPDATE_USER_ROLE_SUCCESS.value,
-            data=response.model_dump(),
-        ).model_dump(),
+            data=response.model_dump(mode="json"),
+        ).model_dump(mode="json"),
     )

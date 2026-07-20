@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, status, Path
 from fastapi.responses import JSONResponse
 
@@ -43,7 +45,7 @@ tag = UserverseApiTag.COMPANY_ROLE_MANAGEMENT.name
 )
 def create_role_api(
     payload: RoleCreateModel,
-    company_id: int = Path(..., description="The unique identifier of the company"),
+    company_id: UUID = Path(..., description="The unique identifier of the company"),
     common: CommonJWTRouteDependencies = Depends(),
 ):
     """
@@ -61,7 +63,7 @@ def create_role_api(
             status_code=status.HTTP_201_CREATED,
             content={
                 "message": CompanyRoleResponseMessages.ROLE_CREATION_SUCCESS.value,
-                "data": response.model_dump(),
+                "data": response.model_dump(mode="json"),
             },
         )
     except (AppError, Exception) as e:
@@ -81,7 +83,7 @@ def create_role_api(
 )
 def update_role_api(
     payload: RoleUpdateModel,
-    company_id: int = Path(..., description="The company ID associated with the role"),
+    company_id: UUID = Path(..., description="The company ID associated with the role"),
     name: str = Path(..., description="The name of the role to update"),
     common: CommonJWTRouteDependencies = Depends(),
 ):
@@ -102,7 +104,7 @@ def update_role_api(
             status_code=status.HTTP_201_CREATED,
             content={
                 "message": CompanyRoleResponseMessages.ROLE_UPDATED.value,
-                "data": response.model_dump(),
+                "data": response.model_dump(mode="json"),
             },
         )
     except (AppError, Exception) as e:
@@ -122,7 +124,7 @@ def update_role_api(
 )
 def delete_role_api(
     payload: RoleDeleteModel,
-    company_id: int = Path(..., description="Company ID to delete role from"),
+    company_id: UUID = Path(..., description="Company ID to delete role from"),
     common: CommonJWTRouteDependencies = Depends(),
 ):
     """
@@ -158,7 +160,7 @@ def delete_role_api(
     },
 )
 def get_company_roles_api(
-    company_id: int = Path(..., description="ID of the company whose roles to fetch"),
+    company_id: UUID = Path(..., description="ID of the company whose roles to fetch"),
     query_params: RoleQueryParamsModel = Depends(),
     common: CommonJWTRouteDependencies = Depends(),
 ):
@@ -179,8 +181,8 @@ def get_company_roles_api(
             status_code=status.HTTP_200_OK,
             content=GenericResponseModel(
                 message=CompanyRoleResponseMessages.ROLE_GET_SUCCESS.value,
-                data=response.model_dump(),
-            ).model_dump(),
+                data=response.model_dump(mode="json"),
+            ).model_dump(mode="json"),
         )
     except (AppError, Exception) as e:
         raise e

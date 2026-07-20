@@ -10,6 +10,7 @@ def test_a_delete_role_success(
     """
     Test deleting a role successfully and reassigning users.
     """
+    company_id = seed_company_roles["company_one"]
     headers = {
         "Authorization": f"Bearer {login_token}",
     }
@@ -20,7 +21,7 @@ def test_a_delete_role_success(
 
     response = client.request(
         method="DELETE",
-        url="/company/1/role",
+        url=f"/company/{company_id}/role",
         json=payload,
         headers=headers,
     )
@@ -40,6 +41,7 @@ def test_b_delete_default_role_forbidden(client, login_token, seed_company_roles
     """
     Test attempting to delete a default system role like 'Administrator'.
     """
+    company_id = seed_company_roles["company_one"]
     headers = {
         "Authorization": f"Bearer {login_token}",
     }
@@ -50,7 +52,7 @@ def test_b_delete_default_role_forbidden(client, login_token, seed_company_roles
 
     response = client.request(
         method="DELETE",
-        url="/company/1/role",
+        url=f"/company/{company_id}/role",
         json=payload,
         headers=headers,
     )
@@ -70,6 +72,7 @@ def test_c_delete_role_not_found(client, login_token, seed_company_roles):
     """
     Test deleting a role that does not exist.
     """
+    company_id = seed_company_roles["company_one"]
     headers = {
         "Authorization": f"Bearer {login_token}",
     }
@@ -80,7 +83,7 @@ def test_c_delete_role_not_found(client, login_token, seed_company_roles):
 
     response = client.request(
         method="DELETE",
-        url="/company/1/role",
+        url=f"/company/{company_id}/role",
         json=payload,
         headers=headers,
     )
@@ -103,6 +106,7 @@ def test_d_delete_role_self_replacement_forbidden(
     """
     Test rejecting deletion where role is being replaced with itself.
     """
+    company_id = seed_company_roles["company_one"]
     headers = {
         "Authorization": f"Bearer {login_token}",
     }
@@ -113,7 +117,7 @@ def test_d_delete_role_self_replacement_forbidden(
 
     response = client.request(
         method="DELETE",
-        url="/company/1/role",
+        url=f"/company/{company_id}/role",
         json=payload,
         headers=headers,
     )

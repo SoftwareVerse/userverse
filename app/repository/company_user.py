@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.orm.attributes import flag_modified
@@ -41,8 +43,8 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
 
     def is_user_linked_to_company(
         self,
-        user_id: int,
-        company_id: int,
+        user_id: UUID,
+        company_id: UUID,
         role_name: str | None = None,
         role: str | None = None,
     ) -> bool:
@@ -57,7 +59,7 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         return self.db_session.query(query.exists()).scalar()
 
     def ensure_user_linked_to_company(
-        self, user_id: int, company_id: int, role_name: str | None = None
+        self, user_id: UUID, company_id: UUID, role_name: str | None = None
     ) -> bool:
         linked_company = self.is_user_linked_to_company(user_id, company_id, role_name)
         if not linked_company:
@@ -68,7 +70,7 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         return linked_company
 
     def add_user_to_company(
-        self, company_id: int, payload: CompanyUserAddModel, added_by
+        self, company_id: UUID, payload: CompanyUserAddModel, added_by
     ) -> CompanyUserReadModel:
         user = self.db_session.query(User).filter(User.email == payload.email).first()
         if not user:
@@ -109,12 +111,12 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
             user_id=user.id,
             company_id=company_id,
             role_name=role.name,
-            primary_meta_data={"added_by": added_by.model_dump()},
+            primary_meta_data={"added_by": added_by.model_dump(mode="json")},
         )
         return self._to_company_user(user, assoc.role_name)
 
     def remove_user_from_company(
-        self, company_id: int, user_id: int, removed_by
+        self, company_id: UUID, user_id: UUID, removed_by
     ) -> CompanyUserReadModel:
         assoc = (
             self._base_query()
@@ -136,7 +138,7 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
                 message=CompanyUserResponseMessages.SUPER_ADMIN_REMOVE_FORBIDDEN.value,
             )
 
-        assoc.primary_meta_data["removed_by"] = removed_by.model_dump()
+        assoc.primary_meta_data["removed_by"] = removed_by.model_dump(mode="json")
         flag_modified(assoc, "primary_meta_data")
         assoc._closed_at = self._now_sql()
         self.db_session.add(assoc)
@@ -147,7 +149,7 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         return self._to_company_user(user, assoc.role_name)
 
     def update_user_role(
-        self, company_id: int, user_id: int, role_name: str, updated_by
+        self, company_id: UUID, user_id: UUID, role_name: str, updated_by
     ) -> CompanyUserReadModel:
         role = (
             self.db_session.query(Role)
@@ -178,7 +180,7 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
             )
 
         assoc.role_name = role.name
-        assoc.primary_meta_data["updated_by"] = updated_by.model_dump()
+        assoc.primary_meta_data["updated_by"] = updated_by.model_dump(mode="json")
         flag_modified(assoc, "primary_meta_data")
         self.db_session.add(assoc)
         self.db_session.commit()
@@ -188,7 +190,7 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         return self._to_company_user(user, assoc.role_name)
 
     def get_company_users(
-        self, company_id: int, params: UserQueryParams
+        self, company_id: UUID, params: UserQueryParams
     ) -> PaginatedResponse[CompanyUserReadModel]:
         query = (
             self.db_session.query(AssociationUserCompany)
@@ -216,7 +218,10 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
             query.options(joinedload(AssociationUserCompany.user)),
             page=params.page,
             limit=params.limit,
-            order_by=[User.id.asc()],
+            order_by=[
+                AssociationUserCompany._created_at.asc(),
+                User.id.asc(),
+            ],
         ).all()
 
         users = [

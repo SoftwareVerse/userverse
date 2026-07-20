@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import status
 
 # utils
@@ -68,7 +70,7 @@ class CompanyUserService:
             )
 
     def add_user_to_company(
-        self, company_id: int, payload: CompanyUserAddModel
+        self, company_id: UUID, payload: CompanyUserAddModel
     ) -> CompanyUserReadModel:
         if not (
             self.company_user_repository.is_user_linked_to_company(
@@ -101,8 +103,8 @@ class CompanyUserService:
 
     def update_user_role(
         self,
-        company_id: int,
-        user_id: int,
+        company_id: UUID,
+        user_id: UUID,
         payload: CompanyUserRoleUpdateModel,
     ) -> CompanyUserReadModel:
         if not (
@@ -130,8 +132,8 @@ class CompanyUserService:
 
     def remove_user_from_company(
         self,
-        company_id: int,
-        user_id: int,
+        company_id: UUID,
+        user_id: UUID,
     ) -> CompanyUserReadModel:
         if not (
             self.company_user_repository.is_user_linked_to_company(
@@ -167,7 +169,7 @@ class CompanyUserService:
 
     def get_company_users(
         self,
-        company_id: int,
+        company_id: UUID,
         params: UserQueryParams,
     ) -> PaginatedResponse[CompanyUserReadModel]:
         self.check_if_user_is_in_company(
@@ -180,7 +182,7 @@ class CompanyUserService:
         )
 
     def check_if_user_is_in_company(
-        self, user_id: int, company_id: int, role: str | None = None
+        self, user_id: UUID, company_id: UUID, role: str | None = None
     ) -> bool:
         """
         Check if the user is linked to the company.

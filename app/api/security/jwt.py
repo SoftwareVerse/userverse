@@ -45,13 +45,13 @@ class JWTManager:
         refresh_expire = now + timedelta(minutes=self.REFRESH_TIMEOUT)
 
         access_payload = {
-            "user": user.model_dump(),
+            "user": user.model_dump(mode="json"),
             "type": "access",
             "exp": access_expire,
         }
 
         refresh_payload = {
-            "user": user.model_dump(),
+            "user": user.model_dump(mode="json"),
             "type": "refresh",
             "refresh_token_version": refresh_token_version,
             "exp": refresh_expire,

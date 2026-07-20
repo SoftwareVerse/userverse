@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 from app.utils.shared_context import SharedContext
 from app.repository.user import UserRepository
 from app.repository.company import CompanyRepository
@@ -22,7 +23,7 @@ class UserProfileService:
         self.company_repository = CompanyRepository(context.db_session)
 
     def get_user(
-        self, user_id: Optional[int] = None, user_email: Optional[str] = None
+        self, user_id: Optional[UUID] = None, user_email: Optional[str] = None
     ) -> UserReadModel:
         """
         Get user profile information.
@@ -38,7 +39,7 @@ class UserProfileService:
             message=UserResponseMessages.USER_NOT_FOUND.value,
         )
 
-    def update_user(self, user_id: int, user_data: UserUpdateModel) -> UserReadModel:
+    def update_user(self, user_id: UUID, user_data: UserUpdateModel) -> UserReadModel:
         """
         Update user profile information.
         This method allows updating user details such as name, phone number, and password.
@@ -70,7 +71,7 @@ class UserProfileService:
             user_id=self.context.user.id, params=params
         )
 
-    def delete_user(self, user_id: int) -> None:
+    def delete_user(self, user_id: UUID) -> None:
         """
         Soft-delete the authenticated user account.
         """

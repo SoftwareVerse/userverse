@@ -49,7 +49,7 @@ def password_reset_request_api(
     )
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED,
-        content=response.model_dump(),
+        content=response.model_dump(mode="json"),
     )
 
 
@@ -78,5 +78,5 @@ def password_reset_validate_otp_api(
     )
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED,
-        content=response.model_dump(),
+        content=response.model_dump(mode="json"),
     )

@@ -70,9 +70,9 @@ def test_get_user_companies_page_two_is_stable(client, seed_pagination_state):
     assert json_data["message"] == CompanyUserResponseMessages.GET_COMPANY_USERS.value
 
     records = json_data["data"]["records"]
-    assert [company["id"] for company in records] == seed_pagination_state[
-        "user_company_ids"
-    ][2:]
+    assert [company["id"] for company in records] == [
+        str(company_id) for company_id in seed_pagination_state["user_company_ids"][2:]
+    ]
 
     pagination = json_data["data"]["pagination"]
     assert pagination == {
