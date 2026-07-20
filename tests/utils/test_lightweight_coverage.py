@@ -522,5 +522,41 @@ def test_company_user_service_logs_invite_failures(monkeypatch):
     assert captured_errors[0][1]["extra"]["error"] == "smtp down"
 
 
+def test_company_user_repository_ensure_user_linked_to_company_raises(monkeypatch):
+    from app.models.company.response_messages import CompanyResponseMessages
+    from app.repository.company_user import CompanyUserRepository
+    from app.utils.app_error import AppError
+
+    repository = CompanyUserRepository(session=object())
+    monkeypatch.setattr(
+        repository,
+        "is_user_linked_to_company",
+        lambda user_id, company_id, role_name=None: False,
+    )
+
+    with pytest.raises(AppError) as exc_info:
+        repository.ensure_user_linked_to_company(user_id=1, company_id=1)
+
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value
+    )
+
+
+def test_company_user_repository_ensure_user_linked_to_company_returns_true(
+    monkeypatch,
+):
+    from app.repository.company_user import CompanyUserRepository
+
+    repository = CompanyUserRepository(session=object())
+    monkeypatch.setattr(
+        repository,
+        "is_user_linked_to_company",
+        lambda user_id, company_id, role_name=None: True,
+    )
+
+    assert repository.ensure_user_linked_to_company(user_id=1, company_id=1) is True
+
+
 def test_shared_context_safe_json_returns_scalars_unchanged():
     assert SharedContext.safe_json("plain") == "plain"

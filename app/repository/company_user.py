@@ -146,6 +146,47 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         user = self.db_session.query(User).filter(User.id == user_id).one()
         return self._to_company_user(user, assoc.role_name)
 
+    def update_user_role(
+        self, company_id: int, user_id: int, role_name: str, updated_by
+    ) -> CompanyUserReadModel:
+        role = (
+            self.db_session.query(Role)
+            .filter(
+                Role.company_id == company_id,
+                Role.name == role_name,
+                Role._closed_at.is_(None),
+            )
+            .one_or_none()
+        )
+        if not role:
+            raise AppError(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                message=CompanyUserResponseMessages.UPDATE_USER_ROLE_FAILED.value,
+                error=f"Role: {role_name} is not linked to the company",
+            )
+
+        assoc = (
+            self._base_query()
+            .filter_by(user_id=user_id, company_id=company_id, _closed_at=None)
+            .first()
+        )
+        if not assoc:
+            raise AppError(
+                status_code=status.HTTP_404_NOT_FOUND,
+                message=CompanyUserResponseMessages.UPDATE_USER_ROLE_FAILED.value,
+                error=CompanyResponseMessages.COMPANY_NOT_FOUND.value,
+            )
+
+        assoc.role_name = role.name
+        assoc.primary_meta_data["updated_by"] = updated_by.model_dump()
+        flag_modified(assoc, "primary_meta_data")
+        self.db_session.add(assoc)
+        self.db_session.commit()
+        self.db_session.refresh(assoc)
+
+        user = self.db_session.query(User).filter(User.id == user_id).one()
+        return self._to_company_user(user, assoc.role_name)
+
     def get_company_users(
         self, company_id: int, params: UserQueryParams
     ) -> PaginatedResponse[CompanyUserReadModel]:

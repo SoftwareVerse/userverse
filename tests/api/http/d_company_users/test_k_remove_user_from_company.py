@@ -34,10 +34,12 @@ def _create_company(client, token: str) -> int:
     return response.json()["data"]["id"]
 
 
-def _add_user_to_company(client, token: str, company_id: int, email: str) -> int:
+def _add_user_to_company(
+    client, token: str, company_id: int, email: str, role: str = "Viewer"
+) -> int:
     response = client.post(
         f"/company/{company_id}/users",
-        json={"email": email, "role": "Viewer"},
+        json={"email": email, "role": role},
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 201, response.text
@@ -105,3 +107,60 @@ def test_remove_owner_from_company_forbidden(client, login_token):
         == CompanyUserResponseMessages.REMOVE_USER_FAILED.value
     )
     assert json_data["detail"]["error"] == "Owner cannot be removed from the company."
+
+
+def test_remove_user_from_company_rejects_already_removed_user(client, login_token):
+    company_id = _create_company(client, login_token)
+    user_id = _add_user_to_company(
+        client, login_token, company_id, "user.three@email.com"
+    )
+
+    first_response = client.delete(
+        f"/company/{company_id}/user/{user_id}",
+        headers={
+            "Authorization": f"Bearer {login_token}",
+            "accept": "application/json",
+        },
+    )
+    assert first_response.status_code == 200, first_response.text
+
+    second_response = client.delete(
+        f"/company/{company_id}/user/{user_id}",
+        headers={
+            "Authorization": f"Bearer {login_token}",
+            "accept": "application/json",
+        },
+    )
+
+    assert second_response.status_code == 403, second_response.text
+    assert (
+        second_response.json()["detail"]["message"]
+        == CompanyUserResponseMessages.USER_ALREADY_REMOVED.value
+    )
+
+
+def test_remove_user_from_company_rejects_self_removal_for_administrator(
+    client, login_token, login_token_user_two
+):
+    company_id = _create_company(client, login_token_user_two)
+    user_id = _add_user_to_company(
+        client,
+        login_token_user_two,
+        company_id,
+        "user.one@email.com",
+        role="Administrator",
+    )
+
+    response = client.delete(
+        f"/company/{company_id}/user/{user_id}",
+        headers={
+            "Authorization": f"Bearer {login_token}",
+            "accept": "application/json",
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    assert (
+        response.json()["detail"]["message"]
+        == CompanyUserResponseMessages.SUPER_ADMIN_REMOVE_FORBIDDEN.value
+    )

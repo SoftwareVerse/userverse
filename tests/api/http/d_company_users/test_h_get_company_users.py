@@ -35,6 +35,13 @@ from app.models.company.response_messages import (
             {"user.two@email.com"},
             200,
         ),
+        (
+            "login_token_user_two",
+            2,
+            "limit=10&page=1&last_name=Smith",
+            {"user.two@email.com"},
+            200,
+        ),
         # ❌ User 2 accessing company 1
         ("login_token_user_two", 1, "limit=10&page=1", set(), 403),
     ],
