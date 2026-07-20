@@ -115,3 +115,29 @@ def get_user_companies_api(
             data=response.model_dump(),
         ).model_dump(),
     )
+
+
+@router.delete(
+    "/me",
+    status_code=status.HTTP_200_OK,
+    response_model=GenericResponseModel[None],
+)
+def delete_user_api(
+    common: CommonJWTRouteDependencies = Depends(),
+):
+    """
+    Delete the authenticated user's account.
+    - **Requires**: JWT token for authentication
+    - **Returns**: Success message on soft deletion
+    """
+    service = UserProfileService(
+        SharedContext(user=common.user, db_session=common.session)
+    )
+    service.delete_user(user_id=common.user.id)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "message": UserResponseMessages.USER_DELETED.value,
+            "data": None,
+        },
+    )
