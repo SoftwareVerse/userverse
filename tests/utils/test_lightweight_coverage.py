@@ -628,10 +628,16 @@ def test_user_repository_create_user_handles_unique_constraint_integrity_error(
 
     session = Mock()
     repository = UserRepository(db_session=session)
-    monkeypatch.setattr(repository, "_active_user_query", lambda: Mock(filter=lambda *a, **k: Mock(first=lambda: None)))
+    monkeypatch.setattr(
+        repository,
+        "_active_user_query",
+        lambda: Mock(filter=lambda *a, **k: Mock(first=lambda: None)),
+    )
 
     def raise_integrity(**kwargs):
-        raise IntegrityError("insert", {}, Exception("UNIQUE constraint failed: user.email"))
+        raise IntegrityError(
+            "insert", {}, Exception("UNIQUE constraint failed: user.email")
+        )
 
     monkeypatch.setattr(repository, "create", raise_integrity)
 
@@ -664,7 +670,10 @@ def test_user_repository_update_user_raises_when_missing(monkeypatch):
         repository.update_user(1, {"first_name": "Updated"})
 
     assert exc_info.value.status_code == 400
-    assert exc_info.value.detail["message"] == UserResponseMessages.USER_UPDATE_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == UserResponseMessages.USER_UPDATE_FAILED.value
+    )
 
 
 def test_user_repository_update_user_status_raises_when_missing(monkeypatch):
@@ -755,11 +764,15 @@ def test_user_profile_service_get_user_prefers_id(monkeypatch):
         status=UserAccountStatus.ACTIVE.name_value,
         is_superuser=False,
     )
-    monkeypatch.setattr(service.user_repository, "get_user_by_id", lambda user_id: expected)
+    monkeypatch.setattr(
+        service.user_repository, "get_user_by_id", lambda user_id: expected
+    )
     monkeypatch.setattr(
         service.user_repository,
         "get_user_by_email",
-        lambda email: (_ for _ in ()).throw(AssertionError("email path should not be used")),
+        lambda email: (_ for _ in ()).throw(
+            AssertionError("email path should not be used")
+        ),
     )
 
     result = service.get_user(user_id=1, user_email="ignored@example.com")
@@ -816,7 +829,10 @@ def test_user_profile_service_update_user_handles_phone_and_invalid_request(
         return expected
 
     monkeypatch.setattr(service.user_repository, "update_user", fake_update_user)
-    monkeypatch.setattr("app.services.user.profile.hash_password", lambda password: f"hashed::{password}")
+    monkeypatch.setattr(
+        "app.services.user.profile.hash_password",
+        lambda password: f"hashed::{password}",
+    )
 
     result = service.update_user(
         9,

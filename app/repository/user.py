@@ -86,7 +86,9 @@ class UserRepository(BaseSQLRepository[User]):
         *,
         account_status: str = UserAccountStatus.AWAITING_VERIFICATION.name_value,
     ) -> UserReadModel:
-        existing_user = self._active_user_query().filter(User.email == data["email"]).first()
+        existing_user = (
+            self._active_user_query().filter(User.email == data["email"]).first()
+        )
         if existing_user:
             raise AppError(
                 status_code=status.HTTP_409_CONFLICT,
