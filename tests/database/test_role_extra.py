@@ -50,7 +50,8 @@ def test_role_belongs_to_company_raises_when_role_missing(
 def test_update_role_raises_when_role_missing(test_session):
     company_id = uuid4()
     with pytest.raises(
-        ValueError, match=f"Role with company_id={company_id} and name='Missing' not found."
+        ValueError,
+        match=f"Role with company_id={company_id} and name='Missing' not found.",
     ):
         Role.update_role(test_session, company_id, "Missing", new_name="Renamed")
 
@@ -58,7 +59,8 @@ def test_update_role_raises_when_role_missing(test_session):
 def test_update_role_json_field_rejects_missing_role(test_session):
     company_id = uuid4()
     with pytest.raises(
-        ValueError, match=f"Role with company_id={company_id} and name='Missing' not found."
+        ValueError,
+        match=f"Role with company_id={company_id} and name='Missing' not found.",
     ):
         Role.update_json_field(
             test_session, company_id, "Missing", "primary_meta_data", "key", "value"

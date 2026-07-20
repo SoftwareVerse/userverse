@@ -39,7 +39,9 @@ def verify_user_account(token: str, session: Session = Depends(get_session)):
     response = UserVerificationService(session).verify_user_account(token=token)
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
-        content=GenericResponseModel(message=response, data=None).model_dump(mode="json"),
+        content=GenericResponseModel(message=response, data=None).model_dump(
+            mode="json"
+        ),
     )
 
 

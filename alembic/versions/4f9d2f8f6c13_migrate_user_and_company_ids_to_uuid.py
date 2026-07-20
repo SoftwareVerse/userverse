@@ -108,7 +108,9 @@ def _create_role_table() -> None:
         sa.Column("_closed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("primary_meta_data", sa.JSON(), nullable=True),
         sa.Column("secondary_meta_data", sa.JSON(), nullable=True),
-        sa.ForeignKeyConstraint(["company_id"], [f"{COMPANY_TEMP}.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["company_id"], [f"{COMPANY_TEMP}.id"], ondelete="CASCADE"
+        ),
         sa.PrimaryKeyConstraint("company_id", "name"),
     )
 
@@ -332,7 +334,9 @@ def downgrade() -> None:
         sa.Column("_closed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("primary_meta_data", sa.JSON(), nullable=True),
         sa.Column("secondary_meta_data", sa.JSON(), nullable=True),
-        sa.ForeignKeyConstraint(["company_id"], [f"{COMPANY_TEMP}.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["company_id"], [f"{COMPANY_TEMP}.id"], ondelete="CASCADE"
+        ),
         sa.PrimaryKeyConstraint("company_id", "name"),
     )
     op.create_table(

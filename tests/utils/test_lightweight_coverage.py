@@ -898,4 +898,6 @@ def test_user_profile_service_get_user_companies_and_delete_user(monkeypatch):
 
 def test_shared_context_safe_json_returns_scalars_unchanged():
     assert SharedContext.safe_json("plain") == "plain"
+
+
 from uuid import uuid4
