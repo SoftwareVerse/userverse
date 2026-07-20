@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 
 from app.repository.database.tables import AssociationUserCompany
@@ -10,7 +12,7 @@ from app.utils.app_error import AppError
 
 def _deleted_by_user() -> UserReadModel:
     return UserReadModel(
-        id=99,
+        id=uuid4(),
         first_name="Admin",
         last_name="User",
         email="admin@example.com",
@@ -46,18 +48,20 @@ def test_role_belongs_to_company_raises_when_role_missing(
 
 
 def test_update_role_raises_when_role_missing(test_session):
+    company_id = uuid4()
     with pytest.raises(
-        ValueError, match="Role with company_id=1 and name='Missing' not found."
+        ValueError, match=f"Role with company_id={company_id} and name='Missing' not found."
     ):
-        Role.update_role(test_session, 1, "Missing", new_name="Renamed")
+        Role.update_role(test_session, company_id, "Missing", new_name="Renamed")
 
 
 def test_update_role_json_field_rejects_missing_role(test_session):
+    company_id = uuid4()
     with pytest.raises(
-        ValueError, match="Role with company_id=1 and name='Missing' not found."
+        ValueError, match=f"Role with company_id={company_id} and name='Missing' not found."
     ):
         Role.update_json_field(
-            test_session, 1, "Missing", "primary_meta_data", "key", "value"
+            test_session, company_id, "Missing", "primary_meta_data", "key", "value"
         )
 
 
@@ -98,7 +102,7 @@ def test_update_role_json_field_rejects_non_dict_column(
 def test_delete_role_and_reassign_users_rejects_same_replacement_name(test_session):
     with pytest.raises(ValueError, match="Cannot replace a role with itself."):
         Role.delete_role_and_reassign_users(
-            test_session, 1, "Admin", "Admin", _deleted_by_user()
+            test_session, uuid4(), "Admin", "Admin", _deleted_by_user()
         )
 
 

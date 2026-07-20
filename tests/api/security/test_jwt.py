@@ -1,9 +1,11 @@
 import asyncio
-import pytest
 from datetime import datetime, timedelta, timezone
+import jwt
+from uuid import uuid4
+
+import pytest
 from fastapi import status
 from fastapi.security import HTTPAuthorizationCredentials
-import jwt
 
 from app.models.user.user import UserReadModel
 from app.models.security_messages import SecurityResponseMessages
@@ -12,7 +14,7 @@ from app.utils.app_error import AppError
 
 # Sample user
 sample_user = UserReadModel(
-    id=1,
+    id=uuid4(),
     first_name="Test",
     last_name="User",
     email="test@example.com",
@@ -50,7 +52,7 @@ def test_decode_refresh_token_invalid_version_defaults_to_zero():
     jwt_manager = JWTManager()
     token = jwt.encode(
         {
-            "user": sample_user.model_dump(),
+            "user": sample_user.model_dump(mode="json"),
             "type": "refresh",
             "refresh_token_version": "invalid",
             "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
@@ -81,7 +83,7 @@ def test_decode_expired_token():
     jwt_manager = JWTManager()
     token = jwt.encode(
         {
-            "user": sample_user.model_dump(),
+            "user": sample_user.model_dump(mode="json"),
             "type": "access",
             "exp": datetime.now(timezone.utc) - timedelta(minutes=1),
         },

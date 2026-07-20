@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
@@ -36,7 +38,7 @@ class CompanyRepository(BaseSQLRepository[Company]):
             data["address"] = primary_meta_data["address"]
         return CompanyReadModel(**data)
 
-    def _get_company_record_by_id(self, company_id: int) -> Company | None:
+    def _get_company_record_by_id(self, company_id: UUID) -> Company | None:
         return (
             self._base_query()
             .filter(Company.id == company_id, Company._closed_at.is_(None))
@@ -102,8 +104,8 @@ class CompanyRepository(BaseSQLRepository[Company]):
         company = self._get_company_record_by_id(company.id)
         return self._to_read_model(company)
 
-    def get_company_by_id(self, company_id: str) -> CompanyReadModel:
-        company = self._get_company_record_by_id(int(company_id))
+    def get_company_by_id(self, company_id: UUID) -> CompanyReadModel:
+        company = self._get_company_record_by_id(company_id)
         if not company:
             raise AppError(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -121,9 +123,9 @@ class CompanyRepository(BaseSQLRepository[Company]):
         return self._to_read_model(company)
 
     def update_company(
-        self, payload: CompanyUpdateModel, company_id: str, user
+        self, payload: CompanyUpdateModel, company_id: UUID, user
     ) -> CompanyReadModel:
-        company = self._get_company_record_by_id(int(company_id))
+        company = self._get_company_record_by_id(company_id)
         if not company:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -142,8 +144,8 @@ class CompanyRepository(BaseSQLRepository[Company]):
             )
         return self._to_read_model(company)
 
-    def delete_company(self, company_id: str) -> None:
-        company = self._get_company_record_by_id(int(company_id))
+    def delete_company(self, company_id: UUID) -> None:
+        company = self._get_company_record_by_id(company_id)
         if not company:
             raise AppError(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -153,7 +155,7 @@ class CompanyRepository(BaseSQLRepository[Company]):
         self.soft_delete(company)
 
     def get_user_companies(
-        self, user_id: int, params: CompanyQueryParamsModel
+        self, user_id: UUID, params: CompanyQueryParamsModel
     ) -> PaginatedResponse[CompanyReadModel]:
         query = (
             self.db_session.query(AssociationUserCompany)
@@ -182,7 +184,10 @@ class CompanyRepository(BaseSQLRepository[Company]):
             query.options(joinedload(AssociationUserCompany.company)),
             page=params.page,
             limit=params.limit,
-            order_by=[Company.id.asc()],
+            order_by=[
+                AssociationUserCompany._created_at.asc(),
+                Company.id.asc(),
+            ],
         ).all()
         companies = [self._to_read_model(assoc.company) for assoc in results]
         return PaginatedResponse[CompanyReadModel](

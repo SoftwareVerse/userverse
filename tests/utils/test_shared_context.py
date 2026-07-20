@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
+from uuid import uuid4
 
 import pytest
 
@@ -12,7 +13,7 @@ from app.utils.shared_context import SharedContext
 
 def _build_user(*, status: str = "Active") -> UserReadModel:
     return UserReadModel(
-        id=1,
+        id=uuid4(),
         first_name="Jane",
         last_name="Doe",
         email="jane@example.com",

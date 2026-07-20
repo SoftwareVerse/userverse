@@ -7,12 +7,13 @@ def test_a_update_company_one_success(
     """
     Test updating a company successfully.
     """
+    company_id = seed_companies["company_one"]
     headers = {"Authorization": f"Bearer {login_token}"}
     payload = {
         **test_company_data["update_company_one"],
         "address": test_company_data["json_field"]["updated_value"],
     }
-    response = client.patch("/company/1", json=payload, headers=headers)
+    response = client.patch(f"/company/{company_id}", json=payload, headers=headers)
     #
     assert response.status_code in [200, 201]
     json_data = response.json()
@@ -20,7 +21,7 @@ def test_a_update_company_one_success(
     assert "message" in json_data
     assert json_data["message"] == CompanyResponseMessages.COMPANY_UPDATED.value
     assert "data" in json_data
-    assert json_data["data"]["id"] == 1
+    assert json_data["data"]["id"] == str(company_id)
     assert json_data["data"]["name"] == test_company_data["update_company_one"]["name"]
     assert (
         json_data["data"]["address"]["city"]
@@ -50,12 +51,13 @@ def test_b_update_company_two_failure(
     """
     Test updating a company, but the user is not an admin.
     """
+    company_id = seed_companies["company_two"]
     headers = {"Authorization": f"Bearer {login_token}"}
     payload = {
         **test_company_data["update_company_one"],
         "address": test_company_data["json_field"]["updated_value"],
     }
-    response = client.patch("/company/2", json=payload, headers=headers)
+    response = client.patch(f"/company/{company_id}", json=payload, headers=headers)
     #
     assert response.status_code in [400, 401, 403]
     json_data = response.json()

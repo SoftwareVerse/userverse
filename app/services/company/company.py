@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import status
 
 # utils
@@ -44,7 +46,7 @@ class CompanyService:
         return company
 
     def get_company(
-        self, company_id: str = None, email: str = None
+        self, company_id: UUID | None = None, email: str | None = None
     ) -> CompanyReadModel:
         """
         Get a company by its ID.
@@ -69,7 +71,7 @@ class CompanyService:
         return company
 
     def update_company(
-        self, payload: CompanyUpdateModel, company_id: str
+        self, payload: CompanyUpdateModel, company_id: UUID
     ) -> CompanyReadModel:
         """
         Update a company by its ID.
@@ -101,7 +103,7 @@ class CompanyService:
             )
         return company
 
-    def delete_company(self, company_id: str) -> None:
+    def delete_company(self, company_id: UUID) -> None:
         self.company_user_service.check_if_user_is_in_company(
             user_id=self.context.user.id,
             company_id=company_id,

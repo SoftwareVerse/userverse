@@ -10,6 +10,7 @@ def test_a_update_role_description_success(
     """
     Test updating a role's description successfully.
     """
+    company_id = seed_company_roles["company_one"]
     headers = {"Authorization": f"Bearer {login_token}"}
     # Assume company 1 and role 'Admin' exist
     payload = test_company_data["roles"]
@@ -19,7 +20,9 @@ def test_a_update_role_description_success(
             "name": name + " Updated",
             "description": role_value["description"] + " Updated",
         }
-        response = client.patch(f"/company/1/role/{name}", json=data, headers=headers)
+        response = client.patch(
+            f"/company/{company_id}/role/{name}", json=data, headers=headers
+        )
         #
         assert response.status_code == 201
         json_data = response.json()
@@ -37,12 +40,15 @@ def test_b_update_role_description_forbidden(
     """
     Test updating a role's description fails if not admin.
     """
+    company_id = seed_company_roles["company_one"]
     headers = {"Authorization": f"Bearer {login_token_user_two}"}
     payload = {
         "name": None,
         "description": "Should not update",
     }
-    response = client.patch("/company/1/role/Admin", json=payload, headers=headers)
+    response = client.patch(
+        f"/company/{company_id}/role/Admin", json=payload, headers=headers
+    )
     assert response.status_code in [400, 403]
     json_data = response.json()
 
@@ -57,12 +63,15 @@ def test_c_update_role_description_not_found(client, login_token, seed_company_r
     """
     Test updating a role that does not exist
     """
+    company_id = seed_company_roles["company_one"]
     headers = {"Authorization": f"Bearer {login_token}"}
     payload = {
         "name": "Should not update",
         "description": "Should not update",
     }
-    response = client.patch("/company/1/role/string", json=payload, headers=headers)
+    response = client.patch(
+        f"/company/{company_id}/role/string", json=payload, headers=headers
+    )
     assert response.status_code in [400, 403]
     json_data = response.json()
 
@@ -73,5 +82,5 @@ def test_c_update_role_description_not_found(client, login_token, seed_company_r
     )
     assert (
         json_data["detail"]["error"]
-        == "Role with company_id=1 and name='string' not found."
+        == f"Role with company_id={company_id} and name='string' not found."
     )

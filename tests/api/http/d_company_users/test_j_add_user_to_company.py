@@ -40,14 +40,14 @@ def _create_company(client, token: str) -> int:
         # ✅ Admin adds a new user to company 1 with a valid role
         (
             "login_token",
-            1,
+            "company_one",
             {"email": "user.three@email.com", "role": "Viewer"},
             201,
             CompanyUserResponseMessages.ADD_USER_SUCCESS.value,
         ),
         (
             "login_token_user_two",
-            2,
+            "company_two",
             {"email": "user.three@email.com", "role": "Viewer"},
             201,
             CompanyUserResponseMessages.ADD_USER_SUCCESS.value,
@@ -55,7 +55,7 @@ def _create_company(client, token: str) -> int:
         # ❌ Non-admin tries to add a user to company 1
         (
             "login_token_user_two",
-            1,
+            "company_one",
             {"email": "user.three@email.com", "role": "Viewer"},
             403,
             CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value,
@@ -63,7 +63,7 @@ def _create_company(client, token: str) -> int:
         # ❌ Admin tries to add a user with an invalid role
         (
             "login_token",
-            1,
+            "company_one",
             {"email": "user.three@email.com", "role": "NotARealRole"},
             400,
             CompanyUserResponseMessages.ADD_USER_FAILED.value,
@@ -71,7 +71,7 @@ def _create_company(client, token: str) -> int:
         # ❌ Admin tries to add a user that does not exist
         (
             "login_token",
-            1,
+            "company_one",
             {"email": "missing.user@email.com", "role": "Viewer"},
             404,
             CompanyUserResponseMessages.ADD_USER_FAILED.value,
@@ -99,6 +99,7 @@ def test_add_user_to_company(
         "login_token": login_token,
         "login_token_user_two": login_token_user_two,
     }
+    company_id = seed_company_roles[company_id]
 
     headers = {
         "Authorization": f"Bearer {token_map[login_token_key]}",

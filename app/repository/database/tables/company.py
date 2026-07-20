@@ -1,4 +1,6 @@
-from sqlalchemy import Integer, String
+from uuid import UUID, uuid4
+
+from sqlalchemy import String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.repository.database.base_model import BaseModel
@@ -7,7 +9,11 @@ from app.repository.database.base_model import BaseModel
 class Company(BaseModel):
     __tablename__ = "company"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid4,
+    )
     name: Mapped[str | None] = mapped_column(String(256), nullable=True)
     description: Mapped[str | None] = mapped_column(String(512), nullable=True)
     industry: Mapped[str | None] = mapped_column(String(128), nullable=True)

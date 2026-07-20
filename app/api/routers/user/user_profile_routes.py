@@ -50,7 +50,7 @@ def get_user_api(
         status_code=status.HTTP_200_OK,
         content={
             "message": UserResponseMessages.USER_FOUND.value,
-            "data": response.model_dump(),
+            "data": response.model_dump(mode="json"),
         },
     )
 
@@ -81,7 +81,7 @@ def update_user_api(
         status_code=status.HTTP_201_CREATED,
         content={
             "message": UserResponseMessages.USER_UPDATED.value,
-            "data": response.model_dump(),
+            "data": response.model_dump(mode="json"),
         },
     )
 
@@ -112,8 +112,8 @@ def get_user_companies_api(
         status_code=status.HTTP_200_OK,
         content=GenericResponseModel(
             message=CompanyUserResponseMessages.GET_COMPANY_USERS.value,
-            data=response.model_dump(),
-        ).model_dump(),
+            data=response.model_dump(mode="json"),
+        ).model_dump(mode="json"),
     )
 
 

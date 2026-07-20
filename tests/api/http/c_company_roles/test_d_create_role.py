@@ -15,11 +15,14 @@ def test_a_create_company_one_roles_success(
     """
     Test creating roles for a company successfully.
     """
+    company_id = seed_companies["company_one"]
     roles = test_company_data["roles"]
     headers = {"Authorization": f"Bearer {login_token}"}
 
     for role_key, role_value in roles.items():
-        response = client.post("/company/1/role", json=role_value, headers=headers)
+        response = client.post(
+            f"/company/{company_id}/role", json=role_value, headers=headers
+        )
         #
         assert response.status_code in [200, 201]
         json_data = response.json()
@@ -40,11 +43,14 @@ def test_a_create_company_two_roles_success(
     """
     Test creating roles for a company successfully.
     """
+    company_id = seed_companies["company_two"]
     roles = test_company_data["roles"]
     headers = {"Authorization": f"Bearer {login_token_user_two}"}
 
     for role_key, role_value in roles.items():
-        response = client.post("/company/2/role", json=role_value, headers=headers)
+        response = client.post(
+            f"/company/{company_id}/role", json=role_value, headers=headers
+        )
         #
         assert response.status_code in [200, 201]
         json_data = response.json()
@@ -65,11 +71,14 @@ def test_b_create_company_roles_failure(
     """
     Test creating roles for a company failure. When the user is not authorized to create roles.
     """
+    company_id = seed_companies["company_one"]
     roles = test_company_data["roles"]
     headers = {"Authorization": f"Bearer {login_token_user_two}"}
 
     for role_key, role_value in roles.items():
-        response = client.post("/company/1/role", json=role_value, headers=headers)
+        response = client.post(
+            f"/company/{company_id}/role", json=role_value, headers=headers
+        )
         #
         assert response.status_code in [400, 403]
         json_data = response.json()
@@ -87,11 +96,14 @@ def test_c_create_company_roles_failure(
     """
     Test creating roles for a company failure. When the roles already exist
     """
+    company_id = seed_companies["company_two"]
     roles = test_company_data["roles"]
     headers = {"Authorization": f"Bearer {login_token_user_two}"}
 
     for role_key, role_value in roles.items():
-        response = client.post("/company/2/role", json=role_value, headers=headers)
+        response = client.post(
+            f"/company/{company_id}/role", json=role_value, headers=headers
+        )
         #
         assert response.status_code in [400, 403]
         json_data = response.json()

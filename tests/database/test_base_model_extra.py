@@ -19,7 +19,7 @@ def test_to_dict_handles_none_and_model_lists(test_session, test_user_data):
         first_name="Two",
     )
 
-    records = test_session.query(User).order_by(User.id).all()
+    records = test_session.query(User).order_by(User._created_at, User.email).all()
 
     assert BaseModel.to_dict(None) == {}
     assert BaseModel.to_dict(records)[0]["id"] == user_one["id"]

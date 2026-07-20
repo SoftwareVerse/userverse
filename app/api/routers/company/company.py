@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, status, Query, Path
 from fastapi.responses import JSONResponse
 
@@ -65,8 +67,8 @@ def create_company_api(
             status_code=status.HTTP_201_CREATED,
             content=GenericResponseModel(
                 message=CompanyResponseMessages.COMPANY_CREATED.value,
-                data=response.model_dump(),
-            ).model_dump(),
+                data=response.model_dump(mode="json"),
+            ).model_dump(mode="json"),
         )
     except (AppError, Exception) as e:
         raise e
@@ -85,7 +87,7 @@ def create_company_api(
 )
 def get_company_api(
     email: str = Query(None, description="(Optional) Company email address"),
-    company_id: int = Query(None, description="(Optional) Company ID"),
+    company_id: UUID | None = Query(None, description="(Optional) Company ID"),
     common_deps: CommonJWTRouteDependencies = Depends(),
 ):
     """
@@ -115,8 +117,8 @@ def get_company_api(
             status_code=status.HTTP_200_OK,
             content=GenericResponseModel(
                 message=CompanyResponseMessages.COMPANY_FOUND.value,
-                data=company.model_dump(),
-            ).model_dump(),
+                data=company.model_dump(mode="json"),
+            ).model_dump(mode="json"),
         )
     except (AppError, Exception) as e:
         raise e
@@ -134,7 +136,7 @@ def get_company_api(
 )
 def update_company_api(
     company_updates: CompanyUpdateModel,
-    company_id: int = Path(..., description="ID of the company to update"),
+    company_id: UUID = Path(..., description="ID of the company to update"),
     common_deps: CommonJWTRouteDependencies = Depends(),
 ):
     """
@@ -156,8 +158,8 @@ def update_company_api(
             status_code=status.HTTP_200_OK,
             content=GenericResponseModel(
                 message=CompanyResponseMessages.COMPANY_UPDATED.value,
-                data=response.model_dump(),
-            ).model_dump(),
+                data=response.model_dump(mode="json"),
+            ).model_dump(mode="json"),
         )
     except (AppError, Exception) as e:
         raise e
@@ -175,7 +177,7 @@ def update_company_api(
     },
 )
 def delete_company_api(
-    company_id: int = Path(..., description="ID of the company to delete"),
+    company_id: UUID = Path(..., description="ID of the company to delete"),
     common_deps: CommonJWTRouteDependencies = Depends(),
 ):
     """
@@ -195,7 +197,7 @@ def delete_company_api(
             content=GenericResponseModel(
                 message=CompanyResponseMessages.COMPANY_DELETED.value,
                 data=None,
-            ).model_dump(),
+            ).model_dump(mode="json"),
         )
     except (AppError, Exception) as e:
         raise e

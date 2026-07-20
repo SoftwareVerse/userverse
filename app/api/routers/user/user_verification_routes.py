@@ -39,7 +39,7 @@ def verify_user_account(token: str, session: Session = Depends(get_session)):
     response = UserVerificationService(session).verify_user_account(token=token)
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
-        content=GenericResponseModel(message=response, data=None).model_dump(),
+        content=GenericResponseModel(message=response, data=None).model_dump(mode="json"),
     )
 
 
@@ -70,5 +70,5 @@ def resend_verification_email(
     )
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content=response.model_dump(),
+        content=response.model_dump(mode="json"),
     )

@@ -1,4 +1,6 @@
-from sqlalchemy import ForeignKey, ForeignKeyConstraint, Integer, String
+from uuid import UUID
+
+from sqlalchemy import ForeignKey, ForeignKeyConstraint, String, Uuid
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -15,13 +17,13 @@ from sqlalchemy.sql import func
 class AssociationUserCompany(BaseModel):
     __tablename__ = "association_user_company"
 
-    user_id: Mapped[int] = mapped_column(
-        Integer,
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid,
         ForeignKey("user.id"),
         primary_key=True,
     )
-    company_id: Mapped[int] = mapped_column(
-        Integer,
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid,
         ForeignKey("company.id"),
         primary_key=True,
     )
@@ -43,8 +45,8 @@ class AssociationUserCompany(BaseModel):
     def is_user_linked_to_company(
         cls,
         session: Session,
-        user_id: int,
-        company_id: int,
+        user_id: UUID,
+        company_id: UUID,
         role_name: str | None = None,
     ) -> bool:
         query = session.query(cls).filter_by(user_id=user_id, company_id=company_id)
@@ -56,8 +58,8 @@ class AssociationUserCompany(BaseModel):
     def link_user(
         cls,
         session: Session,
-        company_id: int,
-        user_id: int,
+        company_id: UUID,
+        user_id: UUID,
         role_name: str,
         added_by: UserReadModel,
     ) -> "AssociationUserCompany":
@@ -73,7 +75,7 @@ class AssociationUserCompany(BaseModel):
             user_id=user_id,
             company_id=company_id,
             role_name=role_name,
-            primary_meta_data={"added_by": added_by.model_dump()},
+            primary_meta_data={"added_by": added_by.model_dump(mode="json")},
         )
         session.add(assoc)
         session.commit()
@@ -84,8 +86,8 @@ class AssociationUserCompany(BaseModel):
     def unlink_user(
         cls,
         session: Session,
-        company_id: int,
-        user_id: int,
+        company_id: UUID,
+        user_id: UUID,
         removed_by: UserReadModel,
     ) -> "AssociationUserCompany":
         assoc = (
@@ -106,7 +108,7 @@ class AssociationUserCompany(BaseModel):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 message=CompanyUserResponseMessages.SUPER_ADMIN_REMOVE_FORBIDDEN.value,
             )
-        assoc.primary_meta_data["removed_by"] = removed_by.model_dump()
+        assoc.primary_meta_data["removed_by"] = removed_by.model_dump(mode="json")
         flag_modified(assoc, "primary_meta_data")
         assoc._closed_at = func.now()
         session.commit()
