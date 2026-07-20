@@ -69,3 +69,9 @@ class UserProfileService:
         return self.company_repository.get_user_companies(
             user_id=self.context.user.id, params=params
         )
+
+    def delete_user(self, user_id: int) -> None:
+        """
+        Soft-delete the authenticated user account.
+        """
+        self.user_repository.delete_user(user_id)
