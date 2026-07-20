@@ -109,3 +109,30 @@ def test_unlink_user_rejects_self_removal_for_administrator(
         AssociationUserCompany.unlink_user(
             test_session, company["id"], user["id"], _acting_user(user_id=user["id"])
         )
+
+
+def test_unlink_user_soft_deletes_link_and_records_removed_by_metadata(
+    test_session, test_company_data, test_user_data, test_role_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+    user = User.create(test_session, **test_user_data["create_user"])
+    role = Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["viewer_role"]["name"],
+        description=test_role_data["viewer_role"]["description"],
+    )
+    added_by = _acting_user(user_id=uuid4())
+    removed_by = _acting_user(user_id=uuid4())
+
+    AssociationUserCompany.link_user(
+        test_session, company["id"], user["id"], role["name"], added_by
+    )
+
+    unlinked = AssociationUserCompany.unlink_user(
+        test_session, company["id"], user["id"], removed_by
+    )
+
+    assert unlinked._closed_at is not None
+    assert unlinked.primary_meta_data["removed_by"]["id"] == str(removed_by.id)
+    assert unlinked.primary_meta_data["removed_by"]["email"] == removed_by.email
