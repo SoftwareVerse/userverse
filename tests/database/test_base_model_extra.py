@@ -249,7 +249,9 @@ def test_bulk_update_json_field_missing_record_raises_record_not_found(test_sess
 def test_create_rolls_back_and_wraps_non_integrity_errors(test_session, monkeypatch):
     rollback_calls = []
     monkeypatch.setattr(test_session, "rollback", lambda: rollback_calls.append(True))
-    monkeypatch.setattr(test_session, "commit", lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr(
+        test_session, "commit", lambda: (_ for _ in ()).throw(RuntimeError("boom"))
+    )
 
     with pytest.raises(ValueError, match="Error creating User: boom"):
         User.create(

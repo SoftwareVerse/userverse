@@ -4,6 +4,8 @@ from app.models.company.response_messages import CompanyResponseMessages
 import pytest
 
 pytestmark = pytest.mark.anyio
+
+
 async def test_a_update_company_one_success(
     client, login_token, test_company_data, seed_companies
 ):
@@ -16,7 +18,9 @@ async def test_a_update_company_one_success(
         **test_company_data["update_company_one"],
         "address": test_company_data["json_field"]["updated_value"],
     }
-    response = await client.patch(f"/company/{company_id}", json=payload, headers=headers)
+    response = await client.patch(
+        f"/company/{company_id}", json=payload, headers=headers
+    )
     #
     assert response.status_code in [200, 201]
     json_data = response.json()
@@ -60,7 +64,9 @@ async def test_b_update_company_two_failure(
         **test_company_data["update_company_one"],
         "address": test_company_data["json_field"]["updated_value"],
     }
-    response = await client.patch(f"/company/{company_id}", json=payload, headers=headers)
+    response = await client.patch(
+        f"/company/{company_id}", json=payload, headers=headers
+    )
     #
     assert response.status_code in [400, 401, 403]
     json_data = response.json()

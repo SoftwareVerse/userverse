@@ -8,6 +8,8 @@ from tests.utils.basic_auth import get_basic_auth_header
 import pytest
 
 pytestmark = pytest.mark.anyio
+
+
 async def test_a_password_reset_validate_otp_fail(
     client, test_user_data, seed_verified_users, get_user_two_otp
 ):

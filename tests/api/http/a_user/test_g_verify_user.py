@@ -10,9 +10,9 @@ from app.repository.database.tables import User
 from app.utils.rate_limiter import VERIFICATION_EMAIL_RATE_LIMITER
 from tests.utils.basic_auth import get_basic_auth_header
 
-
-
 pytestmark = pytest.mark.anyio
+
+
 def _verification_token(email: str, token_type: str = "verification") -> str:
     return JWTManager().sign_payload(
         {"sub": email, "type": token_type},
@@ -87,13 +87,17 @@ async def test_verify_user_account_rejects_wrong_token_type(
 ):
     email = test_user_data["user_two"]["email"]
 
-    response = await client.get(f"/user/verify?token={_verification_token(email, 'refresh')}")
+    response = await client.get(
+        f"/user/verify?token={_verification_token(email, 'refresh')}"
+    )
 
     assert response.status_code == 403
     assert response.json()["detail"]["message"] == "Invalid token"
 
 
-async def test_resend_verification_email_by_email_without_authentication(client, monkeypatch):
+async def test_resend_verification_email_by_email_without_authentication(
+    client, monkeypatch
+):
     sent_messages = []
     monkeypatch.setattr(
         "app.services.user.verification.MailService.send_template_email",
@@ -170,7 +174,9 @@ async def test_resend_verification_email_rate_limited(client):
         assert create_response.status_code == 201
 
         for _ in range(5):
-            response = await client.post("/user/resend-verification", json={"email": email})
+            response = await client.post(
+                "/user/resend-verification", json={"email": email}
+            )
             assert response.status_code == 200
 
         rate_limited_response = await client.post(

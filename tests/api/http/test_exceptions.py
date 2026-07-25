@@ -54,9 +54,7 @@ async def exception_client():
             raise RuntimeError("outer problem") from exc
 
     transport = ASGITransport(app=app, raise_app_exceptions=False)
-    async with AsyncClient(
-        transport=transport, base_url="http://testserver"
-    ) as client:
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client
 
 

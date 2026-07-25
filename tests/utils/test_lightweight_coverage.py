@@ -27,7 +27,11 @@ from app.models.company.response_messages import (
     CompanyRoleResponseMessages,
     CompanyUserResponseMessages,
 )
-from app.models.company.roles import RoleCreateModel, RoleQueryParamsModel, RoleUpdateModel
+from app.models.company.roles import (
+    RoleCreateModel,
+    RoleQueryParamsModel,
+    RoleUpdateModel,
+)
 from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import UserReadModel
 from app.services.user.basic_auth import UserBasicAuthService
@@ -289,7 +293,9 @@ def test_strip_matching_quotes_removes_matching_wrappers():
 
 def test_simple_request_models_and_enums():
     assert PasswordResetRequest(email="user@example.com").email == "user@example.com"
-    assert PasswordResetRequest(email="user@example.com").method == PasswordResetMethod.OTP
+    assert (
+        PasswordResetRequest(email="user@example.com").method == PasswordResetMethod.OTP
+    )
     assert OTPValidationRequest(otp="123456").otp == "123456"
     assert (
         MagicLinkPasswordResetConfirmRequest(
@@ -439,7 +445,10 @@ def test_password_service_request_logs_and_succeeds_when_sync_email_send_fails(
     service = UserPasswordService(session=object())
     response = service.request_password_reset("user@example.com")
 
-    assert response.message == "If an account exists for that email, we’ve sent a reset link."
+    assert (
+        response.message
+        == "If an account exists for that email, we’ve sent a reset link."
+    )
     fake_password_repo.create_password_reset_record.assert_called_once()
     logger_error.assert_called_once()
 
@@ -467,10 +476,7 @@ def test_password_service_reset_with_token_rejects_known_user_with_invalid_token
         service.reset_password_with_token(token="bad", new_password="Secret123!")
 
     assert exc_info.value.status_code == 400
-    assert (
-        exc_info.value.detail["message"]
-        == "Magic link verification failed"
-    )
+    assert exc_info.value.detail["message"] == "Magic link verification failed"
     assert (
         exc_info.value.detail["error"]
         == "Invalid reset token, does not match or expired"
@@ -1236,7 +1242,9 @@ def test_verification_service_resend_logs_dispatch_failures(monkeypatch):
         email="pending@example.com",
         first_name="Pending",
         last_name="User",
-        primary_meta_data={"status": UserAccountStatus.AWAITING_VERIFICATION.name_value},
+        primary_meta_data={
+            "status": UserAccountStatus.AWAITING_VERIFICATION.name_value
+        },
     )
 
     class FakeUserRepository:
@@ -1289,7 +1297,9 @@ def test_company_service_branches_for_falsey_repository_results(monkeypatch):
     context = SharedContext(db_session=object(), user=acting_user)
     service = CompanyService(context)
 
-    monkeypatch.setattr(service.company_repository, "create_company", lambda payload, user: None)
+    monkeypatch.setattr(
+        service.company_repository, "create_company", lambda payload, user: None
+    )
     with pytest.raises(AppError) as exc_info:
         service.create_company(
             CompanyCreateModel(
@@ -1301,21 +1311,34 @@ def test_company_service_branches_for_falsey_repository_results(monkeypatch):
                 address=None,
             )
         )
-    assert exc_info.value.detail["message"] == CompanyResponseMessages.COMPANY_CREATION_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyResponseMessages.COMPANY_CREATION_FAILED.value
+    )
 
     with pytest.raises(AppError) as exc_info:
         service.get_company()
-    assert exc_info.value.detail["message"] == CompanyResponseMessages.COMPANY_ID_OR_EMAIL_REQUIRED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyResponseMessages.COMPANY_ID_OR_EMAIL_REQUIRED.value
+    )
 
     monkeypatch.setattr(
         service.company_user_service.company_user_repository,
         "is_user_linked_to_company",
         lambda **kwargs: True,
     )
-    monkeypatch.setattr(service.company_repository, "update_company", lambda payload, company_id, user: None)
+    monkeypatch.setattr(
+        service.company_repository,
+        "update_company",
+        lambda payload, company_id, user: None,
+    )
     with pytest.raises(AppError) as exc_info:
         service.update_company(CompanyUpdateModel(name="Updated"), uuid4())
-    assert exc_info.value.detail["message"] == CompanyResponseMessages.COMPANY_UPDATE_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyResponseMessages.COMPANY_UPDATE_FAILED.value
+    )
 
 
 def test_role_service_branches_for_falsey_repository_results(monkeypatch):
@@ -1340,12 +1363,22 @@ def test_role_service_branches_for_falsey_repository_results(monkeypatch):
             "Viewer",
             RoleUpdateModel(name=None, description="Updated"),
         )
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
 
-    monkeypatch.setattr(RoleRepository, "create_role", lambda self, payload, created_by: None)
+    monkeypatch.setattr(
+        RoleRepository, "create_role", lambda self, payload, created_by: None
+    )
     with pytest.raises(AppError) as exc_info:
-        service.create_role(RoleCreateModel(name="Viewer", description="Desc"), company_id)
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_CREATION_FAILED.value
+        service.create_role(
+            RoleCreateModel(name="Viewer", description="Desc"), company_id
+        )
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_CREATION_FAILED.value
+    )
 
 
 def test_company_repository_wraps_integrity_error(monkeypatch):
@@ -1377,7 +1410,10 @@ def test_company_repository_wraps_integrity_error(monkeypatch):
             created_by=types.SimpleNamespace(email="owner@example.com"),
         )
 
-    assert exc_info.value.detail["message"] == CompanyResponseMessages.COMPANY_ALREADY_EXISTS.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyResponseMessages.COMPANY_ALREADY_EXISTS.value
+    )
     repository.db_session.rollback.assert_called_once()
 
 
@@ -1388,23 +1424,39 @@ def test_company_repository_missing_record_branches():
 
     with pytest.raises(AppError) as exc_info:
         repository.get_company_by_email("missing@example.com")
-    assert exc_info.value.detail["message"] == CompanyResponseMessages.COMPANY_NOT_FOUND.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyResponseMessages.COMPANY_NOT_FOUND.value
+    )
 
     with pytest.raises(AppError) as exc_info:
         repository.update_company(CompanyUpdateModel(name="Updated"), uuid4(), object())
-    assert exc_info.value.detail["message"] == CompanyResponseMessages.COMPANY_UPDATE_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyResponseMessages.COMPANY_UPDATE_FAILED.value
+    )
 
     with pytest.raises(AppError) as exc_info:
         repository.delete_company(uuid4())
-    assert exc_info.value.detail["message"] == CompanyResponseMessages.COMPANY_NOT_FOUND.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyResponseMessages.COMPANY_NOT_FOUND.value
+    )
 
 
 def test_role_repository_error_branches(monkeypatch):
     repository = RoleRepository(company_id=uuid4(), session=Mock())
-    monkeypatch.setattr(repository, "paginate", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("bad query")))
+    monkeypatch.setattr(
+        repository,
+        "paginate",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("bad query")),
+    )
     with pytest.raises(AppError) as exc_info:
         repository.get_roles(RoleQueryParamsModel(limit=10, page=1))
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_NOT_FOUND.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_NOT_FOUND.value
+    )
 
     monkeypatch.setattr(repository, "get_role_record", lambda role_name: None)
     with pytest.raises(AppError) as exc_info:
@@ -1431,12 +1483,17 @@ def test_role_repository_error_branches(monkeypatch):
             ),
             deleted_by=deleted_by,
         )
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
 
 
 def test_lifespan_logs_startup_and_shutdown(monkeypatch):
     events = []
-    monkeypatch.setattr(main_module.logger, "info", lambda message: events.append(message))
+    monkeypatch.setattr(
+        main_module.logger, "info", lambda message: events.append(message)
+    )
     monkeypatch.setattr(main_module, "get_engine", lambda: "engine")
 
     async def _run():
@@ -1446,12 +1503,19 @@ def test_lifespan_logs_startup_and_shutdown(monkeypatch):
     import asyncio
 
     asyncio.run(_run())
-    assert events == ["Userverse API starting up", "inside", "Userverse API shutting down"]
+    assert events == [
+        "Userverse API starting up",
+        "inside",
+        "Userverse API shutting down",
+    ]
 
 
 def test_main_module_executes_click_entrypoint(monkeypatch):
     called = []
-    monkeypatch.setattr("click.core.Command.main", lambda self, *args, **kwargs: called.append(self.name))
+    monkeypatch.setattr(
+        "click.core.Command.main",
+        lambda self, *args, **kwargs: called.append(self.name),
+    )
     runpy.run_module("app.main", run_name="__main__")
     assert called
 
@@ -1466,7 +1530,10 @@ def test_exceptions_module_reuses_counter_from_registry(monkeypatch):
     original_counter = prometheus_client.Counter
     original_registry = prometheus_client.REGISTRY
 
-    monkeypatch.setattr("prometheus_client.Counter", lambda *args, **kwargs: (_ for _ in ()).throw(ValueError("dup")))
+    monkeypatch.setattr(
+        "prometheus_client.Counter",
+        lambda *args, **kwargs: (_ for _ in ()).throw(ValueError("dup")),
+    )
     monkeypatch.setattr("prometheus_client.REGISTRY", fake_registry)
 
     reloaded = importlib.reload(exceptions_module)
@@ -1489,7 +1556,9 @@ def test_unwrap_exception_handles_context_and_missing_base_exception_group(monke
 
     builtins_without_group = dict(exceptions_module.__dict__["__builtins__"])
     builtins_without_group.pop("BaseExceptionGroup", None)
-    monkeypatch.setitem(exceptions_module.__dict__, "__builtins__", builtins_without_group)
+    monkeypatch.setitem(
+        exceptions_module.__dict__, "__builtins__", builtins_without_group
+    )
 
     same_root, same_trail = exceptions_module.unwrap_exception(RuntimeError("plain"))
     assert isinstance(same_root, RuntimeError)

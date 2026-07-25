@@ -63,7 +63,9 @@ async def test_b_update_role_description_forbidden(
     )
 
 
-async def test_c_update_role_description_not_found(client, login_token, seed_company_roles):
+async def test_c_update_role_description_not_found(
+    client, login_token, seed_company_roles
+):
     """
     Test updating a role that does not exist
     """

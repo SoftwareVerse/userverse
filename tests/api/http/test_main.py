@@ -6,6 +6,8 @@ from app.main import create_app
 import pytest
 
 pytestmark = pytest.mark.anyio
+
+
 async def test_read_main(client):
     response = await client.get("/")
     assert response.status_code == 200

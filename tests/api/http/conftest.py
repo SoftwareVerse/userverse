@@ -525,7 +525,9 @@ def seed_pagination_state():
         company_ids = []
         for company_data in companies:
             company_row = (
-                session.query(Company).filter_by(email=company_data["email"]).one_or_none()
+                session.query(Company)
+                .filter_by(email=company_data["email"])
+                .one_or_none()
             )
             if company_row is None:
                 company_row = Company(
@@ -627,7 +629,9 @@ def seed_pagination_state():
 
         user_ids = []
         for user_data in extra_users:
-            user_row = session.query(User).filter_by(email=user_data["email"]).one_or_none()
+            user_row = (
+                session.query(User).filter_by(email=user_data["email"]).one_or_none()
+            )
             if user_row is None:
                 user_row = User(
                     first_name=user_data["first_name"],
@@ -686,17 +690,21 @@ def seed_pagination_state():
                 existing_link._closed_at = None
             session.commit()
 
-        owner_token = JWTManager().sign_jwt(
-            UserReadModel(
-                id=owner_row.id,
-                first_name=owner_row.first_name,
-                last_name=owner_row.last_name,
-                email=owner_row.email,
-                phone_number=owner_row.phone_number,
-                status=UserAccountStatus.ACTIVE.name_value,
-                is_superuser=owner_row.is_superuser,
+        owner_token = (
+            JWTManager()
+            .sign_jwt(
+                UserReadModel(
+                    id=owner_row.id,
+                    first_name=owner_row.first_name,
+                    last_name=owner_row.last_name,
+                    email=owner_row.email,
+                    phone_number=owner_row.phone_number,
+                    status=UserAccountStatus.ACTIVE.name_value,
+                    is_superuser=owner_row.is_superuser,
+                )
             )
-        ).access_token
+            .access_token
+        )
 
         return {
             "owner": owner,

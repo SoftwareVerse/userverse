@@ -7,6 +7,8 @@ from app.utils.hash_password import verify_password
 import pytest
 
 pytestmark = pytest.mark.anyio
+
+
 async def test_a_password_reset_with_magic_link_success(
     client, test_user_data, seed_verified_users, get_user_two_otp
 ):
@@ -26,7 +28,10 @@ async def test_a_password_reset_with_magic_link_success(
     )
 
     assert response.status_code == 202
-    assert response.json()["message"] == PasswordResetResponseMessages.PASSWORD_CHANGED.value
+    assert (
+        response.json()["message"]
+        == PasswordResetResponseMessages.PASSWORD_CHANGED.value
+    )
 
     db = DatabaseSessionManager()
     session = db.session_object()

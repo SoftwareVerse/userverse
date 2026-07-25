@@ -189,7 +189,9 @@ class UserRepository(BaseSQLRepository[User]):
         method: PasswordResetMethod,
     ) -> User | None:
         for user in self._active_user_query().all():
-            password_reset_data = (user.primary_meta_data or {}).get("password_reset", {})
+            password_reset_data = (user.primary_meta_data or {}).get(
+                "password_reset", {}
+            )
             if (
                 password_reset_data.get("method") == method.value
                 and password_reset_data.get("token") == token

@@ -4,6 +4,8 @@ from app.models.company.response_messages import CompanyResponseMessages
 import pytest
 
 pytestmark = pytest.mark.anyio
+
+
 async def test_a_create_company_one_success(client, test_company_data, login_token):
     """Test creating Company One using User One's token"""
     payload = {
@@ -27,7 +29,9 @@ async def test_a_create_company_one_success(client, test_company_data, login_tok
     assert data["address"]["country"] == payload["address"]["country"]
 
 
-async def test_b_create_company_two_success(client, test_company_data, login_token_user_two):
+async def test_b_create_company_two_success(
+    client, test_company_data, login_token_user_two
+):
     """Test creating Company Two using User Two's token"""
     payload = {
         **test_company_data["company_two"],
@@ -50,7 +54,9 @@ async def test_b_create_company_two_success(client, test_company_data, login_tok
     assert data["address"]["country"] == payload["address"]["country"]
 
 
-async def test_c_create_company_one_again_should_fail(client, test_company_data, login_token):
+async def test_c_create_company_one_again_should_fail(
+    client, test_company_data, login_token
+):
     """Attempt to create Company One again — should fail due to duplicate email"""
     payload = {
         **test_company_data["company_one"],

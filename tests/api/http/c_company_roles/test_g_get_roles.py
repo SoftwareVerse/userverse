@@ -2,9 +2,9 @@ import pytest
 from app.models.company.response_messages import CompanyRoleResponseMessages
 from app.utils.app_error import AppError
 
-
-
 pytestmark = pytest.mark.anyio
+
+
 @pytest.mark.parametrize(
     "query_params,expected_names",
     [
@@ -61,7 +61,9 @@ async def test_get_roles_with_invalid_filter(client, seed_pagination_state):
         "accept": "application/json",
     }
 
-    response = await client.get(f"/company/{company_id}/roles?name=xyz", headers=headers)
+    response = await client.get(
+        f"/company/{company_id}/roles?name=xyz", headers=headers
+    )
     assert response.status_code == 200
 
     json_data = response.json()

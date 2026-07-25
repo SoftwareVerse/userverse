@@ -6,9 +6,9 @@ from app.repository.database.session_manager import DatabaseSessionManager
 from app.repository.database.tables import User
 from app.utils.rate_limiter import PASSWORD_RESET_RATE_LIMITER
 
-
-
 pytestmark = pytest.mark.anyio
+
+
 @pytest.fixture(autouse=True)
 def reset_password_reset_rate_limiters():
     PASSWORD_RESET_RATE_LIMITER.reset()

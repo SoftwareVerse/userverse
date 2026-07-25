@@ -6,6 +6,8 @@ from app.models.company.response_messages import CompanyResponseMessages
 import pytest
 
 pytestmark = pytest.mark.anyio
+
+
 def _build_company_payload() -> dict:
     suffix = uuid4().hex
     return {
@@ -71,5 +73,7 @@ async def test_delete_company_forbidden_for_non_owner(
         == CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value
     )
 
-    cleanup_response = await client.delete(f"/company/{company_id}", headers=owner_headers)
+    cleanup_response = await client.delete(
+        f"/company/{company_id}", headers=owner_headers
+    )
     assert cleanup_response.status_code == 200, cleanup_response.text

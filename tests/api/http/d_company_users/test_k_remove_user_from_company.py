@@ -119,7 +119,9 @@ async def test_remove_owner_from_company_forbidden(client, login_token):
     assert json_data["detail"]["error"] == "Owner cannot be removed from the company."
 
 
-async def test_remove_user_from_company_rejects_already_removed_user(client, login_token):
+async def test_remove_user_from_company_rejects_already_removed_user(
+    client, login_token
+):
     company_id = await _create_company(client, login_token)
     user_id = await _add_user_to_company(
         client, login_token, company_id, "user.three@email.com"

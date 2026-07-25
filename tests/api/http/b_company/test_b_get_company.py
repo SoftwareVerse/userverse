@@ -5,6 +5,8 @@ from uuid import uuid4
 import pytest
 
 pytestmark = pytest.mark.anyio
+
+
 async def test_a_get_company_one_by_id_success(client, login_token, seed_companies):
     """Test creating Company One using User One's token"""
     company_id = seed_companies["company_one"]
