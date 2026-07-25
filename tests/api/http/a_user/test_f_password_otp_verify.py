@@ -5,21 +5,24 @@ from app.utils.hash_password import verify_password
 from tests.utils.basic_auth import get_basic_auth_header
 
 
-def test_a_password_reset_validate_otp_fail(
+import pytest
+
+pytestmark = pytest.mark.anyio
+async def test_a_password_reset_validate_otp_fail(
     client, test_user_data, seed_verified_users, get_user_two_otp
 ):
     """Test password reset with valid user email"""
     user_one = test_user_data["user_two"]
     new_password = "NewPassword123"
 
-    client.patch("password-reset/request", json={"email": user_one["email"]})
+    await client.patch("password-reset/request", json={"email": user_one["email"]})
 
     headers = get_basic_auth_header(
         username=user_one["email"],
         password=new_password,
     )
 
-    response = client.patch(
+    response = await client.patch(
         f"password-reset/validate-otp?one_time_pin={get_user_two_otp}FGWSE",
         headers=headers,
     )
@@ -35,14 +38,14 @@ def test_a_password_reset_validate_otp_fail(
     assert json_data["detail"]["error"] == PasswordResetResponseMessages.ERROR.value
 
 
-def test_b_password_reset_validate_otp_success(
+async def test_b_password_reset_validate_otp_success(
     client, test_user_data, seed_verified_users, get_user_two_otp
 ):
     """Test password reset with valid user email"""
     user_one = test_user_data["user_two"]
     new_password = "NewPassword123!"
 
-    client.patch("password-reset/request", json={"email": user_one["email"]})
+    await client.patch("password-reset/request", json={"email": user_one["email"]})
     otp = get_user_two_otp()
 
     headers = get_basic_auth_header(
@@ -50,7 +53,7 @@ def test_b_password_reset_validate_otp_success(
         password=new_password,
     )
 
-    response = client.patch(
+    response = await client.patch(
         f"password-reset/validate-otp?one_time_pin={otp}",
         headers=headers,
     )
@@ -75,13 +78,13 @@ def test_b_password_reset_validate_otp_success(
         session.close()
 
 
-def test_c_password_reset_validate_otp_rejects_magic_link(
+async def test_c_password_reset_validate_otp_rejects_magic_link(
     client, test_user_data, seed_verified_users, get_user_two_otp
 ):
     user_one = test_user_data["user_two"]
     new_password = "NewPassword123!"
 
-    client.patch(
+    await client.patch(
         "password-reset/request",
         json={"email": user_one["email"], "method": "magic_link"},
     )
@@ -92,7 +95,7 @@ def test_c_password_reset_validate_otp_rejects_magic_link(
         password=new_password,
     )
 
-    response = client.patch(
+    response = await client.patch(
         f"password-reset/validate-otp?one_time_pin={token}",
         headers=headers,
     )

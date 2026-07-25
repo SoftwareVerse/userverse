@@ -7,6 +7,8 @@ from app.repository.database.tables import User
 from app.utils.rate_limiter import PASSWORD_RESET_RATE_LIMITER
 
 
+
+pytestmark = pytest.mark.anyio
 @pytest.fixture(autouse=True)
 def reset_password_reset_rate_limiters():
     PASSWORD_RESET_RATE_LIMITER.reset()
@@ -14,11 +16,11 @@ def reset_password_reset_rate_limiters():
     PASSWORD_RESET_RATE_LIMITER.reset()
 
 
-def test_password_reset_success(client, test_user_data, seed_users):
+async def test_password_reset_success(client, test_user_data, seed_users):
     """Test password reset with valid user email"""
     user = test_user_data["user_two"]
 
-    response = client.patch(
+    response = await client.patch(
         "password-reset/request",
         json={"email": user["email"]},
     )
@@ -45,10 +47,10 @@ def test_password_reset_success(client, test_user_data, seed_users):
         session.close()
 
 
-def test_password_reset_magic_link_success(client, test_user_data, seed_users):
+async def test_password_reset_magic_link_success(client, test_user_data, seed_users):
     user = test_user_data["user_two"]
 
-    response = client.patch(
+    response = await client.patch(
         "password-reset/request",
         json={"email": user["email"], "method": "magic_link"},
     )
@@ -70,11 +72,11 @@ def test_password_reset_magic_link_success(client, test_user_data, seed_users):
         session.close()
 
 
-def test_password_reset_user_not_found(client):
+async def test_password_reset_user_not_found(client):
     """Test password reset with unknown email"""
     unknown_email = "unknown@example.com"
 
-    response = client.patch(
+    response = await client.patch(
         "password-reset/request",
         json={"email": unknown_email},
     )
@@ -86,12 +88,12 @@ def test_password_reset_user_not_found(client):
     assert json_data["data"] is None
 
 
-def test_password_reset_rate_limited(client, test_user_data, seed_users):
+async def test_password_reset_rate_limited(client, test_user_data, seed_users):
     user = test_user_data["user_two"]
 
     success_responses = []
     for _ in range(5):
-        response = client.patch(
+        response = await client.patch(
             "password-reset/request",
             json={"email": user["email"]},
         )
@@ -100,7 +102,7 @@ def test_password_reset_rate_limited(client, test_user_data, seed_users):
     for resp in success_responses:
         assert resp.status_code == 202
 
-    rate_limited_response = client.patch(
+    rate_limited_response = await client.patch(
         "password-reset/request",
         json={"email": user["email"]},
     )
@@ -111,13 +113,13 @@ def test_password_reset_rate_limited(client, test_user_data, seed_users):
     assert detail["error"] == "password_reset_rate_limited"
 
 
-def test_password_reset_magic_link_requires_frontend_url(
+async def test_password_reset_magic_link_requires_frontend_url(
     client, test_user_data, seed_users, monkeypatch
 ):
     user = test_user_data["user_two"]
     monkeypatch.setattr("app.services.user.password.settings.FRONTEND_URL", None)
 
-    response = client.patch(
+    response = await client.patch(
         "password-reset/request",
         json={"email": user["email"], "method": "magic_link"},
     )

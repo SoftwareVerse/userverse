@@ -1,3 +1,6 @@
+import pytest
+
+pytestmark = pytest.mark.anyio
 # TODO: cases to add
 # Create a new role for a company
 # Attempt to create a role with an existing name
@@ -9,7 +12,7 @@ from app.models.company.response_messages import (
 )
 
 
-def test_a_create_company_one_roles_success(
+async def test_a_create_company_one_roles_success(
     client, login_token, test_company_data, seed_companies
 ):
     """
@@ -20,7 +23,7 @@ def test_a_create_company_one_roles_success(
     headers = {"Authorization": f"Bearer {login_token}"}
 
     for role_key, role_value in roles.items():
-        response = client.post(
+        response = await client.post(
             f"/company/{company_id}/role", json=role_value, headers=headers
         )
         #
@@ -37,7 +40,7 @@ def test_a_create_company_one_roles_success(
         assert json_data["data"]["description"] == role_value["description"]
 
 
-def test_a_create_company_two_roles_success(
+async def test_a_create_company_two_roles_success(
     client, login_token_user_two, test_company_data, seed_companies
 ):
     """
@@ -48,7 +51,7 @@ def test_a_create_company_two_roles_success(
     headers = {"Authorization": f"Bearer {login_token_user_two}"}
 
     for role_key, role_value in roles.items():
-        response = client.post(
+        response = await client.post(
             f"/company/{company_id}/role", json=role_value, headers=headers
         )
         #
@@ -65,7 +68,7 @@ def test_a_create_company_two_roles_success(
         assert json_data["data"]["description"] == role_value["description"]
 
 
-def test_b_create_company_roles_failure(
+async def test_b_create_company_roles_failure(
     client, login_token_user_two, test_company_data, seed_companies
 ):
     """
@@ -76,7 +79,7 @@ def test_b_create_company_roles_failure(
     headers = {"Authorization": f"Bearer {login_token_user_two}"}
 
     for role_key, role_value in roles.items():
-        response = client.post(
+        response = await client.post(
             f"/company/{company_id}/role", json=role_value, headers=headers
         )
         #
@@ -90,7 +93,7 @@ def test_b_create_company_roles_failure(
         )
 
 
-def test_c_create_company_roles_failure(
+async def test_c_create_company_roles_failure(
     client, login_token_user_two, test_company_data, seed_companies
 ):
     """
@@ -101,7 +104,7 @@ def test_c_create_company_roles_failure(
     headers = {"Authorization": f"Bearer {login_token_user_two}"}
 
     for role_key, role_value in roles.items():
-        response = client.post(
+        response = await client.post(
             f"/company/{company_id}/role", json=role_value, headers=headers
         )
         #

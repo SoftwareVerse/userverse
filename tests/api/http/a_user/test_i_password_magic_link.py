@@ -4,20 +4,23 @@ from app.repository.database.tables import User
 from app.utils.hash_password import verify_password
 
 
-def test_a_password_reset_with_magic_link_success(
+import pytest
+
+pytestmark = pytest.mark.anyio
+async def test_a_password_reset_with_magic_link_success(
     client, test_user_data, seed_verified_users, get_user_two_otp
 ):
     user = test_user_data["user_two"]
     new_password = "ResetViaMagic123!"
 
-    request_response = client.patch(
+    request_response = await client.patch(
         "password-reset/request",
         json={"email": user["email"], "method": "magic_link"},
     )
     assert request_response.status_code == 202
     token = get_user_two_otp()
 
-    response = client.patch(
+    response = await client.patch(
         "password-reset/reset-with-token",
         json={"token": token, "new_password": new_password},
     )
@@ -35,8 +38,8 @@ def test_a_password_reset_with_magic_link_success(
         session.close()
 
 
-def test_b_password_reset_with_magic_link_invalid_token(client):
-    response = client.patch(
+async def test_b_password_reset_with_magic_link_invalid_token(client):
+    response = await client.patch(
         "password-reset/reset-with-token",
         json={"token": "invalid-token", "new_password": "ResetViaMagic123!"},
     )
@@ -50,15 +53,15 @@ def test_b_password_reset_with_magic_link_invalid_token(client):
     assert detail["error"] == PasswordResetResponseMessages.TOKEN_ERROR.value
 
 
-def test_c_password_reset_with_magic_link_rejects_otp_token(
+async def test_c_password_reset_with_magic_link_rejects_otp_token(
     client, test_user_data, seed_verified_users, get_user_two_otp
 ):
     user = test_user_data["user_two"]
 
-    client.patch("password-reset/request", json={"email": user["email"]})
+    await client.patch("password-reset/request", json={"email": user["email"]})
     otp = get_user_two_otp()
 
-    response = client.patch(
+    response = await client.patch(
         "password-reset/reset-with-token",
         json={"token": otp, "new_password": "ResetViaMagic123!"},
     )

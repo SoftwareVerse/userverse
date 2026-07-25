@@ -5,9 +5,13 @@ from app.repository.database.session_manager import DatabaseSessionManager
 from app.repository.database.tables import User
 from tests.utils.basic_auth import get_basic_auth_header
 
+import pytest
 
-def _login_for_tokens(client, user: dict) -> dict:
-    response = client.patch(
+pytestmark = pytest.mark.anyio
+
+
+async def _login_for_tokens(client, user: dict) -> dict:
+    response = await client.patch(
         "/user/login",
         headers=get_basic_auth_header(
             username=user["email"],
@@ -31,10 +35,10 @@ def _set_user_status(email: str, status: str) -> None:
         session.close()
 
 
-def test_user_login_success(client, test_user_data, seed_verified_users):
+async def test_user_login_success(client, test_user_data, seed_verified_users):
     """Test user login with valid credentials"""
     user_one = test_user_data["user_one"]
-    response = client.patch(
+    response = await client.patch(
         "/user/login",
         headers=get_basic_auth_header(
             username=user_one["email"],
@@ -57,7 +61,7 @@ def test_user_login_success(client, test_user_data, seed_verified_users):
     assert token_data["token_type"] == "bearer"
 
 
-def test_user_login_rejects_unverified_user(client, test_user_data, seed_users):
+async def test_user_login_rejects_unverified_user(client, test_user_data, seed_users):
     user_one = test_user_data["user_one"]
     original_setting = settings.REQUIRE_EMAIL_VERIFICATION
 
@@ -67,7 +71,7 @@ def test_user_login_rejects_unverified_user(client, test_user_data, seed_users):
             user_one["email"], UserAccountStatus.AWAITING_VERIFICATION.name_value
         )
 
-        response = client.patch(
+        response = await client.patch(
             "/user/login",
             headers=get_basic_auth_header(
                 username=user_one["email"],
@@ -84,7 +88,7 @@ def test_user_login_rejects_unverified_user(client, test_user_data, seed_users):
         settings.REQUIRE_EMAIL_VERIFICATION = original_setting
 
 
-def test_user_login_resends_verification_email_for_unverified_user(
+async def test_user_login_resends_verification_email_for_unverified_user(
     client, monkeypatch, test_user_data, seed_users
 ):
     sent_messages = []
@@ -102,7 +106,7 @@ def test_user_login_resends_verification_email_for_unverified_user(
             user_one["email"], UserAccountStatus.AWAITING_VERIFICATION.name_value
         )
 
-        response = client.patch(
+        response = await client.patch(
             "/user/login",
             headers=get_basic_auth_header(
                 username=user_one["email"],
@@ -123,11 +127,11 @@ def test_user_login_resends_verification_email_for_unverified_user(
         _set_user_status(user_one["email"], UserAccountStatus.ACTIVE.name_value)
 
 
-def test_user_login_invalid_credentials(client, test_user_data, seed_users):
+async def test_user_login_invalid_credentials(client, test_user_data, seed_users):
     """Test user login with invalid credentials"""
     user_one = test_user_data["user_one"]
 
-    response = client.patch(
+    response = await client.patch(
         "/user/login",
         headers=get_basic_auth_header(
             username=user_one["email"],
@@ -144,12 +148,12 @@ def test_user_login_invalid_credentials(client, test_user_data, seed_users):
     assert json_details["message"] == UserResponseMessages.INVALID_CREDENTIALS.value
 
 
-def test_user_refresh_success(client, test_user_data, seed_users):
+async def test_user_refresh_success(client, test_user_data, seed_users):
     user_one = test_user_data["user_one"]
     _set_user_status(user_one["email"], UserAccountStatus.ACTIVE.name_value)
-    token_data = _login_for_tokens(client, user_one)
+    token_data = await _login_for_tokens(client, user_one)
 
-    response = client.post(
+    response = await client.post(
         "/user/refresh",
         json={"refresh_token": token_data["refresh_token"]},
     )
@@ -163,12 +167,12 @@ def test_user_refresh_success(client, test_user_data, seed_users):
     assert refreshed_token_data["token_type"] == "bearer"
 
 
-def test_user_revoke_blocks_old_refresh_token(client, test_user_data, seed_users):
+async def test_user_revoke_blocks_old_refresh_token(client, test_user_data, seed_users):
     user_one = test_user_data["user_one"]
     _set_user_status(user_one["email"], UserAccountStatus.ACTIVE.name_value)
-    token_data = _login_for_tokens(client, user_one)
+    token_data = await _login_for_tokens(client, user_one)
 
-    revoke_response = client.post(
+    revoke_response = await client.post(
         "/user/revoke",
         json={"refresh_token": token_data["refresh_token"]},
     )
@@ -180,7 +184,7 @@ def test_user_revoke_blocks_old_refresh_token(client, test_user_data, seed_users
     )
     assert revoke_json["data"]["revoked"] is True
 
-    refresh_response = client.post(
+    refresh_response = await client.post(
         "/user/refresh",
         json={"refresh_token": token_data["refresh_token"]},
     )
@@ -188,16 +192,16 @@ def test_user_revoke_blocks_old_refresh_token(client, test_user_data, seed_users
     assert refresh_response.status_code == 401
 
 
-def test_user_refresh_rejects_inactive_user(
+async def test_user_refresh_rejects_inactive_user(
     client, test_user_data, seed_verified_users
 ):
     user_one = test_user_data["user_one"]
-    token_data = _login_for_tokens(client, user_one)
+    token_data = await _login_for_tokens(client, user_one)
 
     try:
         _set_user_status(user_one["email"], UserAccountStatus.SUSPENDED.name_value)
 
-        response = client.post(
+        response = await client.post(
             "/user/refresh",
             json={"refresh_token": token_data["refresh_token"]},
         )
@@ -211,16 +215,16 @@ def test_user_refresh_rejects_inactive_user(
         _set_user_status(user_one["email"], UserAccountStatus.ACTIVE.name_value)
 
 
-def test_user_access_token_rejects_inactive_user(
+async def test_user_access_token_rejects_inactive_user(
     client, test_user_data, seed_verified_users
 ):
     user_one = test_user_data["user_one"]
-    token_data = _login_for_tokens(client, user_one)
+    token_data = await _login_for_tokens(client, user_one)
 
     try:
         _set_user_status(user_one["email"], UserAccountStatus.SUSPENDED.name_value)
 
-        response = client.get(
+        response = await client.get(
             "/user/get",
             headers={"Authorization": f"Bearer {token_data['access_token']}"},
         )
@@ -234,7 +238,7 @@ def test_user_access_token_rejects_inactive_user(
         _set_user_status(user_one["email"], UserAccountStatus.ACTIVE.name_value)
 
 
-def test_user_login_allows_unverified_user_when_verification_disabled(
+async def test_user_login_allows_unverified_user_when_verification_disabled(
     client, monkeypatch, test_user_data, seed_users
 ):
     user_one = test_user_data["user_one"]
@@ -244,7 +248,7 @@ def test_user_login_allows_unverified_user_when_verification_disabled(
             user_one["email"], UserAccountStatus.AWAITING_VERIFICATION.name_value
         )
 
-        response = client.patch(
+        response = await client.patch(
             "/user/login",
             headers=get_basic_auth_header(
                 username=user_one["email"],
@@ -255,7 +259,7 @@ def test_user_login_allows_unverified_user_when_verification_disabled(
         assert response.status_code == 202
         token_data = response.json()["data"]
 
-        protected_response = client.get(
+        protected_response = await client.get(
             "/user/get",
             headers={"Authorization": f"Bearer {token_data['access_token']}"},
         )

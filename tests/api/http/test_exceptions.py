@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi import FastAPI, HTTPException
-from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 
 from app.exceptions import (
     get_correlation_id,
@@ -13,9 +13,11 @@ from app.exceptions import (
 from app.models.response_messages import ErrorResponseMessagesModel
 from app.utils.app_error import AppError
 
+pytestmark = pytest.mark.anyio
+
 
 @pytest.fixture
-def exception_client():
+async def exception_client():
     app = FastAPI()
     register_exception_handlers(app)
 
@@ -51,18 +53,21 @@ def exception_client():
         except ValueError as exc:
             raise RuntimeError("outer problem") from exc
 
-    with TestClient(app, raise_server_exceptions=False) as client:
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    async with AsyncClient(
+        transport=transport, base_url="http://testserver"
+    ) as client:
         yield client
 
 
-def test_not_found_handler_returns_plain_text(exception_client: TestClient):
-    response = exception_client.get("/missing-endpoint")
+async def test_not_found_handler_returns_plain_text(exception_client: AsyncClient):
+    response = await exception_client.get("/missing-endpoint")
     assert response.status_code == 404
     assert response.text == "Not found"
 
 
-def test_http_exception_with_string_detail(exception_client: TestClient):
-    response = exception_client.get(
+async def test_http_exception_with_string_detail(exception_client: AsyncClient):
+    response = await exception_client.get(
         "/raise-http-str", headers={"x-correlation-id": "cid-1"}
     )
 
@@ -73,8 +78,8 @@ def test_http_exception_with_string_detail(exception_client: TestClient):
     assert body["detail"]["correlation_id"] == "cid-1"
 
 
-def test_http_exception_with_dict_detail(exception_client: TestClient):
-    response = exception_client.get(
+async def test_http_exception_with_dict_detail(exception_client: AsyncClient):
+    response = await exception_client.get(
         "/raise-http-dict", headers={"x-request-id": "req-42"}
     )
 
@@ -86,8 +91,8 @@ def test_http_exception_with_dict_detail(exception_client: TestClient):
     assert body["detail"]["extra"] == {"detail": {"reason": "forbidden"}}
 
 
-def test_request_validation_error_handler(exception_client: TestClient):
-    response = exception_client.get("/raise-validation?limit=abc")
+async def test_request_validation_error_handler(exception_client: AsyncClient):
+    response = await exception_client.get("/raise-validation?limit=abc")
 
     body = response.json()
     assert response.status_code == 422
@@ -98,8 +103,8 @@ def test_request_validation_error_handler(exception_client: TestClient):
     assert body["detail"]["extra"]["errors"]
 
 
-def test_app_error_handler(exception_client: TestClient):
-    response = exception_client.get("/raise-app-error")
+async def test_app_error_handler(exception_client: AsyncClient):
+    response = await exception_client.get("/raise-app-error")
 
     body = response.json()
     assert response.status_code == 409
@@ -108,8 +113,8 @@ def test_app_error_handler(exception_client: TestClient):
     assert body["detail"]["extra"] == {"error": "role_conflict"}
 
 
-def test_unhandled_exception_handler_in_prod_mode(exception_client: TestClient):
-    response = exception_client.get("/raise-unhandled")
+async def test_unhandled_exception_handler_in_prod_mode(exception_client: AsyncClient):
+    response = await exception_client.get("/raise-unhandled")
 
     body = response.json()
     assert response.status_code == 500
@@ -118,11 +123,11 @@ def test_unhandled_exception_handler_in_prod_mode(exception_client: TestClient):
     assert "correlation_id" in body["detail"]
 
 
-def test_unhandled_exception_handler_in_debug_mode(
-    exception_client: TestClient, monkeypatch: pytest.MonkeyPatch
+async def test_unhandled_exception_handler_in_debug_mode(
+    exception_client: AsyncClient, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.setattr("app.exceptions.DEBUG_ERRORS", True)
-    response = exception_client.get("/raise-chained")
+    response = await exception_client.get("/raise-chained")
 
     body = response.json()
     assert response.status_code == 500

@@ -1,10 +1,14 @@
+import pytest
+
 from app.models.company.response_messages import (
     CompanyResponseMessages,
     CompanyRoleResponseMessages,
 )
 
+pytestmark = pytest.mark.anyio
 
-def test_a_update_role_description_success(
+
+async def test_a_update_role_description_success(
     client, login_token, test_company_data, seed_company_roles
 ):
     """
@@ -20,7 +24,7 @@ def test_a_update_role_description_success(
             "name": name + " Updated",
             "description": role_value["description"] + " Updated",
         }
-        response = client.patch(
+        response = await client.patch(
             f"/company/{company_id}/role/{name}", json=data, headers=headers
         )
         #
@@ -34,7 +38,7 @@ def test_a_update_role_description_success(
         assert json_data["data"]["description"] == data["description"]
 
 
-def test_b_update_role_description_forbidden(
+async def test_b_update_role_description_forbidden(
     client, login_token_user_two, seed_company_roles
 ):
     """
@@ -46,7 +50,7 @@ def test_b_update_role_description_forbidden(
         "name": None,
         "description": "Should not update",
     }
-    response = client.patch(
+    response = await client.patch(
         f"/company/{company_id}/role/Admin", json=payload, headers=headers
     )
     assert response.status_code in [400, 403]
@@ -59,7 +63,7 @@ def test_b_update_role_description_forbidden(
     )
 
 
-def test_c_update_role_description_not_found(client, login_token, seed_company_roles):
+async def test_c_update_role_description_not_found(client, login_token, seed_company_roles):
     """
     Test updating a role that does not exist
     """
@@ -69,7 +73,7 @@ def test_c_update_role_description_not_found(client, login_token, seed_company_r
         "name": "Should not update",
         "description": "Should not update",
     }
-    response = client.patch(
+    response = await client.patch(
         f"/company/{company_id}/role/string", json=payload, headers=headers
     )
     assert response.status_code in [400, 403]

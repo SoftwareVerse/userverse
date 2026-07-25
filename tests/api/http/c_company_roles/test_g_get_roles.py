@@ -3,6 +3,8 @@ from app.models.company.response_messages import CompanyRoleResponseMessages
 from app.utils.app_error import AppError
 
 
+
+pytestmark = pytest.mark.anyio
 @pytest.mark.parametrize(
     "query_params,expected_names",
     [
@@ -11,7 +13,7 @@ from app.utils.app_error import AppError
         ("limit=10&page=1&name=er&description=access", {"Owner", "User", "Viewer"}),
     ],
 )
-def test_get_company_roles(
+async def test_get_company_roles(
     client,
     seed_pagination_state,
     query_params,
@@ -26,7 +28,7 @@ def test_get_company_roles(
         "accept": "application/json",
     }
 
-    response = client.get(
+    response = await client.get(
         f"/company/{company_id}/roles?{query_params}",
         headers=headers,
     )
@@ -49,7 +51,7 @@ def test_get_company_roles(
     assert pagination["total_records"] == len(expected_names)
 
 
-def test_get_roles_with_invalid_filter(client, seed_pagination_state):
+async def test_get_roles_with_invalid_filter(client, seed_pagination_state):
     """
     Test getting company roles with a filter that returns no results.
     """
@@ -59,7 +61,7 @@ def test_get_roles_with_invalid_filter(client, seed_pagination_state):
         "accept": "application/json",
     }
 
-    response = client.get(f"/company/{company_id}/roles?name=xyz", headers=headers)
+    response = await client.get(f"/company/{company_id}/roles?name=xyz", headers=headers)
     assert response.status_code == 200
 
     json_data = response.json()
@@ -68,7 +70,7 @@ def test_get_roles_with_invalid_filter(client, seed_pagination_state):
     assert json_data["data"]["pagination"]["total_records"] == 0
 
 
-def test_get_roles_with_pagination(client, seed_pagination_state):
+async def test_get_roles_with_pagination(client, seed_pagination_state):
     """
     Test pagination with limit=1 and page=2.
     """
@@ -78,7 +80,7 @@ def test_get_roles_with_pagination(client, seed_pagination_state):
         "accept": "application/json",
     }
 
-    response = client.get(
+    response = await client.get(
         f"/company/{company_id}/roles?limit=1&page=2",
         headers=headers,
     )
@@ -95,7 +97,7 @@ def test_get_roles_with_pagination(client, seed_pagination_state):
     assert pagination["total_pages"] == 5
 
 
-def test_get_company_roles_reraises_service_errors(
+async def test_get_company_roles_reraises_service_errors(
     client, seed_pagination_state, monkeypatch: pytest.MonkeyPatch
 ):
     company_id = seed_pagination_state["role_company_id"]
@@ -112,7 +114,7 @@ def test_get_company_roles_reraises_service_errors(
         _raise_app_error,
     )
 
-    response = client.get(
+    response = await client.get(
         f"/company/{company_id}/roles?limit=10&page=1",
         headers=headers,
     )

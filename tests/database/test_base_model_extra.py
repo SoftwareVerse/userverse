@@ -82,6 +82,20 @@ def test_get_all_uses_page_based_pagination(test_session):
     assert result["records"][0]["email"] == "page-three@example.com"
 
 
+def test_get_all_applies_explicit_filters(test_session):
+    Company.create(test_session, email="alpha@example.com", name="Alpha")
+    Company.create(test_session, email="beta@example.com", name="Beta")
+
+    result = Company.get_all(
+        test_session,
+        filters={"email": Company.email == "beta@example.com"},
+        limit=10,
+        page=1,
+    )
+
+    assert [record["email"] for record in result["records"]] == ["beta@example.com"]
+
+
 def test_update_json_field_initializes_none_json_column(test_session, test_user_data):
     created = User.create(test_session, **test_user_data["create_user"])
     user = test_session.query(User).filter_by(id=created["id"]).one()
@@ -230,3 +244,19 @@ def test_bulk_update_json_field_missing_record_raises_record_not_found(test_sess
             "primary_meta_data",
             {"source": "tests"},
         )
+
+
+def test_create_rolls_back_and_wraps_non_integrity_errors(test_session, monkeypatch):
+    rollback_calls = []
+    monkeypatch.setattr(test_session, "rollback", lambda: rollback_calls.append(True))
+    monkeypatch.setattr(test_session, "commit", lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+
+    with pytest.raises(ValueError, match="Error creating User: boom"):
+        User.create(
+            test_session,
+            email="broken@example.com",
+            password="secret",
+            first_name="Broken",
+        )
+
+    assert rollback_calls == [True]

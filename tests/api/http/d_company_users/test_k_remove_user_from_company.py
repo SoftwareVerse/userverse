@@ -1,9 +1,13 @@
 from uuid import uuid4
 
+import pytest
+
 from app.models.company.response_messages import (
     CompanyResponseMessages,
     CompanyUserResponseMessages,
 )
+
+pytestmark = pytest.mark.anyio
 
 
 def _build_company_payload() -> dict:
@@ -24,8 +28,8 @@ def _build_company_payload() -> dict:
     }
 
 
-def _create_company(client, token: str) -> str:
-    response = client.post(
+async def _create_company(client, token: str) -> str:
+    response = await client.post(
         "/company",
         json=_build_company_payload(),
         headers={"Authorization": f"Bearer {token}"},
@@ -34,10 +38,10 @@ def _create_company(client, token: str) -> str:
     return response.json()["data"]["id"]
 
 
-def _add_user_to_company(
+async def _add_user_to_company(
     client, token: str, company_id: str, email: str, role: str = "Viewer"
 ) -> str:
-    response = client.post(
+    response = await client.post(
         f"/company/{company_id}/users",
         json={"email": email, "role": role},
         headers={"Authorization": f"Bearer {token}"},
@@ -46,13 +50,13 @@ def _add_user_to_company(
     return response.json()["data"]["id"]
 
 
-def test_remove_user_from_company_success(client, login_token):
-    company_id = _create_company(client, login_token)
-    user_id = _add_user_to_company(
+async def test_remove_user_from_company_success(client, login_token):
+    company_id = await _create_company(client, login_token)
+    user_id = await _add_user_to_company(
         client, login_token, company_id, "user.three@email.com"
     )
 
-    response = client.delete(
+    response = await client.delete(
         f"/company/{company_id}/user/{user_id}",
         headers={
             "Authorization": f"Bearer {login_token}",
@@ -66,15 +70,15 @@ def test_remove_user_from_company_success(client, login_token):
     assert json_data["data"]["id"] == user_id
 
 
-def test_remove_user_from_company_forbidden_for_non_owner(
+async def test_remove_user_from_company_forbidden_for_non_owner(
     client, login_token, login_token_user_two
 ):
-    company_id = _create_company(client, login_token)
-    user_id = _add_user_to_company(
+    company_id = await _create_company(client, login_token)
+    user_id = await _add_user_to_company(
         client, login_token, company_id, "user.three@email.com"
     )
 
-    response = client.delete(
+    response = await client.delete(
         f"/company/{company_id}/user/{user_id}",
         headers={
             "Authorization": f"Bearer {login_token_user_two}",
@@ -89,16 +93,16 @@ def test_remove_user_from_company_forbidden_for_non_owner(
     )
 
 
-def test_remove_owner_from_company_forbidden(client, login_token):
-    company_id = _create_company(client, login_token)
-    owner_response = client.get(
+async def test_remove_owner_from_company_forbidden(client, login_token):
+    company_id = await _create_company(client, login_token)
+    owner_response = await client.get(
         "/user/get",
         headers={"Authorization": f"Bearer {login_token}"},
     )
     assert owner_response.status_code == 200, owner_response.text
     owner_id = owner_response.json()["data"]["id"]
 
-    response = client.delete(
+    response = await client.delete(
         f"/company/{company_id}/user/{owner_id}",
         headers={
             "Authorization": f"Bearer {login_token}",
@@ -115,13 +119,13 @@ def test_remove_owner_from_company_forbidden(client, login_token):
     assert json_data["detail"]["error"] == "Owner cannot be removed from the company."
 
 
-def test_remove_user_from_company_rejects_already_removed_user(client, login_token):
-    company_id = _create_company(client, login_token)
-    user_id = _add_user_to_company(
+async def test_remove_user_from_company_rejects_already_removed_user(client, login_token):
+    company_id = await _create_company(client, login_token)
+    user_id = await _add_user_to_company(
         client, login_token, company_id, "user.three@email.com"
     )
 
-    first_response = client.delete(
+    first_response = await client.delete(
         f"/company/{company_id}/user/{user_id}",
         headers={
             "Authorization": f"Bearer {login_token}",
@@ -130,7 +134,7 @@ def test_remove_user_from_company_rejects_already_removed_user(client, login_tok
     )
     assert first_response.status_code == 200, first_response.text
 
-    second_response = client.delete(
+    second_response = await client.delete(
         f"/company/{company_id}/user/{user_id}",
         headers={
             "Authorization": f"Bearer {login_token}",
@@ -145,11 +149,11 @@ def test_remove_user_from_company_rejects_already_removed_user(client, login_tok
     )
 
 
-def test_remove_user_from_company_rejects_self_removal_for_administrator(
+async def test_remove_user_from_company_rejects_self_removal_for_administrator(
     client, login_token, login_token_user_two
 ):
-    company_id = _create_company(client, login_token_user_two)
-    user_id = _add_user_to_company(
+    company_id = await _create_company(client, login_token_user_two)
+    user_id = await _add_user_to_company(
         client,
         login_token_user_two,
         company_id,
@@ -157,7 +161,7 @@ def test_remove_user_from_company_rejects_self_removal_for_administrator(
         role="Administrator",
     )
 
-    response = client.delete(
+    response = await client.delete(
         f"/company/{company_id}/user/{user_id}",
         headers={
             "Authorization": f"Bearer {login_token}",

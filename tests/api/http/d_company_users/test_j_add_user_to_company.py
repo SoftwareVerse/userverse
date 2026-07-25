@@ -1,9 +1,12 @@
 import pytest
 from uuid import uuid4
+
 from app.models.company.response_messages import (
     CompanyResponseMessages,
     CompanyUserResponseMessages,
 )
+
+pytestmark = pytest.mark.anyio
 
 
 def _build_company_payload() -> dict:
@@ -24,8 +27,8 @@ def _build_company_payload() -> dict:
     }
 
 
-def _create_company(client, token: str) -> int:
-    response = client.post(
+async def _create_company(client, token: str) -> int:
+    response = await client.post(
         "/company",
         json=_build_company_payload(),
         headers={"Authorization": f"Bearer {token}"},
@@ -78,7 +81,7 @@ def _create_company(client, token: str) -> int:
         ),
     ],
 )
-def test_add_user_to_company(
+async def test_add_user_to_company(
     client,
     login_token,
     login_token_user_two,
@@ -107,7 +110,7 @@ def test_add_user_to_company(
         "Content-Type": "application/json",
     }
 
-    response = client.post(
+    response = await client.post(
         f"/company/{company_id}/users", json=payload, headers=headers
     )
     assert response.status_code == expected_status
@@ -120,10 +123,10 @@ def test_add_user_to_company(
         assert json_data["detail"]["message"] == expected_message
 
 
-def test_add_user_to_company_rejects_existing_link(
+async def test_add_user_to_company_rejects_existing_link(
     client, login_token, seed_company_roles
 ):
-    company_id = _create_company(client, login_token)
+    company_id = await _create_company(client, login_token)
     headers = {
         "Authorization": f"Bearer {login_token}",
         "accept": "application/json",
@@ -131,12 +134,12 @@ def test_add_user_to_company_rejects_existing_link(
     }
     payload = {"email": "user.three@email.com", "role": "Viewer"}
 
-    first_response = client.post(
+    first_response = await client.post(
         f"/company/{company_id}/users", json=payload, headers=headers
     )
     assert first_response.status_code == 201, first_response.text
 
-    second_response = client.post(
+    second_response = await client.post(
         f"/company/{company_id}/users", json=payload, headers=headers
     )
     assert second_response.status_code == 400, second_response.text

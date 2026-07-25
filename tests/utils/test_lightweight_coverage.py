@@ -1,4 +1,6 @@
 import importlib
+import runpy
+import types
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from textwrap import dedent
@@ -9,10 +11,23 @@ import pytest
 from pydantic import ValidationError
 
 import app.services.mailer as mailer_module
+import app.exceptions as exceptions_module
+import app.main as main_module
 from app.configs import Settings, _SettingsProxy
 import app.repository.database.session_manager as session_manager
+from app.repository.company import CompanyRepository
+from app.repository.company_role import RoleRepository
+from app.services.company.company import CompanyService
+from app.services.company.role import RoleService
 from app.services.company.user import CompanyUserService
 from app.models.company.company import CompanyQueryParamsModel
+from app.models.company.company import CompanyCreateModel, CompanyUpdateModel
+from app.models.company.response_messages import (
+    CompanyResponseMessages,
+    CompanyRoleResponseMessages,
+    CompanyUserResponseMessages,
+)
+from app.models.company.roles import RoleCreateModel, RoleQueryParamsModel, RoleUpdateModel
 from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import UserReadModel
 from app.services.user.basic_auth import UserBasicAuthService
@@ -1143,3 +1158,339 @@ def test_shared_context_safe_json_returns_scalars_unchanged():
 
 
 from uuid import uuid4
+
+
+def test_verification_service_resend_returns_generic_success_for_unknown_email(
+    monkeypatch,
+):
+    captured_logs = []
+
+    class FakeUserRepository:
+        def __init__(self, session):
+            self.session = session
+
+        def get_user_record_by_email(self, email):
+            return None
+
+    monkeypatch.setattr(
+        "app.services.user.verification.UserRepository",
+        FakeUserRepository,
+    )
+    monkeypatch.setattr(
+        "app.services.user.verification.logger.info",
+        lambda message, extra: captured_logs.append((message, extra)),
+    )
+
+    response = UserVerificationService(session=object()).resend_verification_email(
+        "missing@example.com",
+        server_url="https://api.example.com",
+        app_name="Userverse",
+        verification_required=True,
+        client_ip="127.0.0.1",
+    )
+
+    assert response.message == UserResponseMessages.VERIFICATION_EMAIL_RESENT.value
+    assert captured_logs[0][0] == "Verification resend requested for unknown email"
+
+
+def test_verification_service_resend_skips_non_pending_accounts(monkeypatch):
+    captured_logs = []
+    session_user = types.SimpleNamespace(
+        email="active@example.com",
+        first_name="Active",
+        last_name="User",
+        primary_meta_data={"status": UserAccountStatus.ACTIVE.name_value},
+    )
+
+    class FakeUserRepository:
+        def __init__(self, session):
+            self.session = session
+
+        def get_user_record_by_email(self, email):
+            return session_user
+
+    monkeypatch.setattr(
+        "app.services.user.verification.UserRepository",
+        FakeUserRepository,
+    )
+    monkeypatch.setattr(
+        "app.services.user.verification.logger.info",
+        lambda message, extra: captured_logs.append((message, extra)),
+    )
+
+    response = UserVerificationService(session=object()).resend_verification_email(
+        "active@example.com",
+        server_url="https://api.example.com",
+        app_name="Userverse",
+        verification_required=True,
+        client_ip="127.0.0.1",
+    )
+
+    assert response.message == UserResponseMessages.VERIFICATION_EMAIL_RESENT.value
+    assert captured_logs[0][0] == "Verification resend skipped for non-pending account"
+
+
+def test_verification_service_resend_logs_dispatch_failures(monkeypatch):
+    captured_errors = []
+    session_user = types.SimpleNamespace(
+        email="pending@example.com",
+        first_name="Pending",
+        last_name="User",
+        primary_meta_data={"status": UserAccountStatus.AWAITING_VERIFICATION.name_value},
+    )
+
+    class FakeUserRepository:
+        def __init__(self, session):
+            self.session = session
+
+        def get_user_record_by_email(self, email):
+            return session_user
+
+    monkeypatch.setattr(
+        "app.services.user.verification.UserRepository",
+        FakeUserRepository,
+    )
+    monkeypatch.setattr(
+        "app.services.user.verification.JWTManager.sign_payload",
+        lambda self, payload, expires_delta: "verification-token",
+    )
+    monkeypatch.setattr(
+        "app.services.user.verification.MailService.send_template_email",
+        lambda **kwargs: (_ for _ in ()).throw(RuntimeError("smtp down")),
+    )
+    monkeypatch.setattr(
+        "app.services.user.verification.logger.error",
+        lambda message, extra: captured_errors.append((message, extra)),
+    )
+
+    response = UserVerificationService(session=object()).resend_verification_email(
+        "pending@example.com",
+        server_url="https://api.example.com/",
+        app_name="Userverse",
+        verification_required=True,
+        client_ip="127.0.0.1",
+    )
+
+    assert response.message == UserResponseMessages.VERIFICATION_EMAIL_RESENT.value
+    assert captured_errors[0][0] == "Verification email dispatch failed"
+    assert captured_errors[0][1]["extra"]["error"] == "smtp down"
+
+
+def test_company_service_branches_for_falsey_repository_results(monkeypatch):
+    acting_user = UserReadModel(
+        id=uuid4(),
+        email="owner@example.com",
+        first_name="Owner",
+        last_name="User",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    context = SharedContext(db_session=object(), user=acting_user)
+    service = CompanyService(context)
+
+    monkeypatch.setattr(service.company_repository, "create_company", lambda payload, user: None)
+    with pytest.raises(AppError) as exc_info:
+        service.create_company(
+            CompanyCreateModel(
+                email="company@example.com",
+                name="Acme",
+                description="Desc",
+                industry="Tech",
+                phone_number="+27123456789",
+                address=None,
+            )
+        )
+    assert exc_info.value.detail["message"] == CompanyResponseMessages.COMPANY_CREATION_FAILED.value
+
+    with pytest.raises(AppError) as exc_info:
+        service.get_company()
+    assert exc_info.value.detail["message"] == CompanyResponseMessages.COMPANY_ID_OR_EMAIL_REQUIRED.value
+
+    monkeypatch.setattr(
+        service.company_user_service.company_user_repository,
+        "is_user_linked_to_company",
+        lambda **kwargs: True,
+    )
+    monkeypatch.setattr(service.company_repository, "update_company", lambda payload, company_id, user: None)
+    with pytest.raises(AppError) as exc_info:
+        service.update_company(CompanyUpdateModel(name="Updated"), uuid4())
+    assert exc_info.value.detail["message"] == CompanyResponseMessages.COMPANY_UPDATE_FAILED.value
+
+
+def test_role_service_branches_for_falsey_repository_results(monkeypatch):
+    acting_user = UserReadModel(
+        id=uuid4(),
+        email="owner@example.com",
+        first_name="Owner",
+        last_name="User",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    context = SharedContext(db_session=object(), user=acting_user)
+    service = RoleService(context)
+    company_id = uuid4()
+
+    monkeypatch.setattr(service, "_ensure_company_manager", lambda cid: None)
+    monkeypatch.setattr(RoleRepository, "update_role", lambda self, name, payload: None)
+    with pytest.raises(AppError) as exc_info:
+        service.update_role(
+            company_id,
+            "Viewer",
+            RoleUpdateModel(name=None, description="Updated"),
+        )
+    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+
+    monkeypatch.setattr(RoleRepository, "create_role", lambda self, payload, created_by: None)
+    with pytest.raises(AppError) as exc_info:
+        service.create_role(RoleCreateModel(name="Viewer", description="Desc"), company_id)
+    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_CREATION_FAILED.value
+
+
+def test_company_repository_wraps_integrity_error(monkeypatch):
+    repository = CompanyRepository(Mock())
+    repository.db_session.rollback = Mock()
+    monkeypatch.setattr(
+        repository,
+        "_get_company_record_by_email",
+        lambda email: None,
+    )
+
+    from sqlalchemy.exc import IntegrityError
+
+    def _raise_integrity(**kwargs):
+        raise IntegrityError("insert", {}, Exception("duplicate"))
+
+    monkeypatch.setattr(repository, "create", _raise_integrity)
+
+    with pytest.raises(AppError) as exc_info:
+        repository.create_company(
+            CompanyCreateModel(
+                email="company@example.com",
+                name="Acme",
+                description="Desc",
+                industry="Tech",
+                phone_number="+27123456789",
+                address=None,
+            ),
+            created_by=types.SimpleNamespace(email="owner@example.com"),
+        )
+
+    assert exc_info.value.detail["message"] == CompanyResponseMessages.COMPANY_ALREADY_EXISTS.value
+    repository.db_session.rollback.assert_called_once()
+
+
+def test_company_repository_missing_record_branches():
+    repository = CompanyRepository(Mock())
+    repository._get_company_record_by_email = lambda email: None
+    repository._get_company_record_by_id = lambda company_id: None
+
+    with pytest.raises(AppError) as exc_info:
+        repository.get_company_by_email("missing@example.com")
+    assert exc_info.value.detail["message"] == CompanyResponseMessages.COMPANY_NOT_FOUND.value
+
+    with pytest.raises(AppError) as exc_info:
+        repository.update_company(CompanyUpdateModel(name="Updated"), uuid4(), object())
+    assert exc_info.value.detail["message"] == CompanyResponseMessages.COMPANY_UPDATE_FAILED.value
+
+    with pytest.raises(AppError) as exc_info:
+        repository.delete_company(uuid4())
+    assert exc_info.value.detail["message"] == CompanyResponseMessages.COMPANY_NOT_FOUND.value
+
+
+def test_role_repository_error_branches(monkeypatch):
+    repository = RoleRepository(company_id=uuid4(), session=Mock())
+    monkeypatch.setattr(repository, "paginate", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("bad query")))
+    with pytest.raises(AppError) as exc_info:
+        repository.get_roles(RoleQueryParamsModel(limit=10, page=1))
+    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_NOT_FOUND.value
+
+    monkeypatch.setattr(repository, "get_role_record", lambda role_name: None)
+    with pytest.raises(AppError) as exc_info:
+        repository.ensure_role_belongs_to_company("Missing")
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyUserResponseMessages.ADD_USER_FAILED.value
+    )
+
+    deleted_by = UserReadModel(
+        id=uuid4(),
+        email="admin@example.com",
+        first_name="Admin",
+        last_name="User",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    with pytest.raises(AppError) as exc_info:
+        repository.delete_role(
+            payload=types.SimpleNamespace(
+                role_name_to_delete="Missing",
+                replacement_role_name="Viewer",
+            ),
+            deleted_by=deleted_by,
+        )
+    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+
+
+def test_lifespan_logs_startup_and_shutdown(monkeypatch):
+    events = []
+    monkeypatch.setattr(main_module.logger, "info", lambda message: events.append(message))
+    monkeypatch.setattr(main_module, "get_engine", lambda: "engine")
+
+    async def _run():
+        async with main_module.lifespan(Mock()):
+            events.append("inside")
+
+    import asyncio
+
+    asyncio.run(_run())
+    assert events == ["Userverse API starting up", "inside", "Userverse API shutting down"]
+
+
+def test_main_module_executes_click_entrypoint(monkeypatch):
+    called = []
+    monkeypatch.setattr("click.core.Command.main", lambda self, *args, **kwargs: called.append(self.name))
+    runpy.run_module("app.main", run_name="__main__")
+    assert called
+
+
+def test_exceptions_module_reuses_counter_from_registry(monkeypatch):
+    import prometheus_client
+
+    fake_counter = object()
+    fake_registry = types.SimpleNamespace(
+        _names_to_collectors={"unhandled_exceptions_total": fake_counter}
+    )
+    original_counter = prometheus_client.Counter
+    original_registry = prometheus_client.REGISTRY
+
+    monkeypatch.setattr("prometheus_client.Counter", lambda *args, **kwargs: (_ for _ in ()).throw(ValueError("dup")))
+    monkeypatch.setattr("prometheus_client.REGISTRY", fake_registry)
+
+    reloaded = importlib.reload(exceptions_module)
+    try:
+        assert reloaded.UNHANDLED_EXCEPTIONS is fake_counter
+    finally:
+        monkeypatch.setattr("prometheus_client.Counter", original_counter)
+        monkeypatch.setattr("prometheus_client.REGISTRY", original_registry)
+        importlib.reload(exceptions_module)
+
+
+def test_unwrap_exception_handles_context_and_missing_base_exception_group(monkeypatch):
+    inner = ValueError("inner")
+    outer = RuntimeError("outer")
+    outer.__context__ = inner
+
+    root, trail = exceptions_module.unwrap_exception(outer)
+    assert root is inner
+    assert trail == ["RuntimeError", "ValueError"]
+
+    builtins_without_group = dict(exceptions_module.__dict__["__builtins__"])
+    builtins_without_group.pop("BaseExceptionGroup", None)
+    monkeypatch.setitem(exceptions_module.__dict__, "__builtins__", builtins_without_group)
+
+    same_root, same_trail = exceptions_module.unwrap_exception(RuntimeError("plain"))
+    assert isinstance(same_root, RuntimeError)
+    assert same_trail == ["RuntimeError"]

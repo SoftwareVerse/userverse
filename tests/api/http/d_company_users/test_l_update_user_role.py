@@ -1,7 +1,11 @@
 from uuid import UUID, uuid4
 
+import pytest
+
 from app.repository.database.session_manager import DatabaseSessionManager
 from app.repository.database.tables import AssociationUserCompany, User
+
+pytestmark = pytest.mark.anyio
 
 
 def _build_company_payload() -> dict:
@@ -22,8 +26,8 @@ def _build_company_payload() -> dict:
     }
 
 
-def _create_company(client, token: str) -> str:
-    response = client.post(
+async def _create_company(client, token: str) -> str:
+    response = await client.post(
         "/company",
         json=_build_company_payload(),
         headers={"Authorization": f"Bearer {token}"},
@@ -32,8 +36,8 @@ def _create_company(client, token: str) -> str:
     return response.json()["data"]["id"]
 
 
-def _create_role(client, token: str, company_id: str, payload: dict) -> None:
-    response = client.post(
+async def _create_role(client, token: str, company_id: str, payload: dict) -> None:
+    response = await client.post(
         f"/company/{company_id}/role",
         json=payload,
         headers={"Authorization": f"Bearer {token}"},
@@ -41,8 +45,8 @@ def _create_role(client, token: str, company_id: str, payload: dict) -> None:
     assert response.status_code in [200, 201], response.text
 
 
-def _add_user_to_company(client, token: str, company_id: str, email: str) -> str:
-    response = client.post(
+async def _add_user_to_company(client, token: str, company_id: str, email: str) -> str:
+    response = await client.post(
         f"/company/{company_id}/users",
         json={"email": email, "role": "Viewer"},
         headers={"Authorization": f"Bearer {token}"},
@@ -76,9 +80,9 @@ def _get_link_row(company_id: str, user_id: str):
         session.close()
 
 
-def test_update_company_user_role_success(client, login_token):
-    company_id = _create_company(client, login_token)
-    _create_role(
+async def test_update_company_user_role_success(client, login_token):
+    company_id = await _create_company(client, login_token)
+    await _create_role(
         client,
         login_token,
         company_id,
@@ -87,11 +91,11 @@ def test_update_company_user_role_success(client, login_token):
             "description": "Standard user role for company-user role update tests.",
         },
     )
-    user_id = _add_user_to_company(
+    user_id = await _add_user_to_company(
         client, login_token, company_id, "user.three@email.com"
     )
 
-    response = client.patch(
+    response = await client.patch(
         f"/company/{company_id}/user/{user_id}",
         json={"role": "User"},
         headers={"Authorization": f"Bearer {login_token}"},
@@ -108,11 +112,11 @@ def test_update_company_user_role_success(client, login_token):
     assert link_row.role_name == "User"
 
 
-def test_update_company_user_role_forbidden_for_non_admin(
+async def test_update_company_user_role_forbidden_for_non_admin(
     client, login_token, login_token_user_two
 ):
-    company_id = _create_company(client, login_token)
-    _create_role(
+    company_id = await _create_company(client, login_token)
+    await _create_role(
         client,
         login_token,
         company_id,
@@ -121,11 +125,11 @@ def test_update_company_user_role_forbidden_for_non_admin(
             "description": "Standard user role for company-user role update tests.",
         },
     )
-    user_id = _add_user_to_company(
+    user_id = await _add_user_to_company(
         client, login_token, company_id, "user.three@email.com"
     )
 
-    response = client.patch(
+    response = await client.patch(
         f"/company/{company_id}/user/{user_id}",
         json={"role": "User"},
         headers={"Authorization": f"Bearer {login_token_user_two}"},
@@ -137,13 +141,13 @@ def test_update_company_user_role_forbidden_for_non_admin(
     assert link_row.role_name == "Viewer"
 
 
-def test_update_company_user_role_rejects_unknown_role(client, login_token):
-    company_id = _create_company(client, login_token)
-    user_id = _add_user_to_company(
+async def test_update_company_user_role_rejects_unknown_role(client, login_token):
+    company_id = await _create_company(client, login_token)
+    user_id = await _add_user_to_company(
         client, login_token, company_id, "user.three@email.com"
     )
 
-    response = client.patch(
+    response = await client.patch(
         f"/company/{company_id}/user/{user_id}",
         json={"role": "NotARealRole"},
         headers={"Authorization": f"Bearer {login_token}"},
@@ -155,11 +159,11 @@ def test_update_company_user_role_rejects_unknown_role(client, login_token):
     assert link_row.role_name == "Viewer"
 
 
-def test_update_company_user_role_returns_not_found_for_missing_link(
+async def test_update_company_user_role_returns_not_found_for_missing_link(
     client, login_token
 ):
-    company_id = _create_company(client, login_token)
-    _create_role(
+    company_id = await _create_company(client, login_token)
+    await _create_role(
         client,
         login_token,
         company_id,
@@ -170,7 +174,7 @@ def test_update_company_user_role_returns_not_found_for_missing_link(
     )
     user_id = _get_user_id("user.three@email.com")
 
-    response = client.patch(
+    response = await client.patch(
         f"/company/{company_id}/user/{user_id}",
         json={"role": "User"},
         headers={"Authorization": f"Bearer {login_token}"},
@@ -179,13 +183,13 @@ def test_update_company_user_role_returns_not_found_for_missing_link(
     assert response.status_code == 404, response.text
 
 
-def test_update_company_user_role_requires_role_field(client, login_token):
-    company_id = _create_company(client, login_token)
-    user_id = _add_user_to_company(
+async def test_update_company_user_role_requires_role_field(client, login_token):
+    company_id = await _create_company(client, login_token)
+    user_id = await _add_user_to_company(
         client, login_token, company_id, "user.three@email.com"
     )
 
-    response = client.patch(
+    response = await client.patch(
         f"/company/{company_id}/user/{user_id}",
         json={},
         headers={"Authorization": f"Bearer {login_token}"},

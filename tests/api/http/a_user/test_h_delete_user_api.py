@@ -8,6 +8,9 @@ from app.repository.database.session_manager import DatabaseSessionManager
 from app.repository.database.tables import User
 from tests.utils.basic_auth import get_basic_auth_header
 
+import pytest
+
+pytestmark = pytest.mark.anyio
 BASE_URL = "/user/me"
 
 
@@ -22,8 +25,8 @@ def _build_user_payload() -> dict:
     }
 
 
-def _create_user(client, user: dict) -> None:
-    response = client.post(
+async def _create_user(client, user: dict) -> None:
+    response = await client.post(
         "/user/create",
         json={
             "first_name": user["first_name"],
@@ -35,17 +38,17 @@ def _create_user(client, user: dict) -> None:
     assert response.status_code in [200, 201], response.text
 
 
-def _verify_user_account(client, email: str) -> None:
+async def _verify_user_account(client, email: str) -> None:
     token = JWTManager().sign_payload(
         {"sub": email, "type": "verification"},
         expires_delta=timedelta(minutes=60),
     )
-    response = client.get(f"/user/verify?token={token}")
+    response = await client.get(f"/user/verify?token={token}")
     assert response.status_code in [200, 201], response.text
 
 
-def _login_for_access_token(client, user: dict) -> str:
-    response = client.patch(
+async def _login_for_access_token(client, user: dict) -> str:
+    response = await client.patch(
         "/user/login",
         headers=get_basic_auth_header(user["email"], user["password"]),
     )
@@ -62,13 +65,13 @@ def _get_user_row(email: str):
         session.close()
 
 
-def test_delete_user_account_success(client):
+async def test_delete_user_account_success(client):
     user = _build_user_payload()
-    _create_user(client, user)
-    _verify_user_account(client, user["email"])
-    access_token = _login_for_access_token(client, user)
+    await _create_user(client, user)
+    await _verify_user_account(client, user["email"])
+    access_token = await _login_for_access_token(client, user)
 
-    response = client.delete(
+    response = await client.delete(
         BASE_URL,
         headers={"Authorization": f"Bearer {access_token}"},
     )
@@ -83,8 +86,8 @@ def test_delete_user_account_success(client):
     assert user_row._closed_at is not None
 
 
-def test_delete_user_account_rejects_invalid_token(client):
-    response = client.delete(
+async def test_delete_user_account_rejects_invalid_token(client):
+    response = await client.delete(
         BASE_URL,
         headers={"Authorization": "Bearer invalid_token"},
     )
@@ -96,19 +99,19 @@ def test_delete_user_account_rejects_invalid_token(client):
     )
 
 
-def test_delete_user_account_blocks_login_after_deletion(client):
+async def test_delete_user_account_blocks_login_after_deletion(client):
     user = _build_user_payload()
-    _create_user(client, user)
-    _verify_user_account(client, user["email"])
-    access_token = _login_for_access_token(client, user)
+    await _create_user(client, user)
+    await _verify_user_account(client, user["email"])
+    access_token = await _login_for_access_token(client, user)
 
-    delete_response = client.delete(
+    delete_response = await client.delete(
         BASE_URL,
         headers={"Authorization": f"Bearer {access_token}"},
     )
     assert delete_response.status_code == 200, delete_response.text
 
-    login_response = client.patch(
+    login_response = await client.patch(
         "/user/login",
         headers=get_basic_auth_header(user["email"], user["password"]),
     )
@@ -120,19 +123,19 @@ def test_delete_user_account_blocks_login_after_deletion(client):
     )
 
 
-def test_delete_user_account_rejects_repeat_delete_with_same_token(client):
+async def test_delete_user_account_rejects_repeat_delete_with_same_token(client):
     user = _build_user_payload()
-    _create_user(client, user)
-    _verify_user_account(client, user["email"])
-    access_token = _login_for_access_token(client, user)
+    await _create_user(client, user)
+    await _verify_user_account(client, user["email"])
+    access_token = await _login_for_access_token(client, user)
 
-    first_response = client.delete(
+    first_response = await client.delete(
         BASE_URL,
         headers={"Authorization": f"Bearer {access_token}"},
     )
     assert first_response.status_code == 200, first_response.text
 
-    second_response = client.delete(
+    second_response = await client.delete(
         BASE_URL,
         headers={"Authorization": f"Bearer {access_token}"},
     )
