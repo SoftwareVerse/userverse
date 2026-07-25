@@ -60,6 +60,7 @@ def setup_database():
     os.environ["ENV"] = "testing"
     os.environ["DB_AUTO_CREATE"] = "true"
     os.environ["FRONTEND_URL"] = "https://frontend.example.com/reset-password"
+    os.environ["JWT_SECRET"] = "testing-secret-key-with-at-least-32-bytes"
 
     default_db = DatabaseSessionManager()
     session_manager._default_db = default_db

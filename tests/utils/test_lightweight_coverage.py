@@ -636,6 +636,10 @@ def test_send_verification_email_logs_dispatch_failures(monkeypatch):
         lambda **kwargs: (_ for _ in ()).throw(RuntimeError("smtp down")),
     )
     monkeypatch.setattr(
+        "app.services.user.basic_auth.UserBasicAuthService.generate_verification_link",
+        lambda self: "https://api.example.com/user/verify?token=test-token",
+    )
+    monkeypatch.setattr(
         "app.services.user.basic_auth.logger.error",
         lambda message, extra: captured_errors.append((message, extra)),
     )
