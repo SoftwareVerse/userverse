@@ -1,8 +1,11 @@
 import pytest
+
 from app.models.company.response_messages import (
     CompanyResponseMessages,
     CompanyUserResponseMessages,
 )
+
+pytestmark = pytest.mark.anyio
 
 
 @pytest.mark.parametrize(
@@ -52,7 +55,7 @@ from app.models.company.response_messages import (
         ("login_token_user_two", "company_one", "limit=10&page=1", set(), 403),
     ],
 )
-def test_get_users_for_company(
+async def test_get_users_for_company(
     client,
     login_token,
     login_token_user_two,
@@ -80,7 +83,7 @@ def test_get_users_for_company(
     }
     company_id = seed_companies[company_id]
 
-    response = client.get(
+    response = await client.get(
         f"/company/{company_id}/users?{query_params}", headers=headers
     )
     assert response.status_code == expected_status

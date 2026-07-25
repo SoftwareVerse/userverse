@@ -4,6 +4,7 @@ from fastapi import status
 from sqlalchemy.exc import IntegrityError
 
 from app.models.user.account_status import UserAccountStatus
+from app.models.user.password import PasswordResetMethod
 from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import UserReadModel
 from app.repository.base import BaseSQLRepository
@@ -180,3 +181,18 @@ class UserRepository(BaseSQLRepository[User]):
                 message=UserResponseMessages.USER_NOT_FOUND.value,
             )
         self.soft_delete(user)
+
+    def get_user_record_by_password_reset_token(
+        self,
+        *,
+        token: str,
+        method: PasswordResetMethod,
+    ) -> User | None:
+        for user in self._active_user_query().all():
+            password_reset_data = (user.primary_meta_data or {}).get("password_reset", {})
+            if (
+                password_reset_data.get("method") == method.value
+                and password_reset_data.get("token") == token
+            ):
+                return user
+        return None

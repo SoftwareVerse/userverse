@@ -150,3 +150,18 @@ def test_session_local_uses_default_db_session_object(monkeypatch):
     from app.repository.database.session_manager import session_local
 
     assert session_local() is fake_session
+
+
+def test_get_engine_uses_default_db_engine(monkeypatch):
+    class FakeManager:
+        def get_engine(self):
+            return fake_engine
+
+    fake_engine = object()
+    monkeypatch.setattr(
+        "app.repository.database.session_manager._default_db", FakeManager()
+    )
+
+    from app.repository.database.session_manager import get_engine
+
+    assert get_engine() is fake_engine

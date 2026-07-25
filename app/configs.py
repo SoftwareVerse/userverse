@@ -34,6 +34,10 @@ class Settings(BaseSettings):
         default="http://localhost:8500",
         validation_alias=AliasChoices("SERVER_URL"),
     )
+    FRONTEND_URL: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("FRONTEND_URL"),
+    )
     APP_NAME: str = Field(
         default="Userverse",
         validation_alias=AliasChoices("APP_NAME"),
@@ -152,6 +156,13 @@ class Settings(BaseSettings):
         default=60,
         validation_alias=AliasChoices("JWT_REFRESH_TIMEOUT", "JWT__REFRESH_TIMEOUT"),
     )
+    PASSWORD_RESET_EXPIRY_MINUTES: int = Field(
+        default=60,
+        validation_alias=AliasChoices(
+            "PASSWORD_RESET_EXPIRY_MINUTES",
+            "PASSWORD_RESET_TIMEOUT_MINUTES",
+        ),
+    )
 
     EMAIL_HOST: str | None = Field(
         default=None,
@@ -189,6 +200,8 @@ class Settings(BaseSettings):
 
         object.__setattr__(self, "ENVIRONMENT", self.ENVIRONMENT.strip().lower())
         object.__setattr__(self, "SERVER_URL", self.SERVER_URL.rstrip("/"))
+        if self.FRONTEND_URL:
+            object.__setattr__(self, "FRONTEND_URL", self.FRONTEND_URL.rstrip("/"))
         object.__setattr__(self, "CORS_ALLOWED", normalize_origins(self.CORS_ALLOWED))
         object.__setattr__(self, "CORS_BLOCKED", normalize_origins(self.CORS_BLOCKED))
 

@@ -1,11 +1,14 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 from fastapi.responses import JSONResponse
-from pydantic import EmailStr
 
 # Tags & Models
 from app.models.app_error import AppErrorResponseModel
 from app.models.generic_response import GenericResponseModel
 from app.models.tags import UserverseApiTag
+from app.models.user.password import (
+    MagicLinkPasswordResetConfirmRequest,
+    PasswordResetRequest,
+)
 
 # Auth & Logic
 from app.api.dependencies.common import CommonBasicAuthRouteDependencies
@@ -30,7 +33,7 @@ router = APIRouter(
     response_model=GenericResponseModel[None],
 )
 def password_reset_request_api(
-    email: EmailStr,
+    payload: PasswordResetRequest,
     request: Request,
     background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
@@ -38,14 +41,40 @@ def password_reset_request_api(
     """
     Trigger a password reset request.
 
-    - **Sends**: OTP code to user's email
+    - **Sends**: OTP code or magic reset link to user's email
     - **Returns**: Success message
     """
     client_host = request.client.host if request.client else None
     response = UserPasswordService(session).request_password_reset(
-        email,
+        payload.email,
+        method=payload.method,
         client_ip=client_host,
         background_tasks=background_tasks,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content=response.model_dump(mode="json"),
+    )
+
+
+@router.patch(
+    "/reset-with-token",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=GenericResponseModel[None],
+)
+def password_reset_with_token_api(
+    payload: MagicLinkPasswordResetConfirmRequest,
+    session: Session = Depends(get_session),
+):
+    """
+    Validate a magic reset token and reset password.
+
+    - **Requires**: `token` and `new_password` in the request body
+    - **Returns**: Success message
+    """
+    response = UserPasswordService(session).reset_password_with_token(
+        token=payload.token,
+        new_password=payload.new_password,
     )
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED,

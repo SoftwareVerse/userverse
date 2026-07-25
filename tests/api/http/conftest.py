@@ -1,28 +1,31 @@
 # tests/conftest.py
-import os
 import json
 import logging
+import os
+import tempfile
 from datetime import timedelta
+from pathlib import Path
 from uuid import UUID
 
 import pytest
-from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 from unittest.mock import patch
 
-from app.main import create_app
-import app.repository.database.session_manager as session_manager
-from app.repository.database.session_manager import DatabaseSessionManager
-from app.repository.database.tables import User
-from app.repository.database.tables import Company
-from app.repository.database.tables import Role
-from app.repository.database.tables import AssociationUserCompany
-from app.models.user.account_status import UserAccountStatus
-from app.models.company.roles import CompanyDefaultRoles
-from app.models.user.user import UserReadModel
-from tests.utils.basic_auth import get_basic_auth_header
+import app.configs as app_configs
 from app.api.security.jwt import JWTManager
+from app.main import create_app
+from app.models.company.roles import CompanyDefaultRoles
+from app.models.user.account_status import UserAccountStatus
+from app.models.user.user import UserReadModel
+from app.configs import settings
+from app.repository.database.session_manager import DatabaseSessionManager
+from app.repository.database.tables import AssociationUserCompany, Company, Role, User
+import app.repository.database.session_manager as session_manager
+from app.utils.hash_password import hash_password
+from tests.utils.basic_auth import get_basic_auth_header
 
 TEST_DATA_BASE_PATH = "tests/data/http/"
+BASE_URL = "http://testserver"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -51,51 +54,76 @@ def setup_database():
     Setup a clean database for the test session.
     Forces the application to use a test-specific database file.
     """
-    db_path = "./test.db"
-    if os.path.exists(db_path):
-        os.remove(db_path)
+    db_dir = Path(tempfile.mkdtemp(prefix="userverse-http-tests-"))
+    db_path = db_dir / "test.db"
 
-    # Ensure any new DatabaseSessionManager instances use this DB.
     os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
     os.environ["ENV"] = "testing"
+    os.environ["TESTING"] = "true"
     os.environ["DB_AUTO_CREATE"] = "true"
+    os.environ["FRONTEND_URL"] = "https://frontend.example.com/reset-password"
+    os.environ["JWT_SECRET"] = "testing-secret-key-with-at-least-32-bytes"
+    app_configs._resolve_settings.cache_clear()
+    settings.DATABASE_URL = f"sqlite:///{db_path}"
+    settings.ENVIRONMENT = "testing"
+    settings.TESTING = True
+    settings.DB_AUTO_CREATE = True
+    settings.FRONTEND_URL = "https://frontend.example.com/reset-password"
+    settings.JWT_SECRET = "testing-secret-key-with-at-least-32-bytes"
 
     default_db = DatabaseSessionManager()
     session_manager._default_db = default_db
 
     yield
 
-    # Teardown
     default_db.engine.dispose()
     session_manager._default_db = None
-    if os.path.exists(db_path):
-        os.remove(db_path)
+    app_configs._resolve_settings.cache_clear()
+    for setting_name in (
+        "DATABASE_URL",
+        "ENVIRONMENT",
+        "TESTING",
+        "DB_AUTO_CREATE",
+        "FRONTEND_URL",
+        "JWT_SECRET",
+    ):
+        try:
+            delattr(settings, setting_name)
+        except AttributeError:
+            pass
+    if db_path.exists():
+        db_path.unlink()
+    if db_dir.exists():
+        db_dir.rmdir()
 
 
-@pytest.fixture(scope="session")
-def client():
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"
+
+
+@pytest.fixture
+async def client():
     app = create_app()
-    with TestClient(app) as test_client:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url=BASE_URL) as test_client:
         yield test_client
 
 
 @pytest.fixture(scope="session")
 def test_user_data():
-    """Fixture to load test user data."""
     with open(f"{TEST_DATA_BASE_PATH}user.json") as f:
         return json.load(f)
 
 
 @pytest.fixture(scope="session")
 def test_company_data():
-    """Fixture to load test company data."""
     with open(f"{TEST_DATA_BASE_PATH}company.json") as f:
         return json.load(f)
 
 
 def _get_user_row(email: str):
-    db = DatabaseSessionManager()
-    session = db.session_object()
+    session = session_manager.session_local()
     try:
         return session.query(User).filter_by(email=email.lower()).first()
     finally:
@@ -103,8 +131,7 @@ def _get_user_row(email: str):
 
 
 def _get_company_row(email: str):
-    db = DatabaseSessionManager()
-    session = db.session_object()
+    session = session_manager.session_local()
     try:
         return session.query(Company).filter_by(email=email.lower()).first()
     finally:
@@ -112,8 +139,7 @@ def _get_company_row(email: str):
 
 
 def _get_role_row(company_id: UUID, name: str):
-    db = DatabaseSessionManager()
-    session = db.session_object()
+    session = session_manager.session_local()
     try:
         return (
             session.query(Role)
@@ -125,8 +151,7 @@ def _get_role_row(company_id: UUID, name: str):
 
 
 def _get_link_row(company_id: UUID, user_id: UUID):
-    db = DatabaseSessionManager()
-    session = db.session_object()
+    session = session_manager.session_local()
     try:
         return (
             session.query(AssociationUserCompany)
@@ -137,8 +162,25 @@ def _get_link_row(company_id: UUID, user_id: UUID):
         session.close()
 
 
-def _create_user_if_missing(client: TestClient, user: dict):
-    if _get_user_row(user["email"]):
+async def _create_user_if_missing(client: AsyncClient, user: dict):
+    existing_user = _get_user_row(user["email"])
+    if existing_user:
+        session = session_manager.session_local()
+        try:
+            user_row = session.query(User).filter_by(email=user["email"].lower()).one()
+            user_row.first_name = user["first_name"]
+            user_row.last_name = user["last_name"]
+            user_row.phone_number = user["phone_number"]
+            user_row.password = hash_password(user["password"])
+            user_row._closed_at = None
+            user_row.primary_meta_data = {
+                "status": UserAccountStatus.AWAITING_VERIFICATION.name_value,
+                "refresh_token_version": 0,
+            }
+            user_row.secondary_meta_data = {}
+            session.commit()
+        finally:
+            session.close()
         return
 
     payload = {
@@ -146,7 +188,7 @@ def _create_user_if_missing(client: TestClient, user: dict):
         "last_name": user["last_name"],
         "phone_number": user["phone_number"],
     }
-    response = client.post(
+    response = await client.post(
         "/user/create",
         json=payload,
         headers=get_basic_auth_header(user["email"], user["password"]),
@@ -154,8 +196,8 @@ def _create_user_if_missing(client: TestClient, user: dict):
     assert response.status_code in [200, 201], response.text
 
 
-def _login_user(client: TestClient, user: dict) -> str:
-    response = client.patch(
+async def _login_user(client: AsyncClient, user: dict) -> str:
+    response = await client.patch(
         "/user/login",
         headers=get_basic_auth_header(user["email"], user["password"]),
     )
@@ -163,8 +205,74 @@ def _login_user(client: TestClient, user: dict) -> str:
     return response.json()["data"]["access_token"]
 
 
-def _create_company_if_missing(client: TestClient, token: str, company: dict):
-    if _get_company_row(company["email"]):
+async def _create_company_if_missing(
+    client: AsyncClient,
+    token: str,
+    company: dict,
+    *,
+    owner_email: str,
+):
+    existing_company = _get_company_row(company["email"])
+    if existing_company:
+        session = session_manager.session_local()
+        try:
+            company_row = (
+                session.query(Company).filter_by(email=company["email"].lower()).one()
+            )
+            company_row.name = company["name"]
+            company_row.description = company["description"]
+            company_row.industry = company["industry"]
+            company_row.phone_number = company["phone_number"]
+            company_row._closed_at = None
+            company_row.primary_meta_data = {
+                "address": {
+                    "street": "123 Main St",
+                    "city": "Johannesburg",
+                    "state": "Gauteng",
+                    "postal_code": "2000",
+                    "country": "South Africa",
+                }
+            }
+
+            for default_role in CompanyDefaultRoles:
+                role_row = (
+                    session.query(Role)
+                    .filter_by(company_id=company_row.id, name=default_role.name_value)
+                    .one_or_none()
+                )
+                if role_row is None:
+                    session.add(
+                        Role(
+                            company_id=company_row.id,
+                            name=default_role.name_value,
+                            description=default_role.description,
+                        )
+                    )
+                else:
+                    role_row.description = default_role.description
+                    role_row._closed_at = None
+
+            owner_row = session.query(User).filter_by(email=owner_email.lower()).one()
+            owner_link = (
+                session.query(AssociationUserCompany)
+                .filter_by(company_id=company_row.id, user_id=owner_row.id)
+                .one_or_none()
+            )
+            if owner_link is None:
+                session.add(
+                    AssociationUserCompany(
+                        company_id=company_row.id,
+                        user_id=owner_row.id,
+                        role_name=CompanyDefaultRoles.OWNER.name_value,
+                    )
+                )
+            else:
+                owner_link.role_name = CompanyDefaultRoles.OWNER.name_value
+                owner_link._closed_at = None
+
+            session.commit()
+        finally:
+            session.close()
         return
 
     payload = {
@@ -177,7 +285,7 @@ def _create_company_if_missing(client: TestClient, token: str, company: dict):
             "country": "South Africa",
         },
     }
-    response = client.post(
+    response = await client.post(
         "/company",
         json=payload,
         headers={"Authorization": f"Bearer {token}"},
@@ -185,13 +293,28 @@ def _create_company_if_missing(client: TestClient, token: str, company: dict):
     assert response.status_code in [200, 201], response.text
 
 
-def _create_role_if_missing(
-    client: TestClient, *, company_id: int, token: str, role_payload: dict
+async def _create_role_if_missing(
+    client: AsyncClient, *, company_id: int, token: str, role_payload: dict
 ):
     if _get_role_row(company_id, role_payload["name"]):
         return
 
-    response = client.post(
+    session = session_manager.session_local()
+    try:
+        role_row = (
+            session.query(Role)
+            .filter_by(company_id=company_id, name=role_payload["name"])
+            .one_or_none()
+        )
+        if role_row is not None:
+            role_row.description = role_payload["description"]
+            role_row._closed_at = None
+            session.commit()
+            return
+    finally:
+        session.close()
+
+    response = await client.post(
         f"/company/{company_id}/role",
         json=role_payload,
         headers={"Authorization": f"Bearer {token}"},
@@ -201,83 +324,83 @@ def _create_role_if_missing(
 
 @pytest.fixture
 def get_user_two_otp(test_user_data):
-    """Get OTP from user metadata."""
-
-    def _get_otp():
+    def _get_token():
         user = test_user_data["user_two"]
-        db = DatabaseSessionManager()
-        session = db.session_object()
+        session = session_manager.session_local()
         try:
             user_row = (
                 session.query(User).filter_by(email=user["email"].lower()).first()
             )
             if user_row:
-                return user_row.primary_meta_data.get("password_reset", {}).get(
-                    "password_reset_token"
-                )
+                return user_row.primary_meta_data.get("password_reset", {}).get("token")
             return None
         finally:
             session.close()
 
-    return _get_otp
+    return _get_token
 
 
-@pytest.fixture(scope="session")
-def seed_users(client, test_user_data):
+@pytest.fixture
+async def seed_users(client, test_user_data):
     for key in ("user_one", "user_two", "user_three"):
-        _create_user_if_missing(client, test_user_data[key])
+        await _create_user_if_missing(client, test_user_data[key])
 
 
-@pytest.fixture(scope="session")
-def seed_verified_users(client, seed_users, test_user_data):
-    for key in ("user_one", "user_two", "user_three"):
-        user = _get_user_row(test_user_data[key]["email"])
-        status = (user.primary_meta_data or {}).get("status") if user else None
-        if status != UserAccountStatus.ACTIVE.name_value:
-            _verify_user_account(client, test_user_data[key]["email"])
-
-
-@pytest.fixture(scope="session")
-def login_token(client, seed_verified_users, test_user_data):
-    """Login user_one and return access token."""
-    return _login_user(client, test_user_data["user_one"])
-
-
-@pytest.fixture(scope="session")
-def login_token_user_two(client, seed_verified_users, test_user_data):
-    """Login user_two and return access token."""
-    return _login_user(client, test_user_data["user_two"])
-
-
-def _verify_user_account(client: TestClient, email: str):
+async def _verify_user_account(client: AsyncClient, email: str):
     token = JWTManager().sign_payload(
         {"sub": email, "type": "verification"}, expires_delta=timedelta(minutes=60)
     )
-    response = client.get(f"/user/verify?token={token}")
+    response = await client.get(f"/user/verify?token={token}")
     assert response.status_code in [200, 201]
 
 
 @pytest.fixture
-def verify_user_one_account(client, test_user_data):
-    _verify_user_account(client, test_user_data["user_one"]["email"])
+async def seed_verified_users(client, seed_users, test_user_data):
+    for key in ("user_one", "user_two", "user_three"):
+        user = _get_user_row(test_user_data[key]["email"])
+        status = (user.primary_meta_data or {}).get("status") if user else None
+        if status != UserAccountStatus.ACTIVE.name_value:
+            await _verify_user_account(client, test_user_data[key]["email"])
 
 
 @pytest.fixture
-def verify_user_two_account(client, test_user_data):
-    _verify_user_account(client, test_user_data["user_two"]["email"])
+async def login_token(client, seed_verified_users, test_user_data):
+    return await _login_user(client, test_user_data["user_one"])
 
 
 @pytest.fixture
-def verify_both_users(verify_user_one_account, verify_user_two_account):
-    # Ensures both users verified before tests
-    pass
+async def login_token_user_two(client, seed_verified_users, test_user_data):
+    return await _login_user(client, test_user_data["user_two"])
 
 
-@pytest.fixture(scope="session")
-def seed_companies(client, test_company_data, login_token, login_token_user_two):
-    _create_company_if_missing(client, login_token, test_company_data["company_one"])
-    _create_company_if_missing(
-        client, login_token_user_two, test_company_data["company_two"]
+@pytest.fixture
+async def verify_user_one_account(client, test_user_data):
+    await _verify_user_account(client, test_user_data["user_one"]["email"])
+
+
+@pytest.fixture
+async def verify_user_two_account(client, test_user_data):
+    await _verify_user_account(client, test_user_data["user_two"]["email"])
+
+
+@pytest.fixture
+async def verify_both_users(verify_user_one_account, verify_user_two_account):
+    return None
+
+
+@pytest.fixture
+async def seed_companies(client, test_company_data, login_token, login_token_user_two):
+    await _create_company_if_missing(
+        client,
+        login_token,
+        test_company_data["company_one"],
+        owner_email="user.one@email.com",
+    )
+    await _create_company_if_missing(
+        client,
+        login_token_user_two,
+        test_company_data["company_two"],
+        owner_email="user.two@email.com",
     )
     return {
         "company_one": _get_company_row(test_company_data["company_one"]["email"]).id,
@@ -285,18 +408,18 @@ def seed_companies(client, test_company_data, login_token, login_token_user_two)
     }
 
 
-@pytest.fixture(scope="session")
-def seed_company_roles(
+@pytest.fixture
+async def seed_company_roles(
     client, seed_companies, test_company_data, login_token, login_token_user_two
 ):
     for role_payload in test_company_data["roles"].values():
-        _create_role_if_missing(
+        await _create_role_if_missing(
             client,
             company_id=seed_companies["company_one"],
             token=login_token,
             role_payload=role_payload,
         )
-        _create_role_if_missing(
+        await _create_role_if_missing(
             client,
             company_id=seed_companies["company_two"],
             token=login_token_user_two,
@@ -368,8 +491,7 @@ def seed_pagination_state():
         },
     ]
 
-    db = DatabaseSessionManager()
-    session = db.session_object()
+    session = session_manager.session_local()
     try:
         owner_row = session.query(User).filter_by(email=owner["email"]).one_or_none()
         if owner_row is None:
@@ -378,126 +500,213 @@ def seed_pagination_state():
                 last_name=owner["last_name"],
                 phone_number=owner["phone_number"],
                 email=owner["email"],
-                password=owner["password"],
-                primary_meta_data={"status": UserAccountStatus.ACTIVE.name_value},
+                password=hash_password(owner["password"]),
+                primary_meta_data={
+                    "status": UserAccountStatus.ACTIVE.name_value,
+                    "refresh_token_version": 0,
+                },
+                secondary_meta_data={},
             )
             session.add(owner_row)
             session.flush()
+        owner_row.first_name = owner["first_name"]
+        owner_row.last_name = owner["last_name"]
+        owner_row.phone_number = owner["phone_number"]
+        owner_row.password = hash_password(owner["password"])
+        owner_row._closed_at = None
+        owner_row.primary_meta_data = {
+            "status": UserAccountStatus.ACTIVE.name_value,
+            "refresh_token_version": 0,
+        }
+        owner_row.secondary_meta_data = {}
+        session.commit()
+        session.refresh(owner_row)
 
-        company_rows = []
-        for company in companies:
+        company_ids = []
+        for company_data in companies:
             company_row = (
-                session.query(Company).filter_by(email=company["email"]).one_or_none()
+                session.query(Company).filter_by(email=company_data["email"]).one_or_none()
             )
             if company_row is None:
-                company_row = Company(**company)
+                company_row = Company(
+                    name=company_data["name"],
+                    description=company_data["description"],
+                    industry=company_data["industry"],
+                    email=company_data["email"],
+                    phone_number=company_data["phone_number"],
+                    primary_meta_data={
+                        "address": {
+                            "street": "123 Pagination Road",
+                            "city": "Johannesburg",
+                            "state": "Gauteng",
+                            "postal_code": "2000",
+                            "country": "South Africa",
+                        }
+                    },
+                )
                 session.add(company_row)
                 session.flush()
-            company_rows.append(company_row)
+            company_row.name = company_data["name"]
+            company_row.description = company_data["description"]
+            company_row.industry = company_data["industry"]
+            company_row.phone_number = company_data["phone_number"]
+            company_row._closed_at = None
+            company_row.primary_meta_data = {
+                "address": {
+                    "street": "123 Pagination Road",
+                    "city": "Johannesburg",
+                    "state": "Gauteng",
+                    "postal_code": "2000",
+                    "country": "South Africa",
+                }
+            }
+            session.commit()
+            session.refresh(company_row)
+            company_ids.append(company_row.id)
 
+        owner_role_name = CompanyDefaultRoles.OWNER.name_value
+        administrator_role_name = CompanyDefaultRoles.ADMINISTRATOR.name_value
+        viewer_role_name = CompanyDefaultRoles.VIEWER.name_value
+
+        for company_id in company_ids:
             for default_role in CompanyDefaultRoles:
-                if not _role_exists(session, company_row.id, default_role.name_value):
-                    session.add(
-                        Role(
-                            company_id=company_row.id,
-                            name=default_role.name_value,
-                            description=default_role.description,
-                        )
-                    )
-
-            if not _link_exists(session, company_row.id, owner_row.id):
-                session.add(
-                    AssociationUserCompany(
-                        company_id=company_row.id,
-                        user_id=owner_row.id,
-                        role_name=CompanyDefaultRoles.ADMINISTRATOR.name_value,
-                    )
+                role_row = (
+                    session.query(Role)
+                    .filter_by(company_id=company_id, name=default_role.name_value)
+                    .one_or_none()
                 )
-
-        session.flush()
-        role_company = company_rows[0]
-        users_company = company_rows[1]
-
-        for role_payload in (
-            {"name": "User", "description": "Standard user role with limited access."},
-            {
-                "name": "Client",
-                "description": "Client role with access to client features.",
-            },
-        ):
-            if not _role_exists(session, role_company.id, role_payload["name"]):
-                session.add(
-                    Role(
-                        company_id=role_company.id,
-                        name=role_payload["name"],
-                        description=role_payload["description"],
+                if role_row is None:
+                    role_row = Role(
+                        company_id=company_id,
+                        name=default_role.name_value,
                     )
-                )
+                    session.add(role_row)
+                role_row.description = default_role.description
+                role_row._closed_at = None
+            session.commit()
 
-        for user in extra_users:
-            user_row = session.query(User).filter_by(email=user["email"]).one_or_none()
+        custom_roles = [
+            ("User", "Standard user role with limited access."),
+            ("Client", "Client role with access to client-specific features."),
+        ]
+        for role_name, description in custom_roles:
+            role_row = (
+                session.query(Role)
+                .filter_by(company_id=company_ids[0], name=role_name)
+                .one_or_none()
+            )
+            if role_row is None:
+                role_row = Role(
+                    company_id=company_ids[0],
+                    name=role_name,
+                    description=description,
+                )
+                session.add(role_row)
+            else:
+                role_row.description = description
+                role_row._closed_at = None
+        session.commit()
+
+        for company_id in company_ids:
+            owner_link = (
+                session.query(AssociationUserCompany)
+                .filter_by(company_id=company_id, user_id=owner_row.id)
+                .one_or_none()
+            )
+            if owner_link is None:
+                owner_link = AssociationUserCompany(
+                    company_id=company_id,
+                    user_id=owner_row.id,
+                    role_name=owner_role_name,
+                )
+                session.add(owner_link)
+            else:
+                owner_link.role_name = owner_role_name
+                owner_link._closed_at = None
+            session.commit()
+
+        user_ids = []
+        for user_data in extra_users:
+            user_row = session.query(User).filter_by(email=user_data["email"]).one_or_none()
             if user_row is None:
                 user_row = User(
-                    first_name=user["first_name"],
-                    last_name=user["last_name"],
-                    phone_number=user["phone_number"],
-                    email=user["email"],
-                    password=user["password"],
-                    primary_meta_data={"status": UserAccountStatus.ACTIVE.name_value},
+                    first_name=user_data["first_name"],
+                    last_name=user_data["last_name"],
+                    phone_number=user_data["phone_number"],
+                    email=user_data["email"],
+                    password=hash_password(user_data["password"]),
+                    primary_meta_data={
+                        "status": UserAccountStatus.ACTIVE.name_value,
+                        "refresh_token_version": 0,
+                    },
+                    secondary_meta_data={},
                 )
                 session.add(user_row)
                 session.flush()
-            if not _link_exists(session, users_company.id, user_row.id):
+            user_row.first_name = user_data["first_name"]
+            user_row.last_name = user_data["last_name"]
+            user_row.phone_number = user_data["phone_number"]
+            user_row.password = hash_password(user_data["password"])
+            user_row._closed_at = None
+            user_row.primary_meta_data = {
+                "status": UserAccountStatus.ACTIVE.name_value,
+                "refresh_token_version": 0,
+            }
+            user_row.secondary_meta_data = {}
+            session.commit()
+            session.refresh(user_row)
+            user_ids.append(user_row.id)
+
+        desired_links = [
+            (company_ids[0], user_ids[0], administrator_role_name),
+            (company_ids[0], user_ids[1], viewer_role_name),
+            (company_ids[0], user_ids[2], viewer_role_name),
+            (company_ids[1], user_ids[0], viewer_role_name),
+            (company_ids[1], user_ids[1], administrator_role_name),
+            (company_ids[2], user_ids[2], administrator_role_name),
+            (company_ids[3], user_ids[0], viewer_role_name),
+        ]
+
+        for company_id, user_id, role_name in desired_links:
+            existing_link = (
+                session.query(AssociationUserCompany)
+                .filter_by(company_id=company_id, user_id=user_id)
+                .one_or_none()
+            )
+            if existing_link is None:
                 session.add(
                     AssociationUserCompany(
-                        company_id=users_company.id,
-                        user_id=user_row.id,
-                        role_name=CompanyDefaultRoles.VIEWER.name_value,
+                        company_id=company_id,
+                        user_id=user_id,
+                        role_name=role_name,
                     )
                 )
+            else:
+                existing_link.role_name = role_name
+                existing_link._closed_at = None
+            session.commit()
 
-        session.commit()
-        session.refresh(owner_row)
-        owner_token = (
-            JWTManager()
-            .sign_jwt(
-                UserReadModel(
-                    id=owner_row.id,
-                    first_name=owner_row.first_name,
-                    last_name=owner_row.last_name,
-                    email=owner_row.email,
-                    phone_number=owner_row.phone_number,
-                    status=UserAccountStatus.ACTIVE.name_value,
-                    is_superuser=owner_row.is_superuser,
-                )
+        owner_token = JWTManager().sign_jwt(
+            UserReadModel(
+                id=owner_row.id,
+                first_name=owner_row.first_name,
+                last_name=owner_row.last_name,
+                email=owner_row.email,
+                phone_number=owner_row.phone_number,
+                status=UserAccountStatus.ACTIVE.name_value,
+                is_superuser=owner_row.is_superuser,
             )
-            .access_token
-        )
+        ).access_token
 
         return {
             "owner": owner,
+            "owner_id": owner_row.id,
             "owner_token": owner_token,
-            "role_company_id": role_company.id,
-            "users_company_id": users_company.id,
-            "user_company_ids": [company.id for company in company_rows],
+            "companies": company_ids,
+            "role_company_id": company_ids[0],
+            "users_company_id": company_ids[0],
+            "user_company_ids": company_ids,
+            "users": user_ids,
         }
     finally:
         session.close()
-
-
-def _role_exists(session, company_id: int, name: str) -> bool:
-    return (
-        session.query(Role)
-        .filter_by(company_id=company_id, name=name, _closed_at=None)
-        .first()
-        is not None
-    )
-
-
-def _link_exists(session, company_id: int, user_id: int) -> bool:
-    return (
-        session.query(AssociationUserCompany)
-        .filter_by(company_id=company_id, user_id=user_id, _closed_at=None)
-        .first()
-        is not None
-    )

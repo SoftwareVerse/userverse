@@ -8,7 +8,9 @@ Userverse configuration is loaded by `app.configs.Settings`, a `pydantic-setting
 | --- | --- | --- |
 | `ENVIRONMENT` or `ENV` | `development` | Runtime environment name. Normalized to lowercase. |
 | `TESTING` | `false` | Enables test-safe behavior such as relaxed DB initialization and skipped SMTP delivery. |
-| `SERVER_URL` | `http://localhost:8500` | Public base URL used for generated links. |
+| `SERVER_URL` | `http://localhost:8500` | Public base URL of the backend API service. |
+| `FRONTEND_URL` | unset | Frontend reset-password route used for password reset magic links, for example `https://app.example.com/reset-password`. |
+| `PASSWORD_RESET_EXPIRY_MINUTES` | `60` | Shared expiry time in minutes for both OTP and magic-link password resets. |
 | `APP_NAME` | project metadata | API title. |
 | `APP_DESCRIPTION` | project metadata | API description. |
 | `APP_VERSION` | project metadata | API version. |
@@ -100,6 +102,81 @@ EMAIL_TLS=false
 ```
 
 In test mode (`TESTING=true` or `ENVIRONMENT=testing`), SMTP delivery is skipped.
+
+## Password Reset Integration
+
+Userverse supports two password reset methods through the same request endpoint:
+
+- `otp`: sends a one-time code and keeps the existing Basic Auth completion flow.
+- `magic_link`: sends a reset link to the frontend application, which must render a new-password form.
+
+Magic links require `FRONTEND_URL` to be configured. `SERVER_URL` is the backend API origin and is not used for password reset links.
+
+Example:
+
+```bash
+SERVER_URL=https://api.example.com
+FRONTEND_URL=https://app.example.com/reset-password
+PASSWORD_RESET_EXPIRY_MINUTES=60
+```
+
+Both OTP and magic-link password resets use the same `PASSWORD_RESET_EXPIRY_MINUTES` setting.
+
+### OTP flow
+
+Request a reset:
+
+```bash
+curl -X PATCH \
+  'http://127.0.0.1:8000/password-reset/request' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@example.com","method":"otp"}'
+```
+
+Complete the reset with Basic Auth and the OTP:
+
+```bash
+curl -X PATCH \
+  'http://127.0.0.1:8000/password-reset/validate-otp?one_time_pin=123456' \
+  -H 'Authorization: Basic <base64(email:new-password)>'
+```
+
+### Magic link flow
+
+Request a reset:
+
+```bash
+curl -X PATCH \
+  'http://127.0.0.1:8000/password-reset/request' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@example.com","method":"magic_link"}'
+```
+
+The email contains a link in this shape:
+
+```text
+https://app.example.com/reset-password?token=<reset-token>
+```
+
+Frontend requirements:
+
+- Expose a reset-password page at the configured `FRONTEND_URL`.
+- Read the `token` query parameter.
+- Render a form that collects the new password.
+- Submit the new password and token to `PATCH /password-reset/reset-with-token`.
+- Handle invalid or expired token errors by prompting the user to request a new reset email.
+
+Magic-link completion request:
+
+```bash
+curl -X PATCH \
+  'http://127.0.0.1:8000/password-reset/reset-with-token' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{"token":"<reset-token>","new_password":"NewPassword123!"}'
+```
 
 ## CORS Settings
 

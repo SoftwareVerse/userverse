@@ -44,7 +44,12 @@ class PasswordResetResponseMessages(str, Enum):
     OTP_SENT = "If an account exists for that email, we’ve sent a reset link."
     OTP_VERIFIED = "OTP verified successfully"
     OTP_VERIFICATION_FAILED = "OTP verification failed"
+    MAGIC_LINK_VERIFICATION_FAILED = "Magic link verification failed"
     PASSWORD_CHANGED = "Password changed successfully"
     PASSWORD_CHANGE_FAILED = "Password change failed"
     ERROR = "Invalid OTP, does not match or expired"
+    TOKEN_ERROR = "Invalid reset token, does not match or expired"
     RATE_LIMITED = "Too many password reset requests. Please try again later."
+    FRONTEND_URL_NOT_CONFIGURED = (
+        "FRONTEND_URL must be configured for magic link password resets."
+    )

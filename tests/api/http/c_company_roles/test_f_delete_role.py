@@ -1,10 +1,12 @@
 import json
-from app.models.company.response_messages import (
-    CompanyRoleResponseMessages,
-)
+import pytest
+
+from app.models.company.response_messages import CompanyRoleResponseMessages
+
+pytestmark = pytest.mark.anyio
 
 
-def test_a_delete_role_success(
+async def test_a_delete_role_success(
     client, login_token, test_company_data, seed_company_roles
 ):
     """
@@ -19,7 +21,7 @@ def test_a_delete_role_success(
         "replacement_role_name": "Viewer",
     }
 
-    response = client.request(
+    response = await client.request(
         method="DELETE",
         url=f"/company/{company_id}/role",
         json=payload,
@@ -37,7 +39,7 @@ def test_a_delete_role_success(
     assert isinstance(json_data["data"]["users_reassigned"], int)
 
 
-def test_b_delete_default_role_forbidden(client, login_token, seed_company_roles):
+async def test_b_delete_default_role_forbidden(client, login_token, seed_company_roles):
     """
     Test attempting to delete a default system role like 'Administrator'.
     """
@@ -50,7 +52,7 @@ def test_b_delete_default_role_forbidden(client, login_token, seed_company_roles
         "replacement_role_name": "Viewer",
     }
 
-    response = client.request(
+    response = await client.request(
         method="DELETE",
         url=f"/company/{company_id}/role",
         json=payload,
@@ -68,7 +70,7 @@ def test_b_delete_default_role_forbidden(client, login_token, seed_company_roles
     )
 
 
-def test_c_delete_role_not_found(client, login_token, seed_company_roles):
+async def test_c_delete_role_not_found(client, login_token, seed_company_roles):
     """
     Test deleting a role that does not exist.
     """
@@ -81,7 +83,7 @@ def test_c_delete_role_not_found(client, login_token, seed_company_roles):
         "replacement_role_name": "Viewer",
     }
 
-    response = client.request(
+    response = await client.request(
         method="DELETE",
         url=f"/company/{company_id}/role",
         json=payload,
@@ -100,7 +102,7 @@ def test_c_delete_role_not_found(client, login_token, seed_company_roles):
     )
 
 
-def test_d_delete_role_self_replacement_forbidden(
+async def test_d_delete_role_self_replacement_forbidden(
     client, login_token, seed_company_roles
 ):
     """
@@ -115,7 +117,7 @@ def test_d_delete_role_self_replacement_forbidden(
         "replacement_role_name": "Client Updated",
     }
 
-    response = client.request(
+    response = await client.request(
         method="DELETE",
         url=f"/company/{company_id}/role",
         json=payload,

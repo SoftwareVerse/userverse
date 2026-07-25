@@ -2,6 +2,8 @@ from uuid import uuid4
 
 import pytest
 
+from app.models.company.response_messages import CompanyRoleResponseMessages
+from app.repository.company_role import RoleRepository
 from app.repository.database.tables import AssociationUserCompany
 from app.repository.database.tables import Company
 from app.repository.database.tables import Role
@@ -54,6 +56,27 @@ def test_update_role_raises_when_role_missing(test_session):
         match=f"Role with company_id={company_id} and name='Missing' not found.",
     ):
         Role.update_role(test_session, company_id, "Missing", new_name="Renamed")
+
+
+def test_update_role_updates_description_when_provided(
+    test_session, test_company_data, test_role_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+    role = Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["admin_role"]["name"],
+        description=test_role_data["admin_role"]["description"],
+    )
+
+    updated = Role.update_role(
+        test_session,
+        company["id"],
+        role["name"],
+        new_description="Updated admin description",
+    )
+
+    assert updated["description"] == "Updated admin description"
 
 
 def test_update_role_json_field_rejects_missing_role(test_session):
@@ -178,3 +201,76 @@ def test_delete_role_and_reassign_users_soft_deletes_and_reassigns_users(
     assert updated_link.role_name == viewer_role["name"]
     assert deleted_role.primary_meta_data["deleted_by"]["email"] == "admin@example.com"
     assert deleted_role._closed_at is not None
+
+
+def test_role_repository_delete_role_rejects_missing_replacement_role(
+    test_session, test_company_data, test_role_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+    Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["admin_role"]["name"],
+        description=test_role_data["admin_role"]["description"],
+    )
+    repository = RoleRepository(company_id=company["id"], session=test_session)
+
+    with pytest.raises(AppError) as exc_info:
+        repository.delete_role(
+            payload=type(
+                "Payload",
+                (),
+                {
+                    "role_name_to_delete": test_role_data["admin_role"]["name"],
+                    "replacement_role_name": "Viewer",
+                },
+            )(),
+            deleted_by=_deleted_by_user(),
+        )
+
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
+
+
+def test_role_repository_delete_role_reassigns_users(
+    test_session, test_company_data, test_role_data, test_user_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+    admin_role = Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["admin_role"]["name"],
+        description=test_role_data["admin_role"]["description"],
+    )
+    viewer_role = Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["viewer_role"]["name"],
+        description=test_role_data["viewer_role"]["description"],
+    )
+    user = User.create(test_session, **test_user_data["create_user"])
+    AssociationUserCompany.create(
+        test_session,
+        user_id=user["id"],
+        company_id=company["id"],
+        role_name=admin_role["name"],
+    )
+    repository = RoleRepository(company_id=company["id"], session=test_session)
+
+    result = repository.delete_role(
+        payload=type(
+            "Payload",
+            (),
+            {
+                "role_name_to_delete": admin_role["name"],
+                "replacement_role_name": viewer_role["name"],
+            },
+        )(),
+        deleted_by=_deleted_by_user(),
+    )
+
+    updated_link = test_session.query(AssociationUserCompany).one()
+    assert result["users_reassigned"] == 1
+    assert updated_link.role_name == viewer_role["name"]

@@ -1,14 +1,18 @@
+import pytest
+
 from app.models.company.response_messages import (
     CompanyRoleResponseMessages,
     CompanyUserResponseMessages,
 )
 
+pytestmark = pytest.mark.anyio
 
-def test_get_company_roles_page_two_is_stable(client, seed_pagination_state):
+
+async def test_get_company_roles_page_two_is_stable(client, seed_pagination_state):
     headers = {"Authorization": f"Bearer {seed_pagination_state['owner_token']}"}
     company_id = seed_pagination_state["role_company_id"]
 
-    response = client.get(
+    response = await client.get(
         f"/company/{company_id}/roles?limit=2&page=2",
         headers=headers,
     )
@@ -29,11 +33,11 @@ def test_get_company_roles_page_two_is_stable(client, seed_pagination_state):
     }
 
 
-def test_get_company_users_page_two_is_stable(client, seed_pagination_state):
+async def test_get_company_users_page_two_is_stable(client, seed_pagination_state):
     headers = {"Authorization": f"Bearer {seed_pagination_state['owner_token']}"}
     company_id = seed_pagination_state["users_company_id"]
 
-    response = client.get(
+    response = await client.get(
         f"/company/{company_id}/users?limit=2&page=2",
         headers=headers,
     )
@@ -57,10 +61,10 @@ def test_get_company_users_page_two_is_stable(client, seed_pagination_state):
     }
 
 
-def test_get_user_companies_page_two_is_stable(client, seed_pagination_state):
+async def test_get_user_companies_page_two_is_stable(client, seed_pagination_state):
     headers = {"Authorization": f"Bearer {seed_pagination_state['owner_token']}"}
 
-    response = client.get(
+    response = await client.get(
         "/user/companies?limit=2&page=2",
         headers=headers,
     )

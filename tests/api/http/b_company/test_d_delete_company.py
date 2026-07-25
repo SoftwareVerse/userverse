@@ -3,6 +3,9 @@ from uuid import uuid4
 from app.models.company.response_messages import CompanyResponseMessages
 
 
+import pytest
+
+pytestmark = pytest.mark.anyio
 def _build_company_payload() -> dict:
     suffix = uuid4().hex
     return {
@@ -21,15 +24,15 @@ def _build_company_payload() -> dict:
     }
 
 
-def test_delete_company_success_for_owner(client, login_token):
+async def test_delete_company_success_for_owner(client, login_token):
     payload = _build_company_payload()
     headers = {"Authorization": f"Bearer {login_token}"}
 
-    create_response = client.post("/company", json=payload, headers=headers)
+    create_response = await client.post("/company", json=payload, headers=headers)
     assert create_response.status_code in [200, 201], create_response.text
     company_id = create_response.json()["data"]["id"]
 
-    delete_response = client.delete(f"/company/{company_id}", headers=headers)
+    delete_response = await client.delete(f"/company/{company_id}", headers=headers)
     assert delete_response.status_code == 200, delete_response.text
     assert (
         delete_response.json()["message"]
@@ -37,7 +40,7 @@ def test_delete_company_success_for_owner(client, login_token):
     )
     assert delete_response.json()["data"] is None
 
-    get_response = client.get(
+    get_response = await client.get(
         f"/company?company_id={company_id}",
         headers=headers,
     )
@@ -48,17 +51,17 @@ def test_delete_company_success_for_owner(client, login_token):
     )
 
 
-def test_delete_company_forbidden_for_non_owner(
+async def test_delete_company_forbidden_for_non_owner(
     client, login_token, login_token_user_two
 ):
     payload = _build_company_payload()
     owner_headers = {"Authorization": f"Bearer {login_token}"}
 
-    create_response = client.post("/company", json=payload, headers=owner_headers)
+    create_response = await client.post("/company", json=payload, headers=owner_headers)
     assert create_response.status_code in [200, 201], create_response.text
     company_id = create_response.json()["data"]["id"]
 
-    delete_response = client.delete(
+    delete_response = await client.delete(
         f"/company/{company_id}",
         headers={"Authorization": f"Bearer {login_token_user_two}"},
     )
@@ -68,5 +71,5 @@ def test_delete_company_forbidden_for_non_owner(
         == CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value
     )
 
-    cleanup_response = client.delete(f"/company/{company_id}", headers=owner_headers)
+    cleanup_response = await client.delete(f"/company/{company_id}", headers=owner_headers)
     assert cleanup_response.status_code == 200, cleanup_response.text

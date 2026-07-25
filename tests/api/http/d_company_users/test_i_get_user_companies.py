@@ -1,7 +1,8 @@
 import pytest
-from app.models.company.response_messages import (
-    CompanyUserResponseMessages,
-)
+
+from app.models.company.response_messages import CompanyUserResponseMessages
+
+pytestmark = pytest.mark.anyio
 from app.configs import settings
 from app.models.user.account_status import UserAccountStatus
 from app.repository.database.session_manager import DatabaseSessionManager
@@ -37,7 +38,7 @@ def _set_user_status(email: str, status: str) -> None:
         ),  # updated
     ],
 )
-def test_get_user_companies(
+async def test_get_user_companies(
     client,
     login_token,
     login_token_user_two,
@@ -61,7 +62,7 @@ def test_get_user_companies(
         "accept": "application/json",
     }
 
-    response = client.get(f"/user/companies?{query_params}", headers=headers)
+    response = await client.get(f"/user/companies?{query_params}", headers=headers)
     assert response.status_code == expected_status
 
     if expected_status == 200:
@@ -80,7 +81,7 @@ def test_get_user_companies(
         assert pagination["current_page"] == 1
 
 
-def test_get_user_companies_allows_awaiting_verification_when_not_required(
+async def test_get_user_companies_allows_awaiting_verification_when_not_required(
     client, test_user_data, seed_companies, login_token
 ):
     user_one = test_user_data["user_one"]
@@ -92,7 +93,7 @@ def test_get_user_companies_allows_awaiting_verification_when_not_required(
             user_one["email"], UserAccountStatus.AWAITING_VERIFICATION.name_value
         )
 
-        response = client.get(
+        response = await client.get(
             "/user/companies?limit=10&page=1",
             headers={
                 "Authorization": f"Bearer {login_token}",
