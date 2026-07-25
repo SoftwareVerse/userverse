@@ -1,4 +1,5 @@
 import importlib
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from textwrap import dedent
 from unittest.mock import Mock
@@ -15,6 +16,7 @@ from app.models.company.company import CompanyQueryParamsModel
 from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import UserReadModel
 from app.services.user.basic_auth import UserBasicAuthService
+from app.services.user.password import UserPasswordService
 from app.services.user.profile import UserProfileService
 from app.services.user.verification import UserVerificationService
 from app.utils.app_error import AppError
@@ -337,6 +339,226 @@ def test_mail_service_renders_and_sends_template(monkeypatch):
         subject="Subject",
         html_body="welcome.html:Jane",
         reason="template:welcome.html",
+    )
+
+
+def test_password_service_helpers_use_shared_frontend_and_expiry(monkeypatch):
+    service = UserPasswordService(session=object())
+    from app.services.user.password import settings as password_settings
+
+    previous_overrides = dict(password_settings._overrides)
+    object.__setattr__(
+        password_settings,
+        "_overrides",
+        {
+            **previous_overrides,
+            "FRONTEND_URL": "https://app.example.com/reset-password",
+            "PASSWORD_RESET_EXPIRY_MINUTES": 45,
+            "APP_NAME": "Userverse",
+        },
+    )
+    try:
+        assert service.password_reset_expiry == timedelta(minutes=45)
+        assert (
+            service.build_magic_reset_url("token123")
+            == "https://app.example.com/reset-password?token=token123"
+        )
+
+        otp_context = service._build_email_context(
+            method=PasswordResetMethod.OTP,
+            token="123456",
+            user_name="Jane",
+        )
+        assert otp_context == {
+            "user_name": "Jane",
+            "app_name": "Userverse",
+            "otp": "123456",
+        }
+
+        magic_context = service._build_email_context(
+            method=PasswordResetMethod.MAGIC_LINK,
+            token="token123",
+            user_name="Jane",
+        )
+        assert magic_context == {
+            "user_name": "Jane",
+            "app_name": "Userverse",
+            "reset_url": "https://app.example.com/reset-password?token=token123",
+            "expires_in": "45 minutes",
+        }
+    finally:
+        object.__setattr__(password_settings, "_overrides", previous_overrides)
+
+
+def test_password_service_request_logs_and_succeeds_when_sync_email_send_fails(
+    monkeypatch,
+):
+    class FakeUser:
+        email = "user@example.com"
+        first_name = "Jane"
+        last_name = "Doe"
+
+    fake_repo = Mock()
+    fake_repo.get_user_record_by_email.return_value = FakeUser()
+    fake_password_repo = Mock()
+
+    monkeypatch.setattr(
+        "app.services.user.password.UserRepository",
+        lambda session: fake_repo,
+    )
+    monkeypatch.setattr(
+        "app.services.user.password.UserPasswordRepository",
+        lambda session: fake_password_repo,
+    )
+    monkeypatch.setattr(
+        "app.services.user.password.PASSWORD_RESET_RATE_LIMITER.check",
+        lambda **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "app.services.user.password.MailService.send_template_email",
+        lambda **kwargs: (_ for _ in ()).throw(RuntimeError("smtp down")),
+    )
+    logger_error = Mock()
+    monkeypatch.setattr("app.services.user.password.logger.error", logger_error)
+
+    service = UserPasswordService(session=object())
+    response = service.request_password_reset("user@example.com")
+
+    assert response.message == "If an account exists for that email, we’ve sent a reset link."
+    fake_password_repo.create_password_reset_record.assert_called_once()
+    logger_error.assert_called_once()
+
+
+def test_password_service_reset_with_token_rejects_known_user_with_invalid_token_verification(
+    monkeypatch,
+):
+    fake_user = Mock(email="user@example.com")
+    fake_user_repo = Mock()
+    fake_user_repo.get_user_record_by_password_reset_token.return_value = fake_user
+    fake_password_repo = Mock()
+    fake_password_repo.verify_password_reset_token.return_value = False
+
+    monkeypatch.setattr(
+        "app.services.user.password.UserRepository",
+        lambda session: fake_user_repo,
+    )
+    monkeypatch.setattr(
+        "app.services.user.password.UserPasswordRepository",
+        lambda session: fake_password_repo,
+    )
+
+    service = UserPasswordService(session=object())
+    with pytest.raises(AppError) as exc_info:
+        service.reset_password_with_token(token="bad", new_password="Secret123!")
+
+    assert exc_info.value.status_code == 400
+    assert (
+        exc_info.value.detail["message"]
+        == "Magic link verification failed"
+    )
+    assert (
+        exc_info.value.detail["error"]
+        == "Invalid reset token, does not match or expired"
+    )
+
+
+def test_password_service_validate_otp_raises_value_error_when_repository_returns_none(
+    monkeypatch,
+):
+    fake_user_repo = Mock()
+    fake_user_repo.get_user_by_email.return_value = None
+    monkeypatch.setattr(
+        "app.services.user.password.UserRepository",
+        lambda session: fake_user_repo,
+    )
+
+    service = UserPasswordService(session=object())
+    with pytest.raises(ValueError, match=UserResponseMessages.USER_NOT_FOUND.value):
+        service.validate_otp_and_change_password(
+            "user@example.com",
+            "123456",
+            "Secret123!",
+        )
+
+
+def test_basic_auth_service_does_not_resend_for_active_user(monkeypatch):
+    context = Mock()
+    context.db_session = object()
+    context.configs = Mock(REQUIRE_EMAIL_VERIFICATION=True)
+    user = Mock(status=UserAccountStatus.ACTIVE.name_value)
+
+    monkeypatch.setattr(
+        "app.services.user.basic_auth.UserRepository",
+        lambda session: Mock(),
+    )
+
+    service = UserBasicAuthService(context)
+    service.send_verification_email = Mock()
+
+    service._resend_verification_email_for_pending_login(user)
+
+    service.send_verification_email.assert_not_called()
+
+
+def test_user_password_repository_handles_missing_user_and_missing_expiry(monkeypatch):
+    from app.repository.user_password import UserPasswordRepository
+
+    repository = UserPasswordRepository(Mock())
+
+    class EmptyQuery:
+        def filter(self, *args, **kwargs):
+            return self
+
+        def first(self):
+            return None
+
+    monkeypatch.setattr(repository, "_base_query", lambda: EmptyQuery())
+    with pytest.raises(AppError) as exc_info:
+        repository._get_user("missing@example.com")
+    assert exc_info.value.status_code == 404
+
+    class FakeUser:
+        primary_meta_data = {
+            "password_reset": {
+                "method": PasswordResetMethod.OTP.value,
+                "token": "123456",
+            }
+        }
+
+    monkeypatch.setattr(repository, "_get_user", lambda email: FakeUser())
+    assert (
+        repository.verify_password_reset_token(
+            "user@example.com",
+            method=PasswordResetMethod.OTP,
+            token="123456",
+        )
+        is False
+    )
+
+
+def test_user_password_repository_verifies_unexpired_token(monkeypatch):
+    from app.repository.user_password import UserPasswordRepository
+
+    repository = UserPasswordRepository(Mock())
+    future_expiry = (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()
+
+    class FakeUser:
+        primary_meta_data = {
+            "password_reset": {
+                "method": PasswordResetMethod.MAGIC_LINK.value,
+                "token": "token123",
+                "expires_at": future_expiry,
+            }
+        }
+
+    monkeypatch.setattr(repository, "_get_user", lambda email: FakeUser())
+    assert (
+        repository.verify_password_reset_token(
+            "user@example.com",
+            method=PasswordResetMethod.MAGIC_LINK,
+            token="token123",
+        )
+        is True
     )
 
 
