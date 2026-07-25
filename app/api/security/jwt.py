@@ -47,6 +47,7 @@ class JWTManager:
         access_payload = {
             "user": user.model_dump(mode="json"),
             "type": "access",
+            "refresh_token_version": refresh_token_version,
             "exp": access_expire,
         }
 
@@ -157,6 +158,16 @@ class JWTManager:
         decoded = self._decode_token_payload(token, expected_type="access")
         return UserReadModel(**decoded["user"])
 
+    def decode_access_token(self, token: str) -> tuple[UserReadModel, int]:
+        decoded = self._decode_token_payload(token, expected_type="access")
+        refresh_token_version = decoded.get("refresh_token_version", 0)
+        try:
+            normalized_version = int(refresh_token_version)
+        except (TypeError, ValueError):
+            normalized_version = 0
+
+        return UserReadModel(**decoded["user"]), normalized_version
+
     def decode_refresh_token(self, token: str) -> tuple[UserReadModel, int]:
         decoded = self._decode_token_payload(token, expected_type="refresh")
         refresh_token_version = decoded.get("refresh_token_version", 0)
@@ -202,8 +213,16 @@ async def get_current_user_from_jwt_token(
         )
 
     try:
-        token_user = JWTManager().decode_token(authorization)
-        current_user = UserRepository(session).get_user_by_id(token_user.id)
+        jwt_manager = JWTManager()
+        user_repository = UserRepository(session)
+        token_user, token_version = jwt_manager.decode_access_token(authorization)
+        current_user = user_repository.get_user_by_id(token_user.id)
+        current_version = user_repository.get_refresh_token_version(current_user.id)
+        if token_version != current_version:
+            raise AppError(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                message=SecurityResponseMessages.INVALID_TOKEN.value,
+            )
         if not _status_allowed_for_authenticated_access(current_user.status):
             raise AppError(
                 status_code=status.HTTP_403_FORBIDDEN,

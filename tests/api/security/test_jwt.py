@@ -39,6 +39,15 @@ def test_decode_valid_access_token():
     assert user.email == sample_user.email
 
 
+def test_decode_valid_access_token_returns_version():
+    jwt_manager = JWTManager()
+    tokens = jwt_manager.sign_jwt(sample_user, refresh_token_version=7)
+    user, refresh_token_version = jwt_manager.decode_access_token(tokens.access_token)
+
+    assert user.email == sample_user.email
+    assert refresh_token_version == 7
+
+
 def test_decode_valid_refresh_token():
     jwt_manager = JWTManager()
     tokens = jwt_manager.sign_jwt(sample_user, refresh_token_version=3)
@@ -226,12 +235,16 @@ def test_get_current_user_from_jwt_token_rejects_missing_credentials():
 
 def test_get_current_user_from_jwt_token_returns_decoded_user(monkeypatch):
     monkeypatch.setattr(
-        "app.api.security.jwt.JWTManager.decode_token",
-        lambda self, token: sample_user,
+        "app.api.security.jwt.JWTManager.decode_access_token",
+        lambda self, token: (sample_user, 2),
     )
     monkeypatch.setattr(
         "app.api.security.jwt.UserRepository.get_user_by_id",
         lambda self, user_id: sample_user.model_copy(update={"status": "Active"}),
+    )
+    monkeypatch.setattr(
+        "app.api.security.jwt.UserRepository.get_refresh_token_version",
+        lambda self, user_id: 2,
     )
     credentials = HTTPAuthorizationCredentials(
         scheme="Bearer", credentials="signed-token"
@@ -254,7 +267,7 @@ def test_get_current_user_from_jwt_token_reraises_app_error(monkeypatch):
     def _raise(self, token):
         raise expected_error
 
-    monkeypatch.setattr("app.api.security.jwt.JWTManager.decode_token", _raise)
+    monkeypatch.setattr("app.api.security.jwt.JWTManager.decode_access_token", _raise)
     credentials = HTTPAuthorizationCredentials(
         scheme="Bearer", credentials="signed-token"
     )
@@ -271,7 +284,7 @@ def test_get_current_user_from_jwt_token_wraps_unexpected_error(monkeypatch):
     def _raise(self, token):
         raise RuntimeError("decode failed")
 
-    monkeypatch.setattr("app.api.security.jwt.JWTManager.decode_token", _raise)
+    monkeypatch.setattr("app.api.security.jwt.JWTManager.decode_access_token", _raise)
     credentials = HTTPAuthorizationCredentials(
         scheme="Bearer", credentials="signed-token"
     )
@@ -288,13 +301,17 @@ def test_get_current_user_from_jwt_token_wraps_unexpected_error(monkeypatch):
 
 def test_get_current_user_from_jwt_token_rejects_inactive_database_user(monkeypatch):
     monkeypatch.setattr(
-        "app.api.security.jwt.JWTManager.decode_token",
-        lambda self, token: sample_user,
+        "app.api.security.jwt.JWTManager.decode_access_token",
+        lambda self, token: (sample_user, 3),
     )
     inactive_user = sample_user.model_copy(update={"status": "Suspended"})
     monkeypatch.setattr(
         "app.api.security.jwt.UserRepository.get_user_by_id",
         lambda self, user_id: inactive_user,
+    )
+    monkeypatch.setattr(
+        "app.api.security.jwt.UserRepository.get_refresh_token_version",
+        lambda self, user_id: 3,
     )
     credentials = HTTPAuthorizationCredentials(
         scheme="Bearer", credentials="signed-token"
