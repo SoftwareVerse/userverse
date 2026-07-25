@@ -65,6 +65,8 @@ Runtime settings are loaded from environment variables and `.env` through `app.c
 ENVIRONMENT=development
 TESTING=false
 SERVER_URL=http://localhost:8500
+FRONTEND_URL=http://localhost:3000/reset-password
+PASSWORD_RESET_EXPIRY_MINUTES=60
 DATABASE_URL=sqlite:///./development.db
 DB_AUTO_CREATE=false
 JWT_SECRET=change-this-secret
@@ -93,6 +95,8 @@ curl -X POST \
   -H 'Content-Type: application/json' \
   -d '{"email":"user@example.com"}'
 ```
+
+Password resets support both `otp` and `magic_link`. Magic-link emails use `FRONTEND_URL`, not `SERVER_URL`, so each deployment must point `FRONTEND_URL` at a frontend route that renders the reset-password form and then calls `PATCH /password-reset/reset-with-token`.
 
 ## Running the API
 

@@ -22,7 +22,12 @@ from app.utils.shared_context import SharedContext
 from app.models.phone_number import validate_phone_number_format
 from app.models.tags import UserverseApiTag
 from app.models.user.account_status import UserAccountStatus
-from app.models.user.password import OTPValidationRequest, PasswordResetRequest
+from app.models.user.password import (
+    MagicLinkPasswordResetConfirmRequest,
+    OTPValidationRequest,
+    PasswordResetMethod,
+    PasswordResetRequest,
+)
 from app.models.user.user import UserUpdateModel
 from app.utils.hash_password import UnknownHashError, verify_password
 from app.utils.parsing import normalize_origins
@@ -162,12 +167,16 @@ def test_settings_defaults_use_safe_db_and_cors_defaults():
 
 def test_settings_normalize_server_url_and_cors_lists(monkeypatch):
     monkeypatch.setenv("SERVER_URL", "http://localhost:8500/")
+    monkeypatch.setenv("FRONTEND_URL", "https://app.example.com/reset-password/")
+    monkeypatch.setenv("PASSWORD_RESET_EXPIRY_MINUTES", "45")
     monkeypatch.setenv("CORS_ALLOWED", '["http://one.test", " http://two.test "]')
     monkeypatch.setenv("CORS_BLOCKED", '["http://two.test"]')
 
     normalized = Settings(JWT_SECRET="development-secret", _env_file=None)
 
     assert normalized.SERVER_URL == "http://localhost:8500"
+    assert normalized.FRONTEND_URL == "https://app.example.com/reset-password"
+    assert normalized.PASSWORD_RESET_EXPIRY_MINUTES == 45
     assert normalized.CORS_ALLOWED == ["http://one.test", "http://two.test"]
     assert normalized.CORS_BLOCKED == ["http://two.test"]
 
@@ -263,7 +272,14 @@ def test_strip_matching_quotes_removes_matching_wrappers():
 
 def test_simple_request_models_and_enums():
     assert PasswordResetRequest(email="user@example.com").email == "user@example.com"
+    assert PasswordResetRequest(email="user@example.com").method == PasswordResetMethod.OTP
     assert OTPValidationRequest(otp="123456").otp == "123456"
+    assert (
+        MagicLinkPasswordResetConfirmRequest(
+            token="reset-token", new_password="Secret123!"
+        ).token
+        == "reset-token"
+    )
 
     with pytest.raises(ValidationError):
         PasswordResetRequest(email="not-an-email")

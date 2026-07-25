@@ -59,6 +59,7 @@ def setup_database():
     os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
     os.environ["ENV"] = "testing"
     os.environ["DB_AUTO_CREATE"] = "true"
+    os.environ["FRONTEND_URL"] = "https://frontend.example.com/reset-password"
 
     default_db = DatabaseSessionManager()
     session_manager._default_db = default_db
@@ -201,9 +202,9 @@ def _create_role_if_missing(
 
 @pytest.fixture
 def get_user_two_otp(test_user_data):
-    """Get OTP from user metadata."""
+    """Get the latest reset token from user metadata."""
 
-    def _get_otp():
+    def _get_token():
         user = test_user_data["user_two"]
         db = DatabaseSessionManager()
         session = db.session_object()
@@ -212,14 +213,12 @@ def get_user_two_otp(test_user_data):
                 session.query(User).filter_by(email=user["email"].lower()).first()
             )
             if user_row:
-                return user_row.primary_meta_data.get("password_reset", {}).get(
-                    "password_reset_token"
-                )
+                return user_row.primary_meta_data.get("password_reset", {}).get("token")
             return None
         finally:
             session.close()
 
-    return _get_otp
+    return _get_token
 
 
 @pytest.fixture(scope="session")

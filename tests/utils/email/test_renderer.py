@@ -34,6 +34,15 @@ from app.email.renderer import render_email_template
             {"user_name": "Sandile", "otp": "123456", "app_name": "Userverse"},
         ),
         (
+            "reset_user_password_magic_link.html",
+            {
+                "user_name": "Sandile",
+                "reset_url": "https://frontend.example.com/reset-password?token=abc",
+                "expires_in": "60 minutes",
+                "app_name": "Userverse",
+            },
+        ),
+        (
             "company_invite.html",
             {
                 "invitee": "John",
