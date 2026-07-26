@@ -167,7 +167,7 @@ def test_settings_builds_database_urls_for_supported_backends(monkeypatch):
         _env_file=None,
     )
     assert fallback_settings.DATABASE_URL == "sqlite:///./review.db"
-    assert fallback_settings.PROJECT_ROOT.name == "userverse"
+    assert fallback_settings.PROJECT_ROOT == Path(__file__).resolve().parents[2]
 
 
 def test_settings_defaults_use_safe_db_and_cors_defaults():
@@ -752,13 +752,13 @@ def test_company_user_service_sends_company_invite(monkeypatch):
     assert sent_messages == [
         {
             "to": "invitee@example.com",
-            "subject": "Userverse Company Invitation",
+            "subject": f"{service.context.configs.APP_NAME} Company Invitation",
             "template_name": "company_invite.html",
             "context": {
                 "invitee": "Invited Member",
                 "company": "Acme Co",
                 "role": "Viewer",
-                "app_name": "Userverse",
+                "app_name": service.context.configs.APP_NAME,
             },
         }
     ]
