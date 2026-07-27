@@ -114,7 +114,9 @@ class UserBasicAuthService:
         )
         self._resend_verification_email_for_pending_login(user)
         self._ensure_user_is_active(user)
-        refresh_token_version = self.user_repository.get_refresh_token_version(user.id)
+        refresh_token_version = self.user_repository.increment_refresh_token_version(
+            user.id
+        )
         return JWTManager().sign_jwt(user, refresh_token_version=refresh_token_version)
 
     def refresh_user_token(self, refresh_token: str) -> TokenResponseModel:

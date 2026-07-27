@@ -192,6 +192,38 @@ async def test_user_revoke_blocks_old_refresh_token(client, test_user_data, seed
     assert refresh_response.status_code == 401
 
 
+async def test_second_login_invalidates_first_login_tokens(
+    client, test_user_data, seed_verified_users
+):
+    user_one = test_user_data["user_one"]
+    first_login = await _login_for_tokens(client, user_one)
+    second_login = await _login_for_tokens(client, user_one)
+
+    old_access_response = await client.get(
+        "/user/get",
+        headers={"Authorization": f"Bearer {first_login['access_token']}"},
+    )
+    assert old_access_response.status_code == 401
+
+    old_refresh_response = await client.post(
+        "/user/refresh",
+        json={"refresh_token": first_login["refresh_token"]},
+    )
+    assert old_refresh_response.status_code == 401
+
+    latest_access_response = await client.get(
+        "/user/get",
+        headers={"Authorization": f"Bearer {second_login['access_token']}"},
+    )
+    assert latest_access_response.status_code == 200
+
+    latest_refresh_response = await client.post(
+        "/user/refresh",
+        json={"refresh_token": second_login["refresh_token"]},
+    )
+    assert latest_refresh_response.status_code == 202
+
+
 async def test_user_refresh_rejects_inactive_user(
     client, test_user_data, seed_verified_users
 ):
