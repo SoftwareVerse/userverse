@@ -55,7 +55,9 @@ Business logic lives in `app/services`. Services coordinate authorization checks
 
 ### Repository and Database Layer
 
-Repository classes live in `app/repository`. SQLAlchemy models and session management live under `app/repository/database`. The canonical tables are `User`, `Company`, `Role`, and `AssociationUserCompany`.
+Repository classes live in `app/repository`. SQLAlchemy models and session management live under `app/repository/database`. The canonical tables are `User`, `Company`, `Role`, `CompanyRole`, and `AssociationUserCompany`.
+
+Roles are modeled as a shared global catalog. Company membership in a role is represented by `company_role`, and user assignments point at the shared role record through `association_user_company.role_id`.
 
 ### Configuration
 
@@ -162,6 +164,8 @@ Apply migrations with Alembic:
 ```bash
 uv run alembic upgrade head
 ```
+
+If you have an older local SQLite database from before the shared-role catalog change, run migrations before starting the app. Current startup checks reject partial or incompatible schemas instead of silently mixing old `role` layouts with the new `company_role` model.
 
 Create a new migration after changing SQLAlchemy table models:
 

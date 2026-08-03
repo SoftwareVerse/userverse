@@ -59,6 +59,24 @@ REQUIRE_EMAIL_VERIFICATION=true
 
 For production databases, prefer Alembic migrations over automatic table creation. `DB_AUTO_CREATE` should generally be enabled only for local development or disposable test databases.
 
+`DB_AUTO_CREATE` only creates a completely missing schema. It does not repair old or partially migrated schemas. If the database contains an incompatible older layout, startup now fails fast and you must run:
+
+```bash
+uv run alembic upgrade head
+```
+
+This matters in particular for older local SQLite databases created before roles were normalized into a shared global `role` catalog plus `company_role` links.
+
+### Shared role catalog
+
+Roles are shared by name across companies. The current model is:
+
+- `role`: global role records such as `Owner`, `Administrator`, and `Viewer`
+- `company_role`: which companies currently use each role
+- `association_user_company.role_id`: the role assigned to a specific user inside a company
+
+If you are upgrading an older database where roles were stored per company, apply Alembic migrations before using the app or env-backed HTTP test mode.
+
 ## JWT Settings
 
 ```bash
@@ -233,6 +251,8 @@ Apply migrations:
 ```bash
 uv run alembic upgrade head
 ```
+
+The current branch includes a role-catalog normalization migration for older databases. Apply migrations before reusing an existing `development.db` or any long-lived local SQLite file.
 
 Create a migration:
 
