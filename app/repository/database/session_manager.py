@@ -16,9 +16,21 @@ class DatabaseSessionManager:
     expected_tables = (
         "association_user_company",
         "company",
+        "company_role",
         "role",
         "user",
     )
+    expected_columns = {
+        "association_user_company": {"user_id", "company_id", "role_id"},
+        "company": {"id", "email"},
+        "company_role": {"company_id", "role_id"},
+        "role": {"id", "name", "description"},
+        "user": {"id", "email", "password"},
+    }
+    forbidden_columns = {
+        "association_user_company": {"role_name", "user_level"},
+        "role": {"company_id"},
+    }
 
     def __init__(self) -> None:
         self._base = Base
@@ -27,10 +39,15 @@ class DatabaseSessionManager:
 
         self.engine = self._configure_engine()
 
-        tables_exist = self._tables_exist()
-        if settings.DB_AUTO_CREATE and not tables_exist:
+        table_state = self._table_state()
+        if settings.DB_AUTO_CREATE and table_state == "missing":
             self._base.metadata.create_all(bind=self.engine)
-        elif not tables_exist and not settings.TESTING:
+        elif table_state in {"partial", "incompatible"}:
+            raise RuntimeError(
+                "Database schema is incompatible with current models; run Alembic "
+                "migrations or recreate the database."
+            )
+        elif table_state == "missing" and not settings.TESTING:
             raise RuntimeError(
                 "Database schema is not initialized; run Alembic migrations before startup"
             )
@@ -74,15 +91,40 @@ class DatabaseSessionManager:
         from app.repository.database.tables import (  # noqa: F401
             AssociationUserCompany,
             Company,
+            CompanyRole,
             Role,
             User,
         )
 
-    def _tables_exist(self) -> bool:
+    def _table_state(self) -> str:
         inspector = inspect(self.engine)
-        return all(
-            inspector.has_table(table_name) for table_name in self.expected_tables
-        )
+        existing_tables = {
+            table_name
+            for table_name in self.expected_tables
+            if inspector.has_table(table_name)
+        }
+        if not existing_tables:
+            return "missing"
+        if existing_tables != set(self.expected_tables):
+            return "partial"
+        if not self._schema_matches_models(inspector):
+            return "incompatible"
+        return "ok"
+
+    def _tables_exist(self) -> bool:
+        return self._table_state() == "ok"
+
+    def _schema_matches_models(self, inspector) -> bool:
+        for table_name, required_columns in self.expected_columns.items():
+            actual_columns = {
+                column["name"] for column in inspector.get_columns(table_name)
+            }
+            if not required_columns.issubset(actual_columns):
+                return False
+            forbidden = self.forbidden_columns.get(table_name, set())
+            if actual_columns.intersection(forbidden):
+                return False
+        return True
 
     def get_session(self) -> Generator[Session, None, None]:
         db = self.SessionLocal()

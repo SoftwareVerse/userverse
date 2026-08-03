@@ -17,7 +17,7 @@ The `scripts/run_http_tests.sh` script sets these values and runs pytest with co
 ./scripts/run_http_tests.sh
 ```
 
-Coverage output is written to `coverage_reports/coverage.xml`, and CI enforces a `95%` coverage threshold.
+Coverage output is written to `coverage_reports/coverage.xml`, and CI enforces a `96%` coverage threshold.
 
 ## Directory Structure
 
@@ -52,6 +52,7 @@ API HTTP tests:
 
 ```bash
 uv run pytest tests/api/http
+uv run pytest tests/api/http --http-env-file .env
 ```
 
 User API tests:
@@ -89,7 +90,9 @@ uv run pytest tests/utils
 
 ## Notes
 
-- HTTP integration tests use FastAPI `TestClient` and a test SQLite database.
+- HTTP integration tests use FastAPI `TestClient` and, by default, a temporary SQLite database.
+- Pass `--http-env-file /path/to/.env` to run the HTTP suite against the `DATABASE_URL` from a specific env file for explicit seeding or environment validation.
+- The env-backed mode is not isolated; its fixtures may create, update, or restore records in the target database.
 - Email delivery is patched/skipped in test mode so tests do not contact SMTP servers.
 - Pagination tests seed their dedicated data directly to keep setup fast and stable.
 - Coverage intentionally omits infrastructure adapters such as SMTP delivery and request/profiling/OTel middleware wrappers.

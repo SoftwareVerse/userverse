@@ -19,6 +19,12 @@ Table models live in `app/repository/database/tables`. Session management lives 
 
 HTTP integration tests are under `tests/api/http`, not `tests/http`.
 
+They use an isolated temporary SQLite database by default. To run them against a specific env file and database, pass `--http-env-file`:
+
+```bash
+uv run pytest tests/api/http --http-env-file .env
+```
+
 ## How do I run the same command CI runs?
 
 Use:
@@ -33,4 +39,4 @@ When `TESTING=true` or `ENVIRONMENT=testing`, SMTP delivery is skipped so tests 
 
 ## How is coverage configured?
 
-Coverage is configured in `pyproject.toml` under `[tool.coverage.*]`. CI enforces `95%` coverage and writes XML output to `coverage_reports/coverage.xml`.
+Coverage is configured in `pyproject.toml` under `[tool.coverage.*]`. CI enforces `96%` coverage and writes XML output to `coverage_reports/coverage.xml`.

@@ -55,7 +55,9 @@ Business logic lives in `app/services`. Services coordinate authorization checks
 
 ### Repository and Database Layer
 
-Repository classes live in `app/repository`. SQLAlchemy models and session management live under `app/repository/database`. The canonical tables are `User`, `Company`, `Role`, and `AssociationUserCompany`.
+Repository classes live in `app/repository`. SQLAlchemy models and session management live under `app/repository/database`. The canonical tables are `User`, `Company`, `Role`, `CompanyRole`, and `AssociationUserCompany`.
+
+Roles are modeled as a shared global catalog. Company membership in a role is represented by `company_role`, and user assignments point at the shared role record through `association_user_company.role_id`.
 
 ### Configuration
 
@@ -136,12 +138,22 @@ Run selected suites:
 
 ```bash
 uv run pytest tests/api/http
+uv run pytest tests/api/http --http-env-file .env
 uv run pytest tests/api/security
 uv run pytest tests/database
 uv run pytest tests/utils
 ```
 
-Coverage is generated with `pytest-cov` and written to `coverage_reports/coverage.xml`. The current CI threshold is `95%`.
+By default, `tests/api/http` uses an isolated temporary SQLite database and test-safe overrides. If you want to seed or validate a real environment-backed database, pass `--http-env-file` with a dotenv file that defines at least `DATABASE_URL`:
+
+```bash
+uv run pytest tests/api/http/c_company_roles -q --http-env-file .env
+uv run pytest tests/api/http -q --http-env-file /home/sandile/projects/pj-userverse/userverse/.env
+```
+
+Use the env-backed mode carefully: it does not create an isolated temporary database, and the HTTP test fixtures may update or seed the target database.
+
+Coverage is generated with `pytest-cov` and written to `coverage_reports/coverage.xml`. The current CI threshold is `96%`.
 
 See [tests/README.md](tests/README.md) and [docs/testing.md](docs/testing.md) for more detail.
 
@@ -152,6 +164,8 @@ Apply migrations with Alembic:
 ```bash
 uv run alembic upgrade head
 ```
+
+If you have an older local SQLite database from before the shared-role catalog change, run migrations before starting the app. Current startup checks reject partial or incompatible schemas instead of silently mixing old `role` layouts with the new `company_role` model.
 
 Create a new migration after changing SQLAlchemy table models:
 

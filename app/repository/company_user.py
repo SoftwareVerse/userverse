@@ -17,6 +17,7 @@ from app.models.generic_pagination import (
 )
 from app.models.user.user import UserQueryParams
 from app.repository.base import BaseSQLRepository
+from app.repository.company_role import CompanyRoleAssignmentRepository
 from app.repository.database.tables import AssociationUserCompany, Role, User
 from app.utils.app_error import AppError
 
@@ -28,7 +29,7 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         super().__init__(session)
 
     @staticmethod
-    def _to_company_user(user: User, role_name: str) -> CompanyUserReadModel:
+    def _to_company_user(user: User, role: Role) -> CompanyUserReadModel:
         metadata = user.primary_meta_data or {}
         return CompanyUserReadModel(
             id=user.id,
@@ -38,7 +39,8 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
             phone_number=user.phone_number,
             status=metadata.get("status"),
             is_superuser=user.is_superuser,
-            role_name=role_name,
+            role_id=str(role.id),
+            role_name=role.name,
         )
 
     def is_user_linked_to_company(
@@ -55,7 +57,9 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
             _closed_at=None,
         )
         if resolved_role_name:
-            query = query.filter_by(role_name=resolved_role_name)
+            query = query.join(AssociationUserCompany.role).filter(
+                Role.name == resolved_role_name
+            )
         return self.db_session.query(query.exists()).scalar()
 
     def ensure_user_linked_to_company(
@@ -80,21 +84,9 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
                 error=CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value,
             )
 
-        role = (
-            self.db_session.query(Role)
-            .filter(
-                Role.company_id == company_id,
-                Role.name == payload.role,
-                Role._closed_at.is_(None),
-            )
-            .one_or_none()
-        )
-        if not role:
-            raise AppError(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                message=CompanyUserResponseMessages.ADD_USER_FAILED.value,
-                error=f"Role: {payload.role} is not linked to the company",
-            )
+        role = CompanyRoleAssignmentRepository(
+            company_id=company_id, session=self.db_session
+        ).ensure_role_name_assigned(payload.role)
 
         existing = (
             self._base_query()
@@ -110,10 +102,11 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         assoc = self.create(
             user_id=user.id,
             company_id=company_id,
-            role_name=role.name,
+            role_id=role.id,
             primary_meta_data={"added_by": added_by.model_dump(mode="json")},
+            secondary_meta_data={"_legacy_role_name": role.name},
         )
-        return self._to_company_user(user, assoc.role_name)
+        return self._to_company_user(user, role)
 
     def remove_user_from_company(
         self, company_id: UUID, user_id: UUID, removed_by
@@ -131,7 +124,7 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
 
         if (
             assoc.user_id == removed_by.id
-            and assoc.role_name == CompanyDefaultRoles.ADMINISTRATOR.name_value
+            and assoc.role.name == CompanyDefaultRoles.ADMINISTRATOR.name_value
         ):
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -146,26 +139,14 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         self.db_session.refresh(assoc)
 
         user = self.db_session.query(User).filter(User.id == user_id).one()
-        return self._to_company_user(user, assoc.role_name)
+        return self._to_company_user(user, assoc.role)
 
     def update_user_role(
         self, company_id: UUID, user_id: UUID, role_name: str, updated_by
     ) -> CompanyUserReadModel:
-        role = (
-            self.db_session.query(Role)
-            .filter(
-                Role.company_id == company_id,
-                Role.name == role_name,
-                Role._closed_at.is_(None),
-            )
-            .one_or_none()
-        )
-        if not role:
-            raise AppError(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                message=CompanyUserResponseMessages.UPDATE_USER_ROLE_FAILED.value,
-                error=f"Role: {role_name} is not linked to the company",
-            )
+        role = CompanyRoleAssignmentRepository(
+            company_id=company_id, session=self.db_session
+        ).ensure_role_name_assigned(role_name)
 
         assoc = (
             self._base_query()
@@ -179,15 +160,17 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
                 error=CompanyResponseMessages.COMPANY_NOT_FOUND.value,
             )
 
-        assoc.role_name = role.name
+        assoc.role_id = role.id
         assoc.primary_meta_data["updated_by"] = updated_by.model_dump(mode="json")
+        assoc.secondary_meta_data["_legacy_role_name"] = role.name
         flag_modified(assoc, "primary_meta_data")
+        flag_modified(assoc, "secondary_meta_data")
         self.db_session.add(assoc)
         self.db_session.commit()
         self.db_session.refresh(assoc)
 
         user = self.db_session.query(User).filter(User.id == user_id).one()
-        return self._to_company_user(user, assoc.role_name)
+        return self._to_company_user(user, role)
 
     def get_company_users(
         self, company_id: UUID, params: UserQueryParams
@@ -195,6 +178,7 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         query = (
             self.db_session.query(AssociationUserCompany)
             .join(AssociationUserCompany.user)
+            .join(AssociationUserCompany.role)
             .filter(
                 AssociationUserCompany.company_id == company_id,
                 AssociationUserCompany._closed_at.is_(None),
@@ -203,9 +187,7 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         )
 
         if params.role_name:
-            query = query.filter(
-                AssociationUserCompany.role_name.ilike(f"%{params.role_name}%")
-            )
+            query = query.filter(Role.name.ilike(f"%{params.role_name}%"))
         if params.first_name:
             query = query.filter(User.first_name.ilike(f"%{params.first_name}%"))
         if params.last_name:
@@ -215,7 +197,10 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
 
         total = query.count()
         results = apply_pagination(
-            query.options(joinedload(AssociationUserCompany.user)),
+            query.options(
+                joinedload(AssociationUserCompany.user),
+                joinedload(AssociationUserCompany.role),
+            ),
             page=params.page,
             limit=params.limit,
             order_by=[
@@ -225,7 +210,7 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         ).all()
 
         users = [
-            self._to_company_user(assoc.user, assoc.role_name) for assoc in results
+            self._to_company_user(assoc.user, assoc.role) for assoc in results
         ]
         return PaginatedResponse[CompanyUserReadModel](
             records=users,

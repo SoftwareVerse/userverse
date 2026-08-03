@@ -45,8 +45,13 @@ class RoleDeleteModel(BaseModel):
 
 
 class RoleReadModel(BaseModel):
+    id: str | None = None
     name: Optional[str]
     description: Optional[str]
+
+
+class RoleAssignCompaniesModel(BaseModel):
+    company_ids: list[str]
 
 
 class RoleQueryParamsModel(PaginationParams):

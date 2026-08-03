@@ -1,4 +1,5 @@
 from uuid import UUID, uuid4
+from types import SimpleNamespace
 
 import pytest
 
@@ -136,3 +137,11 @@ def test_unlink_user_soft_deletes_link_and_records_removed_by_metadata(
     assert unlinked._closed_at is not None
     assert unlinked.primary_meta_data["removed_by"]["id"] == str(removed_by.id)
     assert unlinked.primary_meta_data["removed_by"]["email"] == removed_by.email
+
+
+def test_role_name_property_prefers_loaded_role_name():
+    association = AssociationUserCompany()
+    association.__dict__["role"] = SimpleNamespace(name="Viewer")
+    association.secondary_meta_data = {"_legacy_role_name": "Legacy"}
+
+    assert association.role_name == "Viewer"

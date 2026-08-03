@@ -79,6 +79,27 @@ def test_update_role_updates_description_when_provided(
     assert updated["description"] == "Updated admin description"
 
 
+def test_update_role_updates_name_when_provided(
+    test_session, test_company_data, test_role_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+    role = Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["viewer_role"]["name"],
+        description=test_role_data["viewer_role"]["description"],
+    )
+
+    updated = Role.update_role(
+        test_session,
+        company["id"],
+        role["name"],
+        new_name="Read Only",
+    )
+
+    assert updated["name"] == "Read Only"
+
+
 def test_update_role_json_field_rejects_missing_role(test_session):
     company_id = uuid4()
     with pytest.raises(
@@ -128,6 +149,82 @@ def test_delete_role_and_reassign_users_rejects_same_replacement_name(test_sessi
     with pytest.raises(ValueError, match="Cannot replace a role with itself."):
         Role.delete_role_and_reassign_users(
             test_session, uuid4(), "Admin", "Admin", _deleted_by_user()
+        )
+
+
+def test_delete_by_filters_soft_deletes_company_assignment(
+    test_session, test_company_data, test_role_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+    role = Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["viewer_role"]["name"],
+        description=test_role_data["viewer_role"]["description"],
+    )
+
+    deleted = Role.delete_by_filters(
+        test_session,
+        filters={"company_id": company["id"], "name": role["name"]},
+    )
+
+    assert "deleted" in deleted["message"]
+
+
+def test_update_and_delete_by_filters_fall_back_without_company_scope(
+    test_session, test_role_data
+):
+    created = Role.create(
+        test_session,
+        name="Global Viewer",
+        description=test_role_data["viewer_role"]["description"],
+    )
+
+    updated = Role.update_by_filters(
+        test_session,
+        filters={"name": created["name"]},
+        description="Updated globally",
+    )
+    assert updated["description"] == "Updated globally"
+
+    deleted = Role.delete_by_filters(
+        test_session,
+        filters={"name": created["name"]},
+    )
+    assert "deleted" in deleted["message"]
+
+
+def test_update_json_field_updates_company_scoped_role(
+    test_session, test_company_data, test_role_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+    role = Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["viewer_role"]["name"],
+        description=test_role_data["viewer_role"]["description"],
+    )
+
+    updated = Role.update_json_field(
+        test_session,
+        company["id"],
+        role["name"],
+        "primary_meta_data",
+        "source",
+        "tests",
+    )
+
+    assert updated.primary_meta_data["source"] == "tests"
+
+
+def test_delete_role_and_reassign_users_rejects_missing_target_role_immediately(
+    test_session, test_company_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+
+    with pytest.raises(ValueError, match="Role 'Missing' not found."):
+        Role.delete_role_and_reassign_users(
+            test_session, company["id"], "Missing", "Viewer", _deleted_by_user()
         )
 
 

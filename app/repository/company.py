@@ -20,7 +20,12 @@ from app.models.generic_pagination import (
 )
 from app.repository.base import BaseSQLRepository
 from app.repository.company_user import CompanyUserRepository
-from app.repository.database.tables import AssociationUserCompany, Company, Role
+from app.repository.database.tables import (
+    AssociationUserCompany,
+    Company,
+    CompanyRole,
+    Role,
+)
 from app.utils.app_error import AppError
 
 
@@ -52,6 +57,30 @@ class CompanyRepository(BaseSQLRepository[Company]):
             .one_or_none()
         )
 
+    def _ensure_default_roles(self) -> dict[str, Role]:
+        default_roles: dict[str, Role] = {}
+        for default_role in CompanyDefaultRoles:
+            role = (
+                self.db_session.query(Role)
+                .filter(
+                    Role.name == default_role.name_value,
+                    Role._closed_at.is_(None),
+                )
+                .one_or_none()
+            )
+            if role is None:
+                role = Role(
+                    name=default_role.name_value,
+                    description=default_role.description,
+                )
+                self.db_session.add(role)
+                self.db_session.flush()
+            elif role.description != default_role.description:
+                role.description = default_role.description
+            default_roles[default_role.name_value] = role
+        self.db_session.commit()
+        return default_roles
+
     def create_company(
         self, payload: CompanyCreateModel, created_by
     ) -> CompanyReadModel:
@@ -79,14 +108,9 @@ class CompanyRepository(BaseSQLRepository[Company]):
                 value=payload.address.model_dump(),
             )
 
-        for role in CompanyDefaultRoles:
-            self.db_session.add(
-                Role(
-                    company_id=company.id,
-                    name=role.name_value,
-                    description=role.description,
-                )
-            )
+        default_roles = self._ensure_default_roles()
+        for role in default_roles.values():
+            self.db_session.add(CompanyRole(company_id=company.id, role_id=role.id))
         self.db_session.commit()
 
         CompanyUserRepository(self.db_session).add_user_to_company(
@@ -160,6 +184,7 @@ class CompanyRepository(BaseSQLRepository[Company]):
         query = (
             self.db_session.query(AssociationUserCompany)
             .join(AssociationUserCompany.company)
+            .join(AssociationUserCompany.role)
             .filter(
                 AssociationUserCompany.user_id == user_id,
                 AssociationUserCompany._closed_at.is_(None),
@@ -167,9 +192,7 @@ class CompanyRepository(BaseSQLRepository[Company]):
             )
         )
         if params.role_name:
-            query = query.filter(
-                AssociationUserCompany.role_name.ilike(f"%{params.role_name}%")
-            )
+            query = query.filter(Role.name.ilike(f"%{params.role_name}%"))
         if params.name:
             query = query.filter(Company.name.ilike(f"%{params.name}%"))
         if params.description:
