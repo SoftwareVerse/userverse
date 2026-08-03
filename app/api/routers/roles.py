@@ -96,7 +96,9 @@ def delete_role_api(
     )
 
 
-@router.post("/roles/{role_id}/companies", tags=[tag], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/roles/{role_id}/companies", tags=[tag], status_code=status.HTTP_201_CREATED
+)
 def assign_role_to_companies_api(
     role_id: UUID,
     payload: RoleAssignCompaniesModel,

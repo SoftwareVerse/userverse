@@ -33,7 +33,9 @@ def _acting_user() -> UserReadModel:
 
 
 def _role_obj(name: str = "Viewer", description: str = "Read only"):
-    return SimpleNamespace(id=uuid4(), name=name, description=description, _closed_at=None)
+    return SimpleNamespace(
+        id=uuid4(), name=name, description=description, _closed_at=None
+    )
 
 
 def _role_model(name: str = "Viewer", description: str = "Read only") -> Role:
@@ -48,7 +50,9 @@ def test_role_repository_requires_session():
 def test_role_repository_create_role_success(monkeypatch):
     repository = RoleRepository(session=Mock())
     created = _role_obj()
-    expected = RoleReadModel(id=str(created.id), name=created.name, description=created.description)
+    expected = RoleReadModel(
+        id=str(created.id), name=created.name, description=created.description
+    )
 
     monkeypatch.setattr(repository, "create", lambda **kwargs: created)
     monkeypatch.setattr(
@@ -56,7 +60,9 @@ def test_role_repository_create_role_success(monkeypatch):
         "update_json_field",
         lambda role, **kwargs: role,
     )
-    monkeypatch.setattr(RoleRepository, "_to_read_model", staticmethod(lambda role: expected))
+    monkeypatch.setattr(
+        RoleRepository, "_to_read_model", staticmethod(lambda role: expected)
+    )
 
     result = repository.create_role(
         RoleCreateModel(name="Viewer", description="Read only"),
@@ -89,7 +95,10 @@ def test_role_repository_create_role_wraps_integrity_error(monkeypatch):
             _acting_user(),
         )
 
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_ALREADY_EXISTS.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_ALREADY_EXISTS.value
+    )
     repository.db_session.rollback.assert_called_once()
 
 
@@ -107,7 +116,10 @@ def test_role_repository_create_role_wraps_generic_error(monkeypatch):
             _acting_user(),
         )
 
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_CREATION_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_CREATION_FAILED.value
+    )
 
 
 def test_role_repository_update_role_global_and_company_paths(monkeypatch):
@@ -123,12 +135,20 @@ def test_role_repository_update_role_global_and_company_paths(monkeypatch):
     monkeypatch.setattr(
         company_repository,
         "_to_read_model",
-        staticmethod(lambda role: RoleReadModel(id=str(role.id), name=role.name, description=role.description)),
+        staticmethod(
+            lambda role: RoleReadModel(
+                id=str(role.id), name=role.name, description=role.description
+            )
+        ),
     )
     monkeypatch.setattr(
         RoleRepository,
         "_to_read_model",
-        staticmethod(lambda role: RoleReadModel(id=str(role.id), name=role.name, description=role.description)),
+        staticmethod(
+            lambda role: RoleReadModel(
+                id=str(role.id), name=role.name, description=role.description
+            )
+        ),
     )
     monkeypatch.setattr(
         CompanyRoleAssignmentRepository,
@@ -158,12 +178,18 @@ def test_role_repository_ensure_role_helpers(monkeypatch):
 
     with pytest.raises(AppError) as exc_info:
         repository.ensure_role_exists(uuid4())
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_NOT_FOUND.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_NOT_FOUND.value
+    )
 
     monkeypatch.setattr(repository, "get_role_by_name", lambda name: None)
     with pytest.raises(AppError) as exc_info:
         repository.ensure_role_by_name("Missing")
-    assert exc_info.value.detail["message"] == "Failed to add user to the company. Please verify the input."
+    assert (
+        exc_info.value.detail["message"]
+        == "Failed to add user to the company. Please verify the input."
+    )
 
     monkeypatch.setattr(repository, "get_role_by_name", lambda name: role)
     assert repository.ensure_role_by_name("Viewer") is role
@@ -187,7 +213,10 @@ def test_role_repository_ensure_role_helpers(monkeypatch):
     )
     with pytest.raises(AppError) as exc_info:
         company_repo.ensure_role_belongs_to_company("Missing")
-    assert exc_info.value.detail["message"] == "Failed to add user to the company. Please verify the input."
+    assert (
+        exc_info.value.detail["message"]
+        == "Failed to add user to the company. Please verify the input."
+    )
 
 
 def test_role_repository_update_role_error_paths(monkeypatch):
@@ -196,8 +225,13 @@ def test_role_repository_update_role_error_paths(monkeypatch):
     monkeypatch.setattr(repository, "get_role_record", lambda role_id: None)
 
     with pytest.raises(AppError) as exc_info:
-        repository.update_role(uuid4(), RoleUpdateModel(name="Renamed", description=None))
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+        repository.update_role(
+            uuid4(), RoleUpdateModel(name="Renamed", description=None)
+        )
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
 
     company_repo = RoleRepository(session=Mock(), company_id=uuid4())
     company_repo.db_session.rollback = Mock()
@@ -208,7 +242,10 @@ def test_role_repository_update_role_error_paths(monkeypatch):
     )
     with pytest.raises(AppError) as exc_info:
         company_repo.update_role("Missing", RoleUpdateModel(name=None, description="x"))
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
 
     broken_repo = RoleRepository(session=Mock())
     broken_repo.db_session.rollback = Mock()
@@ -216,7 +253,10 @@ def test_role_repository_update_role_error_paths(monkeypatch):
     monkeypatch.setattr(broken_repo, "get_role_record", lambda role_id: _role_obj())
     with pytest.raises(AppError) as exc_info:
         broken_repo.update_role(uuid4(), RoleUpdateModel(name="X", description=None))
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
     broken_repo.db_session.rollback.assert_called_once()
 
 
@@ -231,7 +271,10 @@ def test_role_repository_delete_role_branches(monkeypatch):
             ),
             deleted_by=deleted_by,
         )
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
 
     company_repository = RoleRepository(session=Mock(), company_id=uuid4())
     with pytest.raises(AppError) as exc_info:
@@ -241,7 +284,10 @@ def test_role_repository_delete_role_branches(monkeypatch):
                 replacement_role_name="Viewer",
             ),
         )
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
 
     monkeypatch.setattr(
         Role,
@@ -262,22 +308,33 @@ def test_role_repository_delete_role_branches(monkeypatch):
     global_repository.db_session.add = Mock()
     global_repository.db_session.commit = Mock()
     global_repository.db_session.rollback = Mock()
-    monkeypatch.setattr(global_repository, "get_role_record", lambda role_id: active_role)
-    monkeypatch.setattr(global_repository, "update_json_field", lambda role, **kwargs: role)
+    monkeypatch.setattr(
+        global_repository, "get_role_record", lambda role_id: active_role
+    )
+    monkeypatch.setattr(
+        global_repository, "update_json_field", lambda role, **kwargs: role
+    )
     blocked_query = Mock()
     blocked_query.filter.return_value.count.return_value = 1
     global_repository.db_session.query.return_value = blocked_query
 
     with pytest.raises(AppError) as exc_info:
         global_repository.delete_role(active_role.id, deleted_by)
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_DELETION_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_DELETION_FAILED.value
+    )
 
     success_repository = RoleRepository(session=Mock())
     success_repository.db_session.add = Mock()
     success_repository.db_session.commit = Mock()
     success_repository.db_session.rollback = Mock()
-    monkeypatch.setattr(success_repository, "get_role_record", lambda role_id: active_role)
-    monkeypatch.setattr(success_repository, "update_json_field", lambda role, **kwargs: role)
+    monkeypatch.setattr(
+        success_repository, "get_role_record", lambda role_id: active_role
+    )
+    monkeypatch.setattr(
+        success_repository, "update_json_field", lambda role, **kwargs: role
+    )
     clear_query = Mock()
     clear_query.filter.return_value.count.return_value = 0
     success_repository.db_session.query.return_value = clear_query
@@ -289,17 +346,27 @@ def test_role_repository_delete_role_branches(monkeypatch):
     missing_args_repository.db_session.rollback = Mock()
     with pytest.raises(AppError) as exc_info:
         missing_args_repository.delete_role()
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_DELETION_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_DELETION_FAILED.value
+    )
 
     missing_role_repository = RoleRepository(session=Mock())
     missing_role_repository.db_session.rollback = Mock()
-    monkeypatch.setattr(missing_role_repository, "get_role_record", lambda role_id: None)
+    monkeypatch.setattr(
+        missing_role_repository, "get_role_record", lambda role_id: None
+    )
     with pytest.raises(AppError) as exc_info:
         missing_role_repository.delete_role(uuid4(), deleted_by)
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_DELETION_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_DELETION_FAILED.value
+    )
 
 
-def test_company_role_assignment_assign_role_to_companies_skips_existing_and_adds_new(monkeypatch):
+def test_company_role_assignment_assign_role_to_companies_skips_existing_and_adds_new(
+    monkeypatch,
+):
     session = Mock()
     assigned_by = _acting_user()
     role = _role_obj()
@@ -333,7 +400,9 @@ def test_company_role_assignment_assign_role_to_companies_skips_existing_and_add
     monkeypatch.setattr(
         CompanyRoleAssignmentRepository,
         "update_json_field",
-        lambda self, assignment, **kwargs: updated_assignments.append(str(self.company_id)),
+        lambda self, assignment, **kwargs: updated_assignments.append(
+            str(self.company_id)
+        ),
     )
 
     repository = CompanyRoleAssignmentRepository(uuid4(), session)
@@ -359,12 +428,18 @@ def test_company_role_assignment_get_roles_and_ensure_assigned_branches(monkeypa
         repository.get_company_roles(
             SimpleNamespace(name="View", description="Read", page=1, limit=10)
         )
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_NOT_FOUND.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_NOT_FOUND.value
+    )
 
     monkeypatch.setattr(repository, "get_assignment", lambda role_id: None)
     with pytest.raises(AppError) as exc_info:
         repository.ensure_role_assigned(uuid4())
-    assert exc_info.value.detail["message"] == "Failed to add user to the company. Please verify the input."
+    assert (
+        exc_info.value.detail["message"]
+        == "Failed to add user to the company. Please verify the input."
+    )
 
     monkeypatch.setattr(repository, "get_assignment", lambda role_id: object())
     assert repository.ensure_role_assigned(uuid4()) is not None
@@ -381,7 +456,16 @@ def test_company_role_assignment_get_roles_and_ensure_assigned_branches(monkeypa
     monkeypatch.setattr(
         success_repository,
         "paginate",
-        lambda query, **kwargs: captured.update(kwargs) or {"records": [], "pagination": {"current_page": 1, "limit": 10, "total_records": 0, "total_pages": 0}},
+        lambda query, **kwargs: captured.update(kwargs)
+        or {
+            "records": [],
+            "pagination": {
+                "current_page": 1,
+                "limit": 10,
+                "total_records": 0,
+                "total_pages": 0,
+            },
+        },
     )
     result = success_repository.get_company_roles(
         SimpleNamespace(name="View", description="Read", page=1, limit=10)
@@ -403,7 +487,10 @@ def test_company_role_assignment_name_lookup_helpers(monkeypatch):
     query.join.return_value.filter.return_value.one_or_none.return_value = None
     with pytest.raises(AppError) as exc_info:
         repository.ensure_role_name_assigned("Missing")
-    assert exc_info.value.detail["message"] == "Failed to add user to the company. Please verify the input."
+    assert (
+        exc_info.value.detail["message"]
+        == "Failed to add user to the company. Please verify the input."
+    )
 
 
 def test_company_role_assignment_update_company_role_and_assign_role(monkeypatch):
@@ -415,7 +502,11 @@ def test_company_role_assignment_update_company_role_and_assign_role(monkeypatch
     monkeypatch.setattr(
         RoleRepository,
         "_to_read_model",
-        staticmethod(lambda role: RoleReadModel(id=str(role.id), name=role.name, description=role.description)),
+        staticmethod(
+            lambda role: RoleReadModel(
+                id=str(role.id), name=role.name, description=role.description
+            )
+        ),
     )
 
     updated = repository.update_company_role(
@@ -431,7 +522,10 @@ def test_company_role_assignment_update_company_role_and_assign_role(monkeypatch
             "Missing",
             RoleUpdateModel(name=None, description="New"),
         )
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
 
     assign_repo = CompanyRoleAssignmentRepository(uuid4(), Mock())
     monkeypatch.setattr(assign_repo, "get_assignment", lambda role_id: None)
@@ -449,7 +543,10 @@ def test_company_role_assignment_update_company_role_and_assign_role(monkeypatch
     monkeypatch.setattr(assign_repo, "get_assignment", lambda role_id: object())
     with pytest.raises(AppError) as exc_info:
         assign_repo.assign_role(_role_model(), _acting_user())
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_CREATION_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_CREATION_FAILED.value
+    )
 
 
 def test_role_repository_get_roles_applies_name_and_description_filters(monkeypatch):
@@ -461,7 +558,8 @@ def test_role_repository_get_roles_applies_name_and_description_filters(monkeypa
     monkeypatch.setattr(
         repository,
         "paginate",
-        lambda query_obj, **kwargs: captured.update(kwargs) or {"records": [], "pagination": {}},
+        lambda query_obj, **kwargs: captured.update(kwargs)
+        or {"records": [], "pagination": {}},
     )
 
     result = repository.get_roles(
@@ -479,7 +577,10 @@ def test_company_role_assignment_unassign_role_branches(monkeypatch):
     monkeypatch.setattr(repository, "get_assignment", lambda role_id: None)
     with pytest.raises(AppError) as exc_info:
         repository.unassign_role(uuid4())
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_NOT_FOUND.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_NOT_FOUND.value
+    )
 
     assignment = SimpleNamespace(_closed_at=None)
     repository = CompanyRoleAssignmentRepository(uuid4(), Mock())
@@ -492,7 +593,10 @@ def test_company_role_assignment_unassign_role_branches(monkeypatch):
 
     with pytest.raises(AppError) as exc_info:
         repository.unassign_role(uuid4())
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_DELETION_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_DELETION_FAILED.value
+    )
 
     repository = CompanyRoleAssignmentRepository(uuid4(), Mock())
     repository.db_session.add = Mock()
@@ -518,7 +622,10 @@ def test_company_role_assignment_reassign_and_delete_role_branches(monkeypatch):
             ),
             deleted_by,
         )
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
 
     delete_role = _role_model(name="Client")
     monkeypatch.setattr(
@@ -534,14 +641,19 @@ def test_company_role_assignment_reassign_and_delete_role_branches(monkeypatch):
             ),
             deleted_by,
         )
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
 
     replacement_role = _role_model(name="Viewer")
     user_link = SimpleNamespace(role_id=delete_role.id)
     repository = CompanyRoleAssignmentRepository(uuid4(), Mock())
     repository.db_session.add = Mock()
     repository.db_session.commit = Mock()
-    repository.db_session.query.return_value.filter.return_value.all.return_value = [user_link]
+    repository.db_session.query.return_value.filter.return_value.all.return_value = [
+        user_link
+    ]
     monkeypatch.setattr(
         repository,
         "get_role_name_assigned",
@@ -556,5 +668,8 @@ def test_company_role_assignment_reassign_and_delete_role_branches(monkeypatch):
             ),
             deleted_by,
         )
-    assert exc_info.value.detail["message"] == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
     assert user_link.role_id == replacement_role.id

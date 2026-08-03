@@ -38,7 +38,11 @@ class Role(BaseModel):
         company_links = getattr(obj, "companies", None)
         if company_links:
             active_link = next(
-                (link for link in company_links if getattr(link, "_closed_at", None) is None),
+                (
+                    link
+                    for link in company_links
+                    if getattr(link, "_closed_at", None) is None
+                ),
                 None,
             )
             if active_link is not None:
@@ -65,8 +69,12 @@ class Role(BaseModel):
                     .one_or_none()
                 )
                 if existing_assignment is not None:
-                    raise ValueError("Integrity error: role already assigned to company")
-                session.add(CompanyRole(company_id=company_id, role_id=existing_role.id))
+                    raise ValueError(
+                        "Integrity error: role already assigned to company"
+                    )
+                session.add(
+                    CompanyRole(company_id=company_id, role_id=existing_role.id)
+                )
                 session.commit()
                 role_dict = cls.to_dict(existing_role)
                 role_dict["company_id"] = company_id
@@ -259,7 +267,9 @@ class Role(BaseModel):
         reassigned_count = 0
         for user_link in (
             session.query(AssociationUserCompany)
-            .filter_by(company_id=company_id, role_id=role_to_delete.id, _closed_at=None)
+            .filter_by(
+                company_id=company_id, role_id=role_to_delete.id, _closed_at=None
+            )
             .all()
         ):
             user_link.role_id = replacement_role.id
@@ -269,7 +279,9 @@ class Role(BaseModel):
 
         assignment = (
             session.query(CompanyRole)
-            .filter_by(company_id=company_id, role_id=role_to_delete.id, _closed_at=None)
+            .filter_by(
+                company_id=company_id, role_id=role_to_delete.id, _closed_at=None
+            )
             .one()
         )
         role_to_delete.primary_meta_data = role_to_delete.primary_meta_data or {}
@@ -292,7 +304,9 @@ class Role(BaseModel):
 
 
 from app.repository.database.tables.company_role import CompanyRole
-from app.repository.database.tables.association_user_company import AssociationUserCompany
+from app.repository.database.tables.association_user_company import (
+    AssociationUserCompany,
+)
 
 Role.company_id = column_property(
     select(CompanyRole.company_id)
