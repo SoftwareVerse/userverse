@@ -13,10 +13,12 @@ from pydantic import ValidationError
 import app.services.mailer as mailer_module
 import app.exceptions as exceptions_module
 import app.main as main_module
+from app.api.routers import roles as global_roles_router
+from app.api.routers.company import roles as company_roles_router
 from app.configs import Settings, _SettingsProxy
 import app.repository.database.session_manager as session_manager
 from app.repository.company import CompanyRepository
-from app.repository.company_role import RoleRepository
+from app.repository.company_role import CompanyRoleAssignmentRepository, RoleRepository
 from app.services.company.company import CompanyService
 from app.services.company.role import RoleService
 from app.services.company.user import CompanyUserService
@@ -28,10 +30,14 @@ from app.models.company.response_messages import (
     CompanyUserResponseMessages,
 )
 from app.models.company.roles import (
+    RoleAssignCompaniesModel,
     RoleCreateModel,
+    RoleDeleteModel,
     RoleQueryParamsModel,
+    RoleReadModel,
     RoleUpdateModel,
 )
+from app.models.generic_pagination import PaginatedResponse
 from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import UserReadModel
 from app.services.user.basic_auth import UserBasicAuthService
@@ -1379,6 +1385,200 @@ def test_role_service_branches_for_falsey_repository_results(monkeypatch):
         exc_info.value.detail["message"]
         == CompanyRoleResponseMessages.ROLE_CREATION_FAILED.value
     )
+
+
+def test_global_role_router_wrappers(monkeypatch):
+    acting_user = types.SimpleNamespace(id=uuid4())
+    common = types.SimpleNamespace(user=acting_user, session=object())
+    role_id = uuid4()
+    role = RoleReadModel(id=str(role_id), name="Viewer", description="Read only")
+    paginated = PaginatedResponse[RoleReadModel](
+        records=[role],
+        pagination={
+            "current_page": 1,
+            "limit": 10,
+            "total_records": 1,
+            "total_pages": 1,
+        },
+    )
+
+    monkeypatch.setattr(RoleService, "create_role", lambda self, payload: role)
+    monkeypatch.setattr(RoleService, "get_roles", lambda self, payload: paginated)
+    monkeypatch.setattr(RoleService, "update_role", lambda self, **kwargs: role)
+    monkeypatch.setattr(
+        RoleService,
+        "delete_global_role",
+        lambda self, role_id: {"message": "Role deleted"},
+    )
+    monkeypatch.setattr(
+        RoleService,
+        "assign_role_to_companies",
+        lambda self, role_id, payload: {
+            "role_id": str(role_id),
+            "company_ids": payload.company_ids,
+        },
+    )
+
+    create_response = global_roles_router.create_role_api(
+        RoleCreateModel(name="Viewer", description="Read only"),
+        common=common,
+    )
+    assert create_response.status_code == 201
+
+    get_response = global_roles_router.get_roles_api(
+        query_params=RoleQueryParamsModel(limit=10, page=1),
+        common=common,
+    )
+    assert get_response.status_code == 200
+
+    update_response = global_roles_router.update_role_api(
+        role_id=role_id,
+        payload=RoleUpdateModel(name="Viewer+", description="Updated"),
+        common=common,
+    )
+    assert update_response.status_code == 200
+
+    delete_response = global_roles_router.delete_role_api(role_id=role_id, common=common)
+    assert delete_response.status_code == 200
+
+    assign_response = global_roles_router.assign_role_to_companies_api(
+        role_id=role_id,
+        payload=RoleAssignCompaniesModel(company_ids=[str(uuid4())]),
+        common=common,
+    )
+    assert assign_response.status_code == 201
+
+
+def test_company_role_router_assignment_wrappers(monkeypatch):
+    acting_user = types.SimpleNamespace(id=uuid4())
+    common = types.SimpleNamespace(user=acting_user, session=object())
+    company_id = uuid4()
+    role_id = uuid4()
+    role = RoleReadModel(id=str(role_id), name="Viewer", description="Read only")
+
+    monkeypatch.setattr(
+        RoleService, "assign_role_to_company", lambda self, company_id, role_id: role
+    )
+    monkeypatch.setattr(
+        RoleService,
+        "unassign_role",
+        lambda self, company_id, role_id: {"message": "Role unassigned successfully."},
+    )
+
+    assign_response = company_roles_router.assign_role_to_company_api(
+        company_id=company_id,
+        role_id=role_id,
+        common=common,
+    )
+    assert assign_response.status_code == 201
+
+    unassign_response = company_roles_router.unassign_role_from_company_api(
+        company_id=company_id,
+        role_id=role_id,
+        common=common,
+    )
+    assert unassign_response.status_code == 200
+
+
+def test_role_service_happy_path_branches(monkeypatch):
+    acting_user = UserReadModel(
+        id=uuid4(),
+        email="admin@example.com",
+        first_name="Admin",
+        last_name="User",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    context = SharedContext(db_session=object(), user=acting_user)
+    service = RoleService(context)
+    company_id = uuid4()
+    role_id = uuid4()
+    role = RoleReadModel(id=str(role_id), name="Viewer", description="Read only")
+
+    monkeypatch.setattr(service, "_ensure_company_manager", lambda cid: None)
+    monkeypatch.setattr(
+        RoleRepository,
+        "get_roles",
+        lambda self, payload: {
+            "records": [{"id": role_id, "name": "Viewer", "description": "Read only"}],
+            "pagination": {
+                "current_page": 1,
+                "limit": 10,
+                "total_records": 1,
+                "total_pages": 1,
+            },
+        },
+    )
+    monkeypatch.setattr(RoleRepository, "delete_role", lambda self, role_id, user: {"message": "deleted"})
+    monkeypatch.setattr(RoleRepository, "ensure_role_exists", lambda self, role_id: types.SimpleNamespace(id=role_id))
+    monkeypatch.setattr(
+        RoleRepository,
+        "get_role_by_name",
+        lambda self, name: types.SimpleNamespace(id=role_id, name=name, description="Read only"),
+    )
+    monkeypatch.setattr(
+        CompanyRoleAssignmentRepository,
+        "assign_role",
+        lambda self, role, user: RoleReadModel(id=str(role.id), name="Viewer", description="Read only"),
+    )
+    monkeypatch.setattr(
+        CompanyRoleAssignmentRepository,
+        "assign_role_to_companies",
+        lambda self, role, payload, user: {"role_id": str(role.id), "company_ids": payload.company_ids},
+    )
+    monkeypatch.setattr(
+        CompanyRoleAssignmentRepository,
+        "unassign_role",
+        lambda self, role_id: {"message": "Role unassigned successfully."},
+    )
+    monkeypatch.setattr(
+        CompanyRoleAssignmentRepository,
+        "reassign_and_delete_role",
+        lambda self, payload, user: {"message": "deleted", "users_reassigned": 1},
+    )
+    monkeypatch.setattr(
+        CompanyRoleAssignmentRepository,
+        "get_company_roles",
+        lambda self, payload: {
+            "records": [{"id": role_id, "name": "Viewer", "description": "Read only"}],
+            "pagination": {
+                "current_page": 1,
+                "limit": 10,
+                "total_records": 1,
+                "total_pages": 1,
+            },
+        },
+    )
+
+    paginated = service.get_roles(RoleQueryParamsModel(limit=10, page=1))
+    assert paginated.records[0].name == "Viewer"
+
+    assert service.delete_global_role(role_id)["message"] == "deleted"
+    assert service.assign_role_to_company(company_id, role_id).id == str(role_id)
+    assert service.assign_role_to_companies(
+        role_id, RoleAssignCompaniesModel(company_ids=[])
+    ) == {"role_id": str(role_id), "company_ids": []}
+    assert service.assign_role_to_companies(
+        role_id, RoleAssignCompaniesModel(company_ids=[str(company_id)])
+    ) == {"role_id": str(role_id), "company_ids": [str(company_id)]}
+    assert (
+        service.create_role_for_company(
+            RoleCreateModel(name="Viewer", description="Read only"),
+            company_id,
+        ).id
+        == str(role_id)
+    )
+    assert service.unassign_role(company_id, role_id)["message"] == "Role unassigned successfully."
+    assert service.delete_role(
+        RoleDeleteModel(role_name_to_delete="Client", replacement_role_name="Viewer"),
+        company_id,
+    )["users_reassigned"] == 1
+    company_roles = service.get_company_roles(
+        RoleQueryParamsModel(limit=10, page=1),
+        company_id,
+    )
+    assert company_roles.records[0].id == str(role_id)
 
 
 def test_company_repository_wraps_integrity_error(monkeypatch):

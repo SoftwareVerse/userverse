@@ -22,7 +22,7 @@ It then runs:
 pytest -v --cov=app \
   --cov-report=term-missing \
   --cov-report=xml:coverage_reports/coverage.xml \
-  --cov-fail-under=95
+  --cov-fail-under=96
 ```
 
 For local development, prefer focused runs:

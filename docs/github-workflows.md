@@ -51,10 +51,10 @@ That script currently:
 uv run pytest -v --cov=app \
   --cov-report=term-missing \
   --cov-report=xml:coverage_reports/coverage.xml \
-  --cov-fail-under=95
+  --cov-fail-under=96
 ```
 
-Coverage must stay at or above `95%` or the job fails.
+Coverage must stay at or above `96%` or the job fails.
 
 ### Formatting behavior
 
@@ -247,4 +247,3 @@ Given the current implementation, the safest contributor workflow is:
 2. Run `./scripts/run_http_tests.sh` locally before opening a PR.
 3. Use `[minor]` or `[major]` in the commit message only when a real semantic version change is intended.
 4. Treat every push to `main` as release-producing automation.
-

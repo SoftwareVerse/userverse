@@ -153,7 +153,7 @@ uv run pytest tests/api/http -q --http-env-file /home/sandile/projects/pj-userve
 
 Use the env-backed mode carefully: it does not create an isolated temporary database, and the HTTP test fixtures may update or seed the target database.
 
-Coverage is generated with `pytest-cov` and written to `coverage_reports/coverage.xml`. The current CI threshold is `95%`.
+Coverage is generated with `pytest-cov` and written to `coverage_reports/coverage.xml`. The current CI threshold is `96%`.
 
 See [tests/README.md](tests/README.md) and [docs/testing.md](docs/testing.md) for more detail.
 
