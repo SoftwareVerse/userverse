@@ -42,6 +42,18 @@ def test_update_by_filters_missing_record_raises_value_error(test_session):
         )
 
 
+def test_update_by_filters_updates_existing_record(test_session, test_user_data):
+    created = User.create(test_session, **test_user_data["create_user"])
+
+    updated = User.update_by_filters(
+        test_session,
+        filters={"email": created["email"]},
+        first_name="Updated",
+    )
+
+    assert updated["first_name"] == "Updated"
+
+
 def test_delete_missing_record_raises_record_not_found(test_session):
     with pytest.raises(RecordNotFoundError):
         User.delete(test_session, 999)

@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy.exc import IntegrityError
 from app.repository.database.tables import User
 from app.repository.database.base_model import RecordNotFoundError
 from app.models.user.response_messages import UserResponseMessages
@@ -118,6 +119,25 @@ def test_create_user_rejects_duplicate_email(test_session, test_user_data):
         exc_info.value.detail["message"]
         == UserResponseMessages.USER_ALREADY_EXISTS.value
     )
+
+
+def test_create_user_reraises_non_duplicate_integrity_error(test_session, monkeypatch):
+    repository = UserRepository(test_session)
+    repository.db_session.rollback = lambda: None
+
+    def _raise_integrity(**kwargs):
+        raise IntegrityError("insert", {}, Exception("other integrity error"))
+
+    monkeypatch.setattr(repository, "create", _raise_integrity)
+
+    with pytest.raises(IntegrityError):
+        repository.create_user(
+            {
+                "email": "user@example.com",
+                "password": "secret",
+                "first_name": "User",
+            }
+        )
 
 
 def test_get_refresh_token_version_raises_when_user_missing(test_session):

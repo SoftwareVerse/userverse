@@ -1581,6 +1581,69 @@ def test_role_service_happy_path_branches(monkeypatch):
     assert company_roles.records[0].id == str(role_id)
 
 
+def test_role_service_update_role_additional_falsey_paths(monkeypatch):
+    acting_user = UserReadModel(
+        id=uuid4(),
+        email="admin@example.com",
+        first_name="Admin",
+        last_name="User",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    context = SharedContext(db_session=object(), user=acting_user)
+    service = RoleService(context)
+    company_id = uuid4()
+
+    monkeypatch.setattr(service, "_ensure_company_manager", lambda cid: None)
+    monkeypatch.setattr(
+        CompanyRoleAssignmentRepository,
+        "update_company_role",
+        lambda self, name, payload: None,
+    )
+
+    with pytest.raises(AppError) as exc_info:
+        service.update_company_role(
+            company_id,
+            "Viewer",
+            RoleUpdateModel(name=None, description="Updated"),
+        )
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
+
+
+def test_role_service_update_role_keyword_success(monkeypatch):
+    acting_user = UserReadModel(
+        id=uuid4(),
+        email="admin@example.com",
+        first_name="Admin",
+        last_name="User",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    context = SharedContext(db_session=object(), user=acting_user)
+    service = RoleService(context)
+    role = RoleReadModel(id=str(uuid4()), name="Viewer", description="Updated")
+
+    monkeypatch.setattr(RoleRepository, "update_role", lambda self, role_id, payload: role)
+
+    assert (
+        service.update_role(role_id=uuid4(), payload=RoleUpdateModel(name=None, description="Updated"))
+        == role
+    )
+
+    monkeypatch.setattr(RoleRepository, "update_role", lambda self, role_id, payload: None)
+    with pytest.raises(AppError) as exc_info:
+        service.update_role(uuid4(), RoleUpdateModel(name=None, description="Updated"))
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
+
+
 def test_company_repository_wraps_integrity_error(monkeypatch):
     repository = CompanyRepository(Mock())
     repository.db_session.rollback = Mock()
