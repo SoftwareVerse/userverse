@@ -45,7 +45,10 @@ async def test_superuser_can_manage_global_roles_and_bulk_assign(
         headers=headers,
     )
     assert update_response.status_code == 200, update_response.text
-    assert update_response.json()["message"] == CompanyRoleResponseMessages.ROLE_UPDATED.value
+    assert (
+        update_response.json()["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATED.value
+    )
 
     assign_response = await client.post(
         f"/roles/{role_id}/companies",
@@ -58,7 +61,10 @@ async def test_superuser_can_manage_global_roles_and_bulk_assign(
         headers=headers,
     )
     assert assign_response.status_code == 201, assign_response.text
-    assert assign_response.json()["message"] == CompanyRoleResponseMessages.ROLE_CREATION_SUCCESS.value
+    assert (
+        assign_response.json()["message"]
+        == CompanyRoleResponseMessages.ROLE_CREATION_SUCCESS.value
+    )
     assert assign_response.json()["data"]["company_ids"] == [
         str(seed_companies["company_one"]),
         str(seed_companies["company_two"]),
@@ -69,7 +75,10 @@ async def test_superuser_can_manage_global_roles_and_bulk_assign(
         headers=headers,
     )
     assert delete_response.status_code == 200, delete_response.text
-    assert delete_response.json()["message"] == CompanyRoleResponseMessages.ROLE_DELETED.value
+    assert (
+        delete_response.json()["message"]
+        == CompanyRoleResponseMessages.ROLE_DELETED.value
+    )
 
 
 async def test_company_owner_cannot_manage_global_roles(
@@ -136,14 +145,20 @@ async def test_owner_can_assign_and_unassign_existing_role_for_company(
         headers=headers,
     )
     assert assign_response.status_code == 201, assign_response.text
-    assert assign_response.json()["message"] == CompanyRoleResponseMessages.ROLE_CREATION_SUCCESS.value
+    assert (
+        assign_response.json()["message"]
+        == CompanyRoleResponseMessages.ROLE_CREATION_SUCCESS.value
+    )
 
     unassign_response = await client.delete(
         f"/company/{company_id}/roles/{role_id}",
         headers=headers,
     )
     assert unassign_response.status_code == 200, unassign_response.text
-    assert unassign_response.json()["message"] == CompanyRoleResponseMessages.ROLE_DELETED.value
+    assert (
+        unassign_response.json()["message"]
+        == CompanyRoleResponseMessages.ROLE_DELETED.value
+    )
 
 
 async def test_non_manager_cannot_assign_or_unassign_company_role(

@@ -1703,7 +1703,9 @@ def test_role_service_update_role_keyword_success(monkeypatch):
     role = RoleReadModel(id=str(uuid4()), name="Viewer", description="Updated")
 
     monkeypatch.setattr(service, "_ensure_superuser", lambda: None)
-    monkeypatch.setattr(RoleRepository, "update_role", lambda self, role_id, payload: role)
+    monkeypatch.setattr(
+        RoleRepository, "update_role", lambda self, role_id, payload: role
+    )
 
     assert (
         service.update_role(

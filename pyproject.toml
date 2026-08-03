@@ -54,6 +54,9 @@ filterwarnings = [
     "ignore::DeprecationWarning:passlib.utils",
 ]
 
+[tool.black]
+target-version = ["py312"]
+
 [tool.coverage.run]
 source = ["app"]
 omit = [
