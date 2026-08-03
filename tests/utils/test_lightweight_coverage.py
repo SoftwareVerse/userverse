@@ -1361,7 +1361,7 @@ def test_role_service_branches_for_falsey_repository_results(monkeypatch):
     service = RoleService(context)
     company_id = uuid4()
 
-    monkeypatch.setattr(service, "_ensure_company_manager", lambda cid: None)
+    monkeypatch.setattr(service, "_ensure_superuser", lambda: None)
     monkeypatch.setattr(RoleRepository, "update_role", lambda self, name, payload: None)
     with pytest.raises(AppError) as exc_info:
         service.update_role(
@@ -1385,6 +1385,57 @@ def test_role_service_branches_for_falsey_repository_results(monkeypatch):
         exc_info.value.detail["message"]
         == CompanyRoleResponseMessages.ROLE_CREATION_FAILED.value
     )
+
+
+def test_role_service_superuser_guard_rejects_non_superusers():
+    acting_user = UserReadModel(
+        id=uuid4(),
+        email="owner@example.com",
+        first_name="Owner",
+        last_name="User",
+        phone_number="+27123456789",
+        status=UserAccountStatus.ACTIVE.name_value,
+        is_superuser=False,
+    )
+    context = SharedContext(db_session=object(), user=acting_user)
+    service = RoleService(context)
+    company_id = uuid4()
+    role_id = uuid4()
+    payload = RoleCreateModel(name="Viewer", description="Read only")
+
+    guarded_calls = [
+        lambda: service.create_role(payload),
+        lambda: service.update_role(
+            role_id=role_id,
+            payload=RoleUpdateModel(name=None, description="Updated"),
+        ),
+        lambda: service.delete_global_role(role_id),
+        lambda: service.assign_role_to_companies(
+            role_id, RoleAssignCompaniesModel(company_ids=[str(company_id)])
+        ),
+        lambda: service.create_role_for_company(payload, company_id),
+        lambda: service.update_company_role(
+            company_id,
+            "Viewer",
+            RoleUpdateModel(name=None, description="Updated"),
+        ),
+        lambda: service.delete_role(
+            RoleDeleteModel(
+                role_name_to_delete="Client",
+                replacement_role_name="Viewer",
+            ),
+            company_id,
+        ),
+    ]
+
+    for guarded_call in guarded_calls:
+        with pytest.raises(AppError) as exc_info:
+            guarded_call()
+        assert exc_info.value.status_code == 403
+        assert (
+            exc_info.value.detail["message"]
+            == CompanyRoleResponseMessages.ROLE_MANAGEMENT_FORBIDDEN.value
+        )
 
 
 def test_global_role_router_wrappers(monkeypatch):
@@ -1488,7 +1539,7 @@ def test_role_service_happy_path_branches(monkeypatch):
         last_name="User",
         phone_number="+27123456789",
         status=UserAccountStatus.ACTIVE.name_value,
-        is_superuser=False,
+        is_superuser=True,
     )
     context = SharedContext(db_session=object(), user=acting_user)
     service = RoleService(context)
@@ -1496,6 +1547,7 @@ def test_role_service_happy_path_branches(monkeypatch):
     role_id = uuid4()
     role = RoleReadModel(id=str(role_id), name="Viewer", description="Read only")
 
+    monkeypatch.setattr(service, "_ensure_superuser", lambda: None)
     monkeypatch.setattr(service, "_ensure_company_manager", lambda cid: None)
     monkeypatch.setattr(
         RoleRepository,
@@ -1595,7 +1647,7 @@ def test_role_service_update_role_additional_falsey_paths(monkeypatch):
     service = RoleService(context)
     company_id = uuid4()
 
-    monkeypatch.setattr(service, "_ensure_company_manager", lambda cid: None)
+    monkeypatch.setattr(service, "_ensure_superuser", lambda: None)
     monkeypatch.setattr(
         CompanyRoleAssignmentRepository,
         "update_company_role",
@@ -1628,6 +1680,7 @@ def test_role_service_update_role_keyword_success(monkeypatch):
     service = RoleService(context)
     role = RoleReadModel(id=str(uuid4()), name="Viewer", description="Updated")
 
+    monkeypatch.setattr(service, "_ensure_superuser", lambda: None)
     monkeypatch.setattr(RoleRepository, "update_role", lambda self, role_id, payload: role)
 
     assert (

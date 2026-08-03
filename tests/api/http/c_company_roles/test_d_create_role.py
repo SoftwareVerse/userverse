@@ -7,20 +7,19 @@ pytestmark = pytest.mark.anyio
 # Attempt to create a role with an invalid user
 
 from app.models.company.response_messages import (
-    CompanyResponseMessages,
     CompanyRoleResponseMessages,
 )
 
 
 async def test_a_create_company_one_roles_success(
-    client, login_token, test_company_data, seed_companies
+    client, login_token_superuser, test_company_data, seed_companies
 ):
     """
     Test creating roles for a company successfully.
     """
     company_id = seed_companies["company_one"]
     roles = test_company_data["roles"]
-    headers = {"Authorization": f"Bearer {login_token}"}
+    headers = {"Authorization": f"Bearer {login_token_superuser}"}
 
     for role_key, role_value in roles.items():
         response = await client.post(
@@ -41,14 +40,14 @@ async def test_a_create_company_one_roles_success(
 
 
 async def test_a_create_company_two_roles_success(
-    client, login_token_user_two, test_company_data, seed_companies
+    client, login_token_superuser, test_company_data, seed_companies
 ):
     """
     Test creating roles for a company successfully.
     """
     company_id = seed_companies["company_two"]
     roles = test_company_data["roles"]
-    headers = {"Authorization": f"Bearer {login_token_user_two}"}
+    headers = {"Authorization": f"Bearer {login_token_superuser}"}
 
     for role_key, role_value in roles.items():
         response = await client.post(
@@ -83,32 +82,32 @@ async def test_b_create_company_roles_failure(
             f"/company/{company_id}/role", json=role_value, headers=headers
         )
         #
-        assert response.status_code in [400, 403]
+        assert response.status_code == 403
         json_data = response.json()
         #
         assert "detail" in json_data
         assert (
             json_data["detail"]["message"]
-            == CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value
+            == CompanyRoleResponseMessages.ROLE_MANAGEMENT_FORBIDDEN.value
         )
 
 
 async def test_c_create_company_roles_failure(
-    client, login_token_user_two, test_company_data, seed_companies
+    client, login_token_superuser, test_company_data, seed_companies
 ):
     """
     Test creating roles for a company failure. When the roles already exist
     """
     company_id = seed_companies["company_two"]
     roles = test_company_data["roles"]
-    headers = {"Authorization": f"Bearer {login_token_user_two}"}
+    headers = {"Authorization": f"Bearer {login_token_superuser}"}
 
     for role_key, role_value in roles.items():
         response = await client.post(
             f"/company/{company_id}/role", json=role_value, headers=headers
         )
         #
-        assert response.status_code in [400, 403]
+        assert response.status_code == 400
         json_data = response.json()
         #
         assert "detail" in json_data

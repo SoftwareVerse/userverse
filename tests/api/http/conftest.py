@@ -28,6 +28,13 @@ from tests.utils.basic_auth import get_basic_auth_header
 
 TEST_DATA_BASE_PATH = "tests/data/http/"
 BASE_URL = "http://testserver"
+SUPERUSER_TEST_USER = {
+    "first_name": "Super",
+    "last_name": "User",
+    "phone_number": "0666666666",
+    "email": "super.user@email.com",
+    "password": "secureSuper",
+}
 HTTP_TEST_SETTING_NAMES = (
     "DATABASE_URL",
     "ENV",
@@ -446,6 +453,33 @@ async def login_token_user_two(client, seed_verified_users, test_user_data):
 
 
 @pytest.fixture
+async def login_token_superuser(client):
+    await _create_user_if_missing(client, SUPERUSER_TEST_USER)
+    session = session_manager.session_local()
+    try:
+        user_row = (
+            session.query(User)
+            .filter_by(email=SUPERUSER_TEST_USER["email"].lower())
+            .one()
+        )
+        user_row.first_name = SUPERUSER_TEST_USER["first_name"]
+        user_row.last_name = SUPERUSER_TEST_USER["last_name"]
+        user_row.phone_number = SUPERUSER_TEST_USER["phone_number"]
+        user_row.password = hash_password(SUPERUSER_TEST_USER["password"])
+        user_row.is_superuser = True
+        user_row._closed_at = None
+        user_row.primary_meta_data = {
+            "status": UserAccountStatus.ACTIVE.name_value,
+            "refresh_token_version": 0,
+        }
+        user_row.secondary_meta_data = {}
+        session.commit()
+    finally:
+        session.close()
+    return await _login_user(client, SUPERUSER_TEST_USER)
+
+
+@pytest.fixture
 async def verify_user_one_account(client, test_user_data):
     await _verify_user_account(client, test_user_data["user_one"]["email"])
 
@@ -482,19 +516,22 @@ async def seed_companies(client, test_company_data, login_token, login_token_use
 
 @pytest.fixture
 async def seed_company_roles(
-    client, seed_companies, test_company_data, login_token, login_token_user_two
+    client,
+    seed_companies,
+    test_company_data,
+    login_token_superuser,
 ):
     for role_payload in test_company_data["roles"].values():
         await _create_role_if_missing(
             client,
             company_id=seed_companies["company_one"],
-            token=login_token,
+            token=login_token_superuser,
             role_payload=role_payload,
         )
         await _create_role_if_missing(
             client,
             company_id=seed_companies["company_two"],
-            token=login_token_user_two,
+            token=login_token_superuser,
             role_payload=role_payload,
         )
     return seed_companies

@@ -1,7 +1,6 @@
 import pytest
 
 from app.models.company.response_messages import (
-    CompanyResponseMessages,
     CompanyRoleResponseMessages,
 )
 
@@ -9,13 +8,13 @@ pytestmark = pytest.mark.anyio
 
 
 async def test_a_update_role_description_success(
-    client, login_token, test_company_data, seed_company_roles
+    client, login_token_superuser, test_company_data, seed_company_roles
 ):
     """
     Test updating a role's description successfully.
     """
     company_id = seed_company_roles["company_one"]
-    headers = {"Authorization": f"Bearer {login_token}"}
+    headers = {"Authorization": f"Bearer {login_token_superuser}"}
     # Assume company 1 and role 'Admin' exist
     payload = test_company_data["roles"]
     for role_key, role_value in payload.items():
@@ -53,24 +52,24 @@ async def test_b_update_role_description_forbidden(
     response = await client.patch(
         f"/company/{company_id}/role/Admin", json=payload, headers=headers
     )
-    assert response.status_code in [400, 403]
+    assert response.status_code == 403
     json_data = response.json()
 
     assert "detail" in json_data
     assert (
         json_data["detail"]["message"]
-        == CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value
+        == CompanyRoleResponseMessages.ROLE_MANAGEMENT_FORBIDDEN.value
     )
 
 
 async def test_c_update_role_description_not_found(
-    client, login_token, seed_company_roles
+    client, login_token_superuser, seed_company_roles
 ):
     """
     Test updating a role that does not exist
     """
     company_id = seed_company_roles["company_one"]
-    headers = {"Authorization": f"Bearer {login_token}"}
+    headers = {"Authorization": f"Bearer {login_token_superuser}"}
     payload = {
         "name": "Should not update",
         "description": "Should not update",

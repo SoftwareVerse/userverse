@@ -54,6 +54,7 @@ class CompanyRoleResponseMessages(str, Enum):
     ROLE_CREATION_FAILED = (
         "Unable to create role. Please verify the data and try again."
     )
+    ROLE_MANAGEMENT_FORBIDDEN = "Access denied. Only superusers can manage roles."
 
     # Role retrieval
     ROLE_GET_SUCCESS = "Roles retrieved successfully."

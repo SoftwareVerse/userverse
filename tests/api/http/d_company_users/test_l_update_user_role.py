@@ -80,11 +80,13 @@ def _get_link_row(company_id: str, user_id: str):
         session.close()
 
 
-async def test_update_company_user_role_success(client, login_token):
+async def test_update_company_user_role_success(
+    client, login_token, login_token_superuser
+):
     company_id = await _create_company(client, login_token)
     await _create_role(
         client,
-        login_token,
+        login_token_superuser,
         company_id,
         {
             "name": "User",
@@ -113,12 +115,12 @@ async def test_update_company_user_role_success(client, login_token):
 
 
 async def test_update_company_user_role_forbidden_for_non_admin(
-    client, login_token, login_token_user_two
+    client, login_token, login_token_superuser, login_token_user_two
 ):
     company_id = await _create_company(client, login_token)
     await _create_role(
         client,
-        login_token,
+        login_token_superuser,
         company_id,
         {
             "name": "User",
@@ -160,12 +162,12 @@ async def test_update_company_user_role_rejects_unknown_role(client, login_token
 
 
 async def test_update_company_user_role_returns_not_found_for_missing_link(
-    client, login_token
+    client, login_token, login_token_superuser
 ):
     company_id = await _create_company(client, login_token)
     await _create_role(
         client,
-        login_token,
+        login_token_superuser,
         company_id,
         {
             "name": "User",
