@@ -209,9 +209,7 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
             ],
         ).all()
 
-        users = [
-            self._to_company_user(assoc.user, assoc.role) for assoc in results
-        ]
+        users = [self._to_company_user(assoc.user, assoc.role) for assoc in results]
         return PaginatedResponse[CompanyUserReadModel](
             records=users,
             pagination=build_pagination_meta(

@@ -139,7 +139,9 @@ def upgrade() -> None:
                     secondary_meta_data=row.get("secondary_meta_data"),
                 )
             )
-        elif role_descriptions[role_name] is None and row.get("description") is not None:
+        elif (
+            role_descriptions[role_name] is None and row.get("description") is not None
+        ):
             role_descriptions[role_name] = row.get("description")
             connection.execute(
                 sa.update(role_target)

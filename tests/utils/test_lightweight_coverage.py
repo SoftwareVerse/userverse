@@ -1489,7 +1489,9 @@ def test_global_role_router_wrappers(monkeypatch):
     )
     assert update_response.status_code == 200
 
-    delete_response = global_roles_router.delete_role_api(role_id=role_id, common=common)
+    delete_response = global_roles_router.delete_role_api(
+        role_id=role_id, common=common
+    )
     assert delete_response.status_code == 200
 
     assign_response = global_roles_router.assign_role_to_companies_api(
@@ -1562,22 +1564,37 @@ def test_role_service_happy_path_branches(monkeypatch):
             },
         },
     )
-    monkeypatch.setattr(RoleRepository, "delete_role", lambda self, role_id, user: {"message": "deleted"})
-    monkeypatch.setattr(RoleRepository, "ensure_role_exists", lambda self, role_id: types.SimpleNamespace(id=role_id))
+    monkeypatch.setattr(
+        RoleRepository,
+        "delete_role",
+        lambda self, role_id, user: {"message": "deleted"},
+    )
+    monkeypatch.setattr(
+        RoleRepository,
+        "ensure_role_exists",
+        lambda self, role_id: types.SimpleNamespace(id=role_id),
+    )
     monkeypatch.setattr(
         RoleRepository,
         "get_role_by_name",
-        lambda self, name: types.SimpleNamespace(id=role_id, name=name, description="Read only"),
+        lambda self, name: types.SimpleNamespace(
+            id=role_id, name=name, description="Read only"
+        ),
     )
     monkeypatch.setattr(
         CompanyRoleAssignmentRepository,
         "assign_role",
-        lambda self, role, user: RoleReadModel(id=str(role.id), name="Viewer", description="Read only"),
+        lambda self, role, user: RoleReadModel(
+            id=str(role.id), name="Viewer", description="Read only"
+        ),
     )
     monkeypatch.setattr(
         CompanyRoleAssignmentRepository,
         "assign_role_to_companies",
-        lambda self, role, payload, user: {"role_id": str(role.id), "company_ids": payload.company_ids},
+        lambda self, role, payload, user: {
+            "role_id": str(role.id),
+            "company_ids": payload.company_ids,
+        },
     )
     monkeypatch.setattr(
         CompanyRoleAssignmentRepository,
@@ -1614,18 +1631,23 @@ def test_role_service_happy_path_branches(monkeypatch):
     assert service.assign_role_to_companies(
         role_id, RoleAssignCompaniesModel(company_ids=[str(company_id)])
     ) == {"role_id": str(role_id), "company_ids": [str(company_id)]}
-    assert (
-        service.create_role_for_company(
-            RoleCreateModel(name="Viewer", description="Read only"),
-            company_id,
-        ).id
-        == str(role_id)
-    )
-    assert service.unassign_role(company_id, role_id)["message"] == "Role unassigned successfully."
-    assert service.delete_role(
-        RoleDeleteModel(role_name_to_delete="Client", replacement_role_name="Viewer"),
+    assert service.create_role_for_company(
+        RoleCreateModel(name="Viewer", description="Read only"),
         company_id,
-    )["users_reassigned"] == 1
+    ).id == str(role_id)
+    assert (
+        service.unassign_role(company_id, role_id)["message"]
+        == "Role unassigned successfully."
+    )
+    assert (
+        service.delete_role(
+            RoleDeleteModel(
+                role_name_to_delete="Client", replacement_role_name="Viewer"
+            ),
+            company_id,
+        )["users_reassigned"]
+        == 1
+    )
     company_roles = service.get_company_roles(
         RoleQueryParamsModel(limit=10, page=1),
         company_id,
@@ -1684,11 +1706,15 @@ def test_role_service_update_role_keyword_success(monkeypatch):
     monkeypatch.setattr(RoleRepository, "update_role", lambda self, role_id, payload: role)
 
     assert (
-        service.update_role(role_id=uuid4(), payload=RoleUpdateModel(name=None, description="Updated"))
+        service.update_role(
+            role_id=uuid4(), payload=RoleUpdateModel(name=None, description="Updated")
+        )
         == role
     )
 
-    monkeypatch.setattr(RoleRepository, "update_role", lambda self, role_id, payload: None)
+    monkeypatch.setattr(
+        RoleRepository, "update_role", lambda self, role_id, payload: None
+    )
     with pytest.raises(AppError) as exc_info:
         service.update_role(uuid4(), RoleUpdateModel(name=None, description="Updated"))
     assert (

@@ -97,17 +97,13 @@ def _load_http_test_env_file(env_file: str) -> dict[str, str]:
         if value is not None
     }
     if "DATABASE_URL" not in loaded:
-        raise pytest.UsageError(
-            f"--http-env-file must define DATABASE_URL: {env_path}"
-        )
+        raise pytest.UsageError(f"--http-env-file must define DATABASE_URL: {env_path}")
 
     loaded.setdefault("ENV", loaded.get("ENVIRONMENT", "testing"))
     loaded.setdefault("ENVIRONMENT", loaded.get("ENV", "testing"))
     loaded.setdefault("TESTING", "true")
     loaded.setdefault("DB_AUTO_CREATE", "true")
-    loaded.setdefault(
-        "FRONTEND_URL", "https://frontend.example.com/reset-password"
-    )
+    loaded.setdefault("FRONTEND_URL", "https://frontend.example.com/reset-password")
     loaded.setdefault("JWT_SECRET", "testing-secret-key-with-at-least-32-bytes")
     return loaded
 

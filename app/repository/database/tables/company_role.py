@@ -20,7 +20,9 @@ class CompanyRole(BaseModel):
         primary_key=True,
     )
 
-    __table_args__ = (UniqueConstraint("company_id", "role_id", name="uq_company_role"),)
+    __table_args__ = (
+        UniqueConstraint("company_id", "role_id", name="uq_company_role"),
+    )
 
     company = relationship("Company", back_populates="roles", overlaps="role")
     role = relationship("Role", back_populates="companies", overlaps="company")

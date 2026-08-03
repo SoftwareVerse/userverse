@@ -124,9 +124,7 @@ def get_company_roles_api(
     common: CommonJWTRouteDependencies = Depends(),
 ):
     service = RoleService(SharedContext(user=common.user, db_session=common.session))
-    response = service.get_company_roles(
-        payload=query_params, company_id=company_id
-    )
+    response = service.get_company_roles(payload=query_params, company_id=company_id)
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content=GenericResponseModel(
