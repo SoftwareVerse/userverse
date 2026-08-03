@@ -136,10 +136,20 @@ Run selected suites:
 
 ```bash
 uv run pytest tests/api/http
+uv run pytest tests/api/http --http-env-file .env
 uv run pytest tests/api/security
 uv run pytest tests/database
 uv run pytest tests/utils
 ```
+
+By default, `tests/api/http` uses an isolated temporary SQLite database and test-safe overrides. If you want to seed or validate a real environment-backed database, pass `--http-env-file` with a dotenv file that defines at least `DATABASE_URL`:
+
+```bash
+uv run pytest tests/api/http/c_company_roles -q --http-env-file .env
+uv run pytest tests/api/http -q --http-env-file /home/sandile/projects/pj-userverse/userverse/.env
+```
+
+Use the env-backed mode carefully: it does not create an isolated temporary database, and the HTTP test fixtures may update or seed the target database.
 
 Coverage is generated with `pytest-cov` and written to `coverage_reports/coverage.xml`. The current CI threshold is `95%`.
 

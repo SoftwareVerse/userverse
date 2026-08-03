@@ -25,6 +25,19 @@ from app.utils.app_error import AppError
 class RoleRepository(BaseSQLRepository[Role]):
     model = Role
 
+    def __init__(
+        self,
+        db_session: Session | None = None,
+        *,
+        company_id: UUID | None = None,
+        session: Session | None = None,
+    ):
+        resolved_session = db_session if db_session is not None else session
+        if resolved_session is None:
+            raise TypeError("RoleRepository requires a database session.")
+        super().__init__(resolved_session)
+        self.company_id = company_id
+
     @staticmethod
     def _to_read_model(role: Role) -> RoleReadModel:
         data = BaseSQLRepository.serialize(role)
@@ -84,6 +97,21 @@ class RoleRepository(BaseSQLRepository[Role]):
             )
         return role
 
+    def ensure_role_belongs_to_company(self, role_name: str) -> Role:
+        if self.company_id is None:
+            return self.ensure_role_by_name(role_name)
+        role = CompanyRoleAssignmentRepository(
+            company_id=self.company_id,
+            session=self.db_session,
+        ).get_role_name_assigned(role_name)
+        if not isinstance(role, Role):
+            raise AppError(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                message=CompanyUserResponseMessages.ADD_USER_FAILED.value,
+                error=f"Role: {role_name} is not linked to the company",
+            )
+        return role
+
     def create_role(
         self, payload: RoleCreateModel, created_by: UserReadModel
     ) -> RoleReadModel:
@@ -115,8 +143,18 @@ class RoleRepository(BaseSQLRepository[Role]):
 
     def update_role(self, role_id: UUID, payload: RoleUpdateModel) -> RoleReadModel:
         try:
-            role = self.get_role_record(role_id)
+            if self.company_id is not None and isinstance(role_id, str):
+                role = CompanyRoleAssignmentRepository(
+                    company_id=self.company_id,
+                    session=self.db_session,
+                ).get_role_name_assigned(role_id)
+            else:
+                role = self.get_role_record(role_id)
             if not role:
+                if self.company_id is not None and isinstance(role_id, str):
+                    raise ValueError(
+                        f"Role with company_id={self.company_id} and name='{role_id}' not found."
+                    )
                 raise ValueError(f"Role with id='{role_id}' not found.")
             if payload.name:
                 role.name = payload.name
@@ -133,8 +171,44 @@ class RoleRepository(BaseSQLRepository[Role]):
                 error=str(exc),
             ) from exc
 
-    def delete_role(self, role_id: UUID, deleted_by: UserReadModel) -> dict:
+    def delete_role(
+        self,
+        role_id: UUID | None = None,
+        deleted_by: UserReadModel | None = None,
+        payload: RoleDeleteModel | None = None,
+    ) -> dict:
+        if payload is not None:
+            if self.company_id is None:
+                raise AppError(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    message=CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value,
+                    error="company_id is required for company-scoped role deletion.",
+                )
+            if deleted_by is None:
+                raise AppError(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    message=CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value,
+                    error="deleted_by is required for role deletion.",
+                )
+            try:
+                return Role.delete_role_and_reassign_users(
+                    session=self.db_session,
+                    company_id=self.company_id,
+                    name_to_delete=payload.role_name_to_delete,
+                    replacement_name=payload.replacement_role_name,
+                    deleted_by=deleted_by,
+                )
+            except Exception as exc:
+                self.db_session.rollback()
+                raise AppError(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    message=CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value,
+                    error=str(exc),
+                ) from exc
+
         try:
+            if role_id is None or deleted_by is None:
+                raise ValueError("role_id and deleted_by are required.")
             role = self.get_role_record(role_id)
             if not role:
                 raise ValueError(f"Role with id='{role_id}' not found.")

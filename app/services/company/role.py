@@ -45,7 +45,11 @@ class RoleService:
                 message="Access denied. You are not authorized to access this company.",
             )
 
-    def create_role(self, payload: RoleCreateModel) -> RoleReadModel:
+    def create_role(
+        self, payload: RoleCreateModel, company_id: UUID | None = None
+    ) -> RoleReadModel:
+        if company_id is not None:
+            self._ensure_company_manager(company_id)
         role = RoleRepository(self.context.db_session).create_role(
             payload, self.context.user
         )
@@ -69,8 +73,18 @@ class RoleService:
             pagination=result["pagination"],
         )
 
-    def update_role(self, role_id: UUID, payload: RoleUpdateModel) -> RoleReadModel:
-        role = RoleRepository(self.context.db_session).update_role(role_id, payload)
+    def update_role(self, *args, **kwargs) -> RoleReadModel:
+        if len(args) == 3 and not kwargs:
+            company_id, name, payload = args
+            self._ensure_company_manager(company_id)
+            role = RoleRepository(
+                self.context.db_session,
+                company_id=company_id,
+            ).update_role(name, payload)
+        else:
+            role_id = kwargs.get("role_id", args[0] if args else None)
+            payload = kwargs.get("payload", args[1] if len(args) > 1 else None)
+            role = RoleRepository(self.context.db_session).update_role(role_id, payload)
         if not role:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,

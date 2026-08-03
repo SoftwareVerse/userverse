@@ -14,8 +14,8 @@ def test_session_manager_uses_sqlite_engine_for_sqlite_urls(monkeypatch):
         lambda bind: None,
     )
     monkeypatch.setattr(
-        "app.repository.database.session_manager.DatabaseSessionManager._tables_exist",
-        lambda self: False,
+        "app.repository.database.session_manager.DatabaseSessionManager._table_state",
+        lambda self: "missing",
     )
     monkeypatch.setattr(settings, "DATABASE_URL", "sqlite:///./development.db")
     monkeypatch.setattr(settings, "DB_AUTO_CREATE", True)
@@ -38,8 +38,8 @@ def test_session_manager_uses_static_pool_for_in_memory_sqlite(monkeypatch):
         lambda bind: None,
     )
     monkeypatch.setattr(
-        "app.repository.database.session_manager.DatabaseSessionManager._tables_exist",
-        lambda self: False,
+        "app.repository.database.session_manager.DatabaseSessionManager._table_state",
+        lambda self: "missing",
     )
     monkeypatch.setattr(settings, "DATABASE_URL", "sqlite:///:memory:")
     monkeypatch.setattr(settings, "DB_AUTO_CREATE", True)
@@ -68,8 +68,8 @@ def test_session_manager_creates_non_sqlite_database_when_missing(monkeypatch):
         lambda bind: None,
     )
     monkeypatch.setattr(
-        "app.repository.database.session_manager.DatabaseSessionManager._tables_exist",
-        lambda self: False,
+        "app.repository.database.session_manager.DatabaseSessionManager._table_state",
+        lambda self: "missing",
     )
     monkeypatch.setattr(settings, "DATABASE_URL", "postgresql://db.example/test")
     monkeypatch.setattr(settings, "DB_AUTO_CREATE", True)
@@ -98,8 +98,8 @@ def test_session_manager_does_not_create_database_when_auto_create_disabled(
         lambda url: created.append(url),
     )
     monkeypatch.setattr(
-        "app.repository.database.session_manager.DatabaseSessionManager._tables_exist",
-        lambda self: False,
+        "app.repository.database.session_manager.DatabaseSessionManager._table_state",
+        lambda self: "missing",
     )
     monkeypatch.setattr(settings, "DATABASE_URL", "postgresql://db.example/test")
     monkeypatch.setattr(settings, "DB_AUTO_CREATE", False)
@@ -122,8 +122,8 @@ def test_session_manager_raises_when_schema_missing_and_auto_create_disabled(
         "app.repository.database.session_manager.database_exists", lambda url: True
     )
     monkeypatch.setattr(
-        "app.repository.database.session_manager.DatabaseSessionManager._tables_exist",
-        lambda self: False,
+        "app.repository.database.session_manager.DatabaseSessionManager._table_state",
+        lambda self: "missing",
     )
     monkeypatch.setattr(settings, "DATABASE_URL", "postgresql://db.example/test")
     monkeypatch.setattr(settings, "DB_AUTO_CREATE", False)
@@ -135,6 +135,50 @@ def test_session_manager_raises_when_schema_missing_and_auto_create_disabled(
         assert "run Alembic migrations before startup" in str(exc)
     else:
         raise AssertionError("Expected DatabaseSessionManager to require migrations")
+
+
+def test_session_manager_raises_on_partial_schema(monkeypatch):
+    monkeypatch.setattr(
+        "app.repository.database.session_manager.create_engine",
+        lambda url, **kwargs: "engine",
+    )
+    monkeypatch.setattr(settings, "DATABASE_URL", "sqlite:///./development.db")
+    monkeypatch.setattr(settings, "DB_AUTO_CREATE", True)
+
+    monkeypatch.setattr(
+        "app.repository.database.session_manager.DatabaseSessionManager._table_state",
+        lambda self: "partial",
+    )
+
+    try:
+        DatabaseSessionManager()
+    except RuntimeError as exc:
+        assert "incompatible with current models" in str(exc)
+    else:
+        raise AssertionError("Expected DatabaseSessionManager to reject partial schema")
+
+
+def test_session_manager_raises_on_incompatible_schema(monkeypatch):
+    monkeypatch.setattr(
+        "app.repository.database.session_manager.create_engine",
+        lambda url, **kwargs: "engine",
+    )
+    monkeypatch.setattr(settings, "DATABASE_URL", "sqlite:///./development.db")
+    monkeypatch.setattr(settings, "DB_AUTO_CREATE", True)
+
+    monkeypatch.setattr(
+        "app.repository.database.session_manager.DatabaseSessionManager._table_state",
+        lambda self: "incompatible",
+    )
+
+    try:
+        DatabaseSessionManager()
+    except RuntimeError as exc:
+        assert "incompatible with current models" in str(exc)
+    else:
+        raise AssertionError(
+            "Expected DatabaseSessionManager to reject incompatible schema"
+        )
 
 
 def test_session_local_uses_default_db_session_object(monkeypatch):

@@ -9,6 +9,7 @@ from uuid import UUID
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from dotenv import dotenv_values
 from unittest.mock import patch
 
 import app.configs as app_configs
@@ -27,6 +28,81 @@ from tests.utils.basic_auth import get_basic_auth_header
 
 TEST_DATA_BASE_PATH = "tests/data/http/"
 BASE_URL = "http://testserver"
+HTTP_TEST_SETTING_NAMES = (
+    "DATABASE_URL",
+    "ENV",
+    "ENVIRONMENT",
+    "TESTING",
+    "DB_AUTO_CREATE",
+    "FRONTEND_URL",
+    "JWT_SECRET",
+)
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--http-env-file",
+        action="store",
+        default=None,
+        help=(
+            "Use the provided env file for HTTP tests instead of the default isolated "
+            "temporary SQLite configuration."
+        ),
+    )
+
+
+def _apply_runtime_settings(overrides: dict[str, str]) -> None:
+    app_configs._resolve_settings.cache_clear()
+
+    for name, value in overrides.items():
+        os.environ[name] = value
+
+    settings.DATABASE_URL = overrides["DATABASE_URL"]
+    settings.ENVIRONMENT = overrides.get(
+        "ENVIRONMENT", overrides.get("ENV", settings.ENVIRONMENT)
+    )
+    settings.TESTING = overrides["TESTING"].lower() == "true"
+    settings.DB_AUTO_CREATE = overrides["DB_AUTO_CREATE"].lower() == "true"
+    settings.FRONTEND_URL = overrides["FRONTEND_URL"]
+    settings.JWT_SECRET = overrides["JWT_SECRET"]
+
+
+def _build_default_http_test_settings(db_path: Path) -> dict[str, str]:
+    return {
+        "DATABASE_URL": f"sqlite:///{db_path}",
+        "ENV": "testing",
+        "ENVIRONMENT": "testing",
+        "TESTING": "true",
+        "DB_AUTO_CREATE": "true",
+        "FRONTEND_URL": "https://frontend.example.com/reset-password",
+        "JWT_SECRET": "testing-secret-key-with-at-least-32-bytes",
+    }
+
+
+def _load_http_test_env_file(env_file: str) -> dict[str, str]:
+    env_path = Path(env_file).expanduser().resolve()
+    if not env_path.exists():
+        raise pytest.UsageError(f"--http-env-file not found: {env_path}")
+
+    loaded = {
+        key: str(value)
+        for key, value in dotenv_values(env_path).items()
+        if value is not None
+    }
+    if "DATABASE_URL" not in loaded:
+        raise pytest.UsageError(
+            f"--http-env-file must define DATABASE_URL: {env_path}"
+        )
+
+    loaded.setdefault("ENV", loaded.get("ENVIRONMENT", "testing"))
+    loaded.setdefault("ENVIRONMENT", loaded.get("ENV", "testing"))
+    loaded.setdefault("TESTING", "true")
+    loaded.setdefault("DB_AUTO_CREATE", "true")
+    loaded.setdefault(
+        "FRONTEND_URL", "https://frontend.example.com/reset-password"
+    )
+    loaded.setdefault("JWT_SECRET", "testing-secret-key-with-at-least-32-bytes")
+    return loaded
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -50,27 +126,22 @@ def test_runtime_guards():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_database():
+def setup_database(pytestconfig):
     """
     Setup a clean database for the test session.
-    Forces the application to use a test-specific database file.
+    By default this uses a test-specific database file.
+    Passing --http-env-file uses that env file instead.
     """
+    original_env = {name: os.environ.get(name) for name in HTTP_TEST_SETTING_NAMES}
     db_dir = Path(tempfile.mkdtemp(prefix="userverse-http-tests-"))
     db_path = db_dir / "test.db"
-
-    os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
-    os.environ["ENV"] = "testing"
-    os.environ["TESTING"] = "true"
-    os.environ["DB_AUTO_CREATE"] = "true"
-    os.environ["FRONTEND_URL"] = "https://frontend.example.com/reset-password"
-    os.environ["JWT_SECRET"] = "testing-secret-key-with-at-least-32-bytes"
-    app_configs._resolve_settings.cache_clear()
-    settings.DATABASE_URL = f"sqlite:///{db_path}"
-    settings.ENVIRONMENT = "testing"
-    settings.TESTING = True
-    settings.DB_AUTO_CREATE = True
-    settings.FRONTEND_URL = "https://frontend.example.com/reset-password"
-    settings.JWT_SECRET = "testing-secret-key-with-at-least-32-bytes"
+    env_file = pytestconfig.getoption("--http-env-file")
+    runtime_settings = (
+        _load_http_test_env_file(env_file)
+        if env_file
+        else _build_default_http_test_settings(db_path)
+    )
+    _apply_runtime_settings(runtime_settings)
 
     default_db = DatabaseSessionManager()
     session_manager._default_db = default_db
@@ -92,9 +163,14 @@ def setup_database():
             delattr(settings, setting_name)
         except AttributeError:
             pass
-    if db_path.exists():
+    for name, original_value in original_env.items():
+        if original_value is None:
+            os.environ.pop(name, None)
+        else:
+            os.environ[name] = original_value
+    if not env_file and db_path.exists():
         db_path.unlink()
-    if db_dir.exists():
+    if not env_file and db_dir.exists():
         db_dir.rmdir()
 
 

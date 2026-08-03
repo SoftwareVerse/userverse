@@ -1,7 +1,8 @@
 from uuid import UUID, uuid4
 
-from sqlalchemy import String, Uuid
+from sqlalchemy import String, Uuid, select
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import column_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import func
@@ -262,6 +263,8 @@ class Role(BaseModel):
             .all()
         ):
             user_link.role_id = replacement_role.id
+            user_link.secondary_meta_data = user_link.secondary_meta_data or {}
+            user_link.secondary_meta_data["_legacy_role_name"] = replacement_role.name
             reassigned_count += 1
 
         assignment = (
@@ -269,17 +272,15 @@ class Role(BaseModel):
             .filter_by(company_id=company_id, role_id=role_to_delete.id, _closed_at=None)
             .one()
         )
+        role_to_delete.primary_meta_data = role_to_delete.primary_meta_data or {}
+        role_to_delete.primary_meta_data["deleted_by"] = deleted_by.model_dump(
+            mode="json"
+        )
+        role_to_delete._closed_at = func.now()
         assignment._closed_at = func.now()
+        session.add(role_to_delete)
         session.add(assignment)
         session.commit()
-        cls.update_json_field(
-            session=session,
-            company_id=company_id,
-            name=name_to_delete,
-            column_name="primary_meta_data",
-            key="deleted_by",
-            value=deleted_by.model_dump(mode="json"),
-        )
         session.refresh(role_to_delete)
         return {
             "message": (
@@ -292,3 +293,12 @@ class Role(BaseModel):
 
 from app.repository.database.tables.company_role import CompanyRole
 from app.repository.database.tables.association_user_company import AssociationUserCompany
+
+Role.company_id = column_property(
+    select(CompanyRole.company_id)
+    .where(CompanyRole.role_id == Role.id)
+    .correlate_except(CompanyRole)
+    .order_by(CompanyRole._created_at.desc())
+    .limit(1)
+    .scalar_subquery()
+)

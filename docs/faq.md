@@ -19,6 +19,12 @@ Table models live in `app/repository/database/tables`. Session management lives 
 
 HTTP integration tests are under `tests/api/http`, not `tests/http`.
 
+They use an isolated temporary SQLite database by default. To run them against a specific env file and database, pass `--http-env-file`:
+
+```bash
+uv run pytest tests/api/http --http-env-file .env
+```
+
 ## How do I run the same command CI runs?
 
 Use:
