@@ -1,6 +1,6 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey, ForeignKeyConstraint, String, Uuid
+from sqlalchemy import ForeignKey, Uuid
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -27,19 +27,58 @@ class AssociationUserCompany(BaseModel):
         ForeignKey("company.id"),
         primary_key=True,
     )
-    role_name: Mapped[str] = mapped_column(String(256), nullable=False)
-
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ["company_id", "role_name"],
-            ["role.company_id", "role.name"],
-            ondelete="CASCADE",
-        ),
+    role_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("role.id", ondelete="CASCADE"),
+        nullable=False,
     )
 
     role = relationship("Role", back_populates="users", overlaps="company,users")
     company = relationship("Company", back_populates="users", overlaps="role")
     user = relationship("User", back_populates="companies", overlaps="company,role")
+
+    @property
+    def role_name(self) -> str | None:
+        if "role" in self.__dict__ and self.__dict__["role"] is not None:
+            return self.__dict__["role"].name
+        return (self.secondary_meta_data or {}).get("_legacy_role_name")
+
+    @role_name.setter
+    def role_name(self, value: str) -> None:
+        self.secondary_meta_data = self.secondary_meta_data or {}
+        self.secondary_meta_data["_legacy_role_name"] = value
+        if getattr(self, "role_id", None) is None:
+            self.role_id = uuid4()
+
+    @staticmethod
+    def to_dict(obj):
+        data = BaseModel.to_dict(obj)
+        data["role_name"] = obj.role_name
+        return data
+
+    @classmethod
+    def create(cls, session: Session, **kwargs) -> dict:
+        role_name = kwargs.pop("role_name", None)
+        if role_name is not None and "role_id" not in kwargs:
+            role = Role.role_belongs_to_company(
+                session, kwargs["company_id"], role_name
+            )
+            kwargs["role_id"] = role["id"]
+        if role_name is not None:
+            secondary_meta_data = kwargs.get("secondary_meta_data") or {}
+            secondary_meta_data["_legacy_role_name"] = role_name
+            kwargs["secondary_meta_data"] = secondary_meta_data
+        return super().create(session, **kwargs)
+
+    @classmethod
+    def delete_by_filters(cls, session: Session, filters: dict) -> dict[str, str]:
+        role_name = filters.pop("role_name", None)
+        if role_name is not None:
+            role = Role.role_belongs_to_company(
+                session, filters["company_id"], role_name
+            )
+            filters["role_id"] = role["id"]
+        return super().delete_by_filters(session, filters)
 
     @classmethod
     def is_user_linked_to_company(
@@ -51,7 +90,7 @@ class AssociationUserCompany(BaseModel):
     ) -> bool:
         query = session.query(cls).filter_by(user_id=user_id, company_id=company_id)
         if role_name:
-            query = query.filter_by(role_name=role_name)
+            query = query.join(cls.role).filter(Role.name == role_name)
         return session.query(query.exists()).scalar()
 
     @classmethod
@@ -60,9 +99,12 @@ class AssociationUserCompany(BaseModel):
         session: Session,
         company_id: UUID,
         user_id: UUID,
-        role_name: str,
+        role_id: UUID | str,
         added_by: UserReadModel,
     ) -> "AssociationUserCompany":
+        if isinstance(role_id, str):
+            role = Role.role_belongs_to_company(session, company_id, role_id)
+            role_id = role["id"]
         existing = (
             session.query(cls)
             .filter_by(user_id=user_id, company_id=company_id, _closed_at=None)
@@ -74,7 +116,7 @@ class AssociationUserCompany(BaseModel):
         assoc = cls(
             user_id=user_id,
             company_id=company_id,
-            role_name=role_name,
+            role_id=role_id,
             primary_meta_data={"added_by": added_by.model_dump(mode="json")},
         )
         session.add(assoc)
@@ -102,7 +144,7 @@ class AssociationUserCompany(BaseModel):
             )
         if (
             assoc.user_id == removed_by.id
-            and assoc.role_name == CompanyDefaultRoles.ADMINISTRATOR.name_value
+            and assoc.role.name == CompanyDefaultRoles.ADMINISTRATOR.name_value
         ):
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -114,3 +156,6 @@ class AssociationUserCompany(BaseModel):
         session.commit()
         session.refresh(assoc)
         return assoc
+
+
+from app.repository.database.tables.role import Role

@@ -26,9 +26,10 @@ class Company(BaseModel):
         overlaps="role,user",
     )
     roles = relationship(
-        "Role",
+        "CompanyRole",
         back_populates="company",
         cascade="all, delete-orphan",
+        overlaps="role",
     )
 
     @classmethod

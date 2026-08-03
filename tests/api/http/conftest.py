@@ -20,6 +20,7 @@ from app.models.user.user import UserReadModel
 from app.configs import settings
 from app.repository.database.session_manager import DatabaseSessionManager
 from app.repository.database.tables import AssociationUserCompany, Company, Role, User
+from app.repository.database.tables import CompanyRole
 import app.repository.database.session_manager as session_manager
 from app.utils.hash_password import hash_password
 from tests.utils.basic_auth import get_basic_auth_header
@@ -143,7 +144,13 @@ def _get_role_row(company_id: UUID, name: str):
     try:
         return (
             session.query(Role)
-            .filter_by(company_id=company_id, name=name, _closed_at=None)
+            .join(CompanyRole, CompanyRole.role_id == Role.id)
+            .filter(
+                CompanyRole.company_id == company_id,
+                CompanyRole._closed_at.is_(None),
+                Role.name == name,
+                Role._closed_at.is_(None),
+            )
             .first()
         )
     finally:
@@ -235,22 +242,13 @@ async def _create_company_if_missing(
             }
 
             for default_role in CompanyDefaultRoles:
-                role_row = (
-                    session.query(Role)
-                    .filter_by(company_id=company_row.id, name=default_role.name_value)
-                    .one_or_none()
-                )
-                if role_row is None:
-                    session.add(
-                        Role(
-                            company_id=company_row.id,
-                            name=default_role.name_value,
-                            description=default_role.description,
-                        )
+                if not _get_role_row(company_row.id, default_role.name_value):
+                    Role.create(
+                        session,
+                        company_id=company_row.id,
+                        name=default_role.name_value,
+                        description=default_role.description,
                     )
-                else:
-                    role_row.description = default_role.description
-                    role_row._closed_at = None
 
             owner_row = session.query(User).filter_by(email=owner_email.lower()).one()
             owner_link = (
@@ -259,15 +257,17 @@ async def _create_company_if_missing(
                 .one_or_none()
             )
             if owner_link is None:
-                session.add(
-                    AssociationUserCompany(
-                        company_id=company_row.id,
-                        user_id=owner_row.id,
-                        role_name=CompanyDefaultRoles.OWNER.name_value,
-                    )
+                AssociationUserCompany.create(
+                    session,
+                    company_id=company_row.id,
+                    user_id=owner_row.id,
+                    role_name=CompanyDefaultRoles.OWNER.name_value,
                 )
             else:
-                owner_link.role_name = CompanyDefaultRoles.OWNER.name_value
+                owner_role = Role.role_belongs_to_company(
+                    session, company_row.id, CompanyDefaultRoles.OWNER.name_value
+                )
+                owner_link.role_id = owner_role["id"]
                 owner_link._closed_at = None
 
             session.commit()
@@ -301,11 +301,7 @@ async def _create_role_if_missing(
 
     session = session_manager.session_local()
     try:
-        role_row = (
-            session.query(Role)
-            .filter_by(company_id=company_id, name=role_payload["name"])
-            .one_or_none()
-        )
+        role_row = _get_role_row(company_id, role_payload["name"])
         if role_row is not None:
             role_row.description = role_payload["description"]
             role_row._closed_at = None
@@ -572,19 +568,13 @@ def seed_pagination_state():
 
         for company_id in company_ids:
             for default_role in CompanyDefaultRoles:
-                role_row = (
-                    session.query(Role)
-                    .filter_by(company_id=company_id, name=default_role.name_value)
-                    .one_or_none()
-                )
-                if role_row is None:
-                    role_row = Role(
+                if not _get_role_row(company_id, default_role.name_value):
+                    Role.create(
+                        session,
                         company_id=company_id,
                         name=default_role.name_value,
+                        description=default_role.description,
                     )
-                    session.add(role_row)
-                role_row.description = default_role.description
-                role_row._closed_at = None
             session.commit()
 
         custom_roles = [
@@ -592,21 +582,13 @@ def seed_pagination_state():
             ("Client", "Client role with access to client-specific features."),
         ]
         for role_name, description in custom_roles:
-            role_row = (
-                session.query(Role)
-                .filter_by(company_id=company_ids[0], name=role_name)
-                .one_or_none()
-            )
-            if role_row is None:
-                role_row = Role(
+            if not _get_role_row(company_ids[0], role_name):
+                Role.create(
+                    session,
                     company_id=company_ids[0],
                     name=role_name,
                     description=description,
                 )
-                session.add(role_row)
-            else:
-                role_row.description = description
-                role_row._closed_at = None
         session.commit()
 
         for company_id in company_ids:
@@ -616,14 +598,17 @@ def seed_pagination_state():
                 .one_or_none()
             )
             if owner_link is None:
-                owner_link = AssociationUserCompany(
+                owner_link = AssociationUserCompany.create(
+                    session,
                     company_id=company_id,
                     user_id=owner_row.id,
                     role_name=owner_role_name,
                 )
-                session.add(owner_link)
             else:
-                owner_link.role_name = owner_role_name
+                owner_role = Role.role_belongs_to_company(
+                    session, company_id, owner_role_name
+                )
+                owner_link.role_id = owner_role["id"]
                 owner_link._closed_at = None
             session.commit()
 
@@ -678,15 +663,15 @@ def seed_pagination_state():
                 .one_or_none()
             )
             if existing_link is None:
-                session.add(
-                    AssociationUserCompany(
-                        company_id=company_id,
-                        user_id=user_id,
-                        role_name=role_name,
-                    )
+                AssociationUserCompany.create(
+                    session,
+                    company_id=company_id,
+                    user_id=user_id,
+                    role_name=role_name,
                 )
             else:
-                existing_link.role_name = role_name
+                role = Role.role_belongs_to_company(session, company_id, role_name)
+                existing_link.role_id = role["id"]
                 existing_link._closed_at = None
             session.commit()
 

@@ -16,6 +16,7 @@ class DatabaseSessionManager:
     expected_tables = (
         "association_user_company",
         "company",
+        "company_role",
         "role",
         "user",
     )
@@ -74,6 +75,7 @@ class DatabaseSessionManager:
         from app.repository.database.tables import (  # noqa: F401
             AssociationUserCompany,
             Company,
+            CompanyRole,
             Role,
             User,
         )

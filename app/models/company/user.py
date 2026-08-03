@@ -4,6 +4,7 @@ from app.models.user.user import UserReadModel
 
 
 class CompanyUserReadModel(UserReadModel):
+    role_id: str | None = None
     role_name: str
 
 
