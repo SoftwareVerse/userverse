@@ -7,14 +7,14 @@ pytestmark = pytest.mark.anyio
 
 
 async def test_a_delete_role_success(
-    client, login_token, test_company_data, seed_company_roles
+    client, login_token_superuser, test_company_data, seed_company_roles
 ):
     """
     Test deleting a role successfully and reassigning users.
     """
     company_id = seed_company_roles["company_one"]
     headers = {
-        "Authorization": f"Bearer {login_token}",
+        "Authorization": f"Bearer {login_token_superuser}",
     }
     payload = {
         "role_name_to_delete": "Client Updated",
@@ -39,13 +39,15 @@ async def test_a_delete_role_success(
     assert isinstance(json_data["data"]["users_reassigned"], int)
 
 
-async def test_b_delete_default_role_forbidden(client, login_token, seed_company_roles):
+async def test_b_delete_default_role_forbidden(
+    client, login_token_superuser, seed_company_roles
+):
     """
     Test attempting to delete a default system role like 'Administrator'.
     """
     company_id = seed_company_roles["company_one"]
     headers = {
-        "Authorization": f"Bearer {login_token}",
+        "Authorization": f"Bearer {login_token_superuser}",
     }
     payload = {
         "role_name_to_delete": "Administrator",
@@ -70,13 +72,15 @@ async def test_b_delete_default_role_forbidden(client, login_token, seed_company
     )
 
 
-async def test_c_delete_role_not_found(client, login_token, seed_company_roles):
+async def test_c_delete_role_not_found(
+    client, login_token_superuser, seed_company_roles
+):
     """
     Test deleting a role that does not exist.
     """
     company_id = seed_company_roles["company_one"]
     headers = {
-        "Authorization": f"Bearer {login_token}",
+        "Authorization": f"Bearer {login_token_superuser}",
     }
     payload = {
         "role_name_to_delete": "NonExistentRole",
@@ -103,14 +107,14 @@ async def test_c_delete_role_not_found(client, login_token, seed_company_roles):
 
 
 async def test_d_delete_role_self_replacement_forbidden(
-    client, login_token, seed_company_roles
+    client, login_token_superuser, seed_company_roles
 ):
     """
     Test rejecting deletion where role is being replaced with itself.
     """
     company_id = seed_company_roles["company_one"]
     headers = {
-        "Authorization": f"Bearer {login_token}",
+        "Authorization": f"Bearer {login_token_superuser}",
     }
     payload = {
         "role_name_to_delete": "Client Updated",
@@ -133,4 +137,30 @@ async def test_d_delete_role_self_replacement_forbidden(
     assert (
         json_data["detail"]["message"]
         == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
+
+
+async def test_e_delete_role_forbidden_for_company_owner(
+    client, login_token, seed_company_roles
+):
+    company_id = seed_company_roles["company_one"]
+    headers = {
+        "Authorization": f"Bearer {login_token}",
+    }
+    payload = {
+        "role_name_to_delete": "Client Updated",
+        "replacement_role_name": "Viewer",
+    }
+
+    response = await client.request(
+        method="DELETE",
+        url=f"/company/{company_id}/role",
+        json=payload,
+        headers=headers,
+    )
+
+    assert response.status_code == 403
+    assert (
+        response.json()["detail"]["message"]
+        == CompanyRoleResponseMessages.ROLE_MANAGEMENT_FORBIDDEN.value
     )

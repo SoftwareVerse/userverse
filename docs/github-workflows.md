@@ -11,7 +11,7 @@ Both workflows run on pushes to `main`. The test workflow also runs on pull requ
 
 | Workflow | Trigger | Purpose |
 | --- | --- | --- |
-| `build-and-test.yml` | `push` to `main`, `pull_request` to `main` | Install Python with `uv`, sync dependencies, auto-format with Black, run the HTTP integration test suite, and upload coverage to Codecov. |
+| `build-and-test.yml` | `push` to `main`, `pull_request` to `main` | Install Python with `uv`, sync dependencies, check formatting with Black, run the HTTP integration test suite, and upload coverage to Codecov. |
 | `release.yml` | `push` to `main` | Calculate the next semantic version, update `pyproject.toml`, create a Git tag, and create or update a GitHub release. |
 
 ## How `build-and-test.yml` Works
@@ -30,8 +30,8 @@ The workflow is named `CI - HTTP Integration Tests with uv`.
 3. Installs Python `3.12` through `uv`.
 4. Creates a virtual environment with `uv venv`.
 5. Installs project dependencies with `uv sync`.
-6. Runs `black .` across the repository.
-7. On direct pushes to `main`, configures Git and pushes any formatting changes created by Black.
+6. Runs `black --check .` across the repository.
+7. Skips `[skip ci]` automation commits such as release version bumps.
 8. Runs `./scripts/run_http_tests.sh`.
 9. Uploads `coverage_reports/coverage.xml` to Codecov using `codecov/codecov-action@v5`.
 
@@ -58,13 +58,10 @@ Coverage must stay at or above `96%` or the job fails.
 
 ### Formatting behavior
 
-The workflow is not only validating formatting; it is mutating the branch on `main` pushes:
+The workflow validates formatting only:
 
-- `black .` may rewrite files.
-- If files changed, the workflow commits them with message `style: auto-format code with Black`.
-- It then pushes that commit back to the same branch.
-
-This auto-commit step does **not** run for pull requests.
+- `black --check .` fails the job when formatting is needed.
+- The workflow does not rewrite files or push commits.
 
 ## How `release.yml` Works
 
@@ -78,18 +75,19 @@ The workflow is named `CI - Release Tag`.
 
 1. Checks out the full repository history and tags.
 2. Fetches tags and determines the latest existing semantic version tag.
-3. Reads the latest commit message to decide the version bump:
+3. Collects non-merge commits since the latest tag and ignores automation commits such as `style: auto-format code with Black` and `chore: bump version to vX.Y.Z [skip ci]`.
+4. Determines the highest requested version bump across those commits:
    - `[major]` -> major bump
    - `[minor]` -> minor bump
    - anything else -> patch bump
-4. Calculates the next version.
-5. Generates release notes from Git commits since the last tag.
-6. Configures Git credentials with `GITHUB_TOKEN`.
-7. Updates `pyproject.toml` inside the `[project]` section.
-8. Commits the version change with message `chore: bump version to vX.Y.Z` if the file changed.
-9. Creates an annotated Git tag `vX.Y.Z`.
-10. Pushes `main` and the new tag.
-11. Creates or updates the GitHub Release for that tag using the GitHub CLI.
+5. Calculates the next version.
+6. Generates release notes from those filtered commits.
+7. Configures Git credentials with `GITHUB_TOKEN`.
+8. Updates `pyproject.toml` inside the `[project]` section.
+9. Commits the version change with message `chore: bump version to vX.Y.Z [skip ci]`.
+10. Creates an annotated Git tag `vX.Y.Z`.
+11. Pushes `main` and the new tag.
+12. Creates or updates the GitHub Release for that tag using the GitHub CLI.
 
 ### Version calculation rules
 
@@ -97,16 +95,16 @@ The workflow uses the latest tag as the base version. If no tag exists, it start
 
 Examples:
 
-- latest tag `v0.6.29` + no marker in latest commit -> `v0.6.30`
-- latest tag `v0.6.29` + `[minor]` in latest commit -> `v0.7.0`
-- latest tag `v0.6.29` + `[major]` in latest commit -> `v1.0.0`
+- latest tag `v0.6.29` + no marker in commits since that tag -> `v0.6.30`
+- latest tag `v0.6.29` + any `[minor]` in commits since that tag -> `v0.7.0`
+- latest tag `v0.6.29` + any `[major]` in commits since that tag -> `v1.0.0`
 
-Only the **most recent commit message** is inspected when deciding the bump level.
+`[major]` takes precedence over `[minor]`, and automation commits are ignored.
 
 ### Release notes behavior
 
-- If a previous tag exists, notes are generated from `git log <previous_tag>..HEAD --no-merges`.
-- If no previous tag exists, notes are generated from all non-merge commits on `main`.
+- If a previous tag exists, notes are generated from filtered non-merge commits in `git log <previous_tag>..HEAD`.
+- If no previous tag exists, notes are generated from filtered non-merge commits on `main`.
 - Each entry is formatted as commit subject, short SHA, and author.
 
 ## How To Use These Workflows
@@ -135,7 +133,7 @@ Once code is merged or pushed to `main`:
 
 That means a push to `main` currently does all of the following automatically:
 
-- formats code and may create a formatting commit
+- checks formatting
 - runs the HTTP integration test suite
 - uploads coverage to Codecov
 - bumps the project version
@@ -144,7 +142,7 @@ That means a push to `main` currently does all of the following automatically:
 
 ### To control release version bumps
 
-Use the latest commit message on the change that lands in `main`:
+Use commit messages in the set of changes that land since the previous release tag:
 
 - add `[major]` for a major release
 - add `[minor]` for a minor release
@@ -174,25 +172,16 @@ They also assume:
 
 The current workflows are functional, but there are a few areas worth tightening.
 
-### 1. Separate validation from mutation
+### 1. Prevent workflow chaining and duplicate runs
 
-`build-and-test.yml` both checks code and rewrites it. That makes CI stateful and can create extra commits on `main`.
-
-Possible improvement:
-
-- replace auto-format-and-push with a pure formatting check such as `uv run black --check .`
-
-### 2. Prevent workflow chaining and duplicate runs
-
-Because the formatting step can push a new commit to `main`, it can trigger the workflows again. The same is true for the version bump commit created by `release.yml`.
+Release automation still creates a version-bump commit, so `[skip ci]` remains part of the design to prevent unnecessary follow-up runs.
 
 Possible improvement:
 
-- add branch protections and remove CI-driven commits
-- or use `[skip ci]` style conventions if the project wants automation commits
+- add branch protections around direct pushes to `main`
 - or gate release creation behind a dedicated manual or tagged workflow
 
-### 3. Run release only after tests succeed
+### 2. Run release only after tests succeed
 
 Both workflows trigger independently on pushes to `main`. The release workflow is not explicitly dependent on the test workflow passing first.
 
@@ -201,7 +190,7 @@ Possible improvement:
 - trigger release from `workflow_run` after a successful test workflow
 - or combine the release logic into a gated post-test job
 
-### 4. Pin tool versions more explicitly
+### 3. Pin tool versions more explicitly
 
 The test workflow installs the latest `uv` release at runtime. That can make CI behavior drift over time.
 
@@ -210,9 +199,9 @@ Possible improvement:
 - pin a known `uv` version
 - optionally cache Python and dependency artifacts for faster, more stable runs
 
-### 5. Review commit-message-based versioning
+### 4. Review commit-message-based versioning
 
-The release workflow only inspects the latest commit message. In squash-merge or multi-commit flows, that may not reflect the actual semantic scope of all included changes.
+The release workflow now inspects all releaseable commits since the latest tag. That is better than a single-commit check, but it still depends on commit-message discipline.
 
 Possible improvement:
 
@@ -220,7 +209,7 @@ Possible improvement:
 - use Conventional Commits across all commits since the last tag
 - or adopt a release tool such as Changesets or semantic-release
 
-### 6. Clarify release notes quality
+### 5. Clarify release notes quality
 
 Current release notes are generated from raw commit subjects. That is simple, but not always user-friendly.
 
@@ -230,7 +219,7 @@ Possible improvement:
 - exclude internal-only commits
 - generate notes from PR titles instead of raw commit history
 
-### 7. Align docs with the live test script
+### 6. Align docs with the live test script
 
 The existing testing docs mention `REQUIRE_EMAIL_VERIFICATION=true`, but the current CI script only sets `ENVIRONMENT=testing` and `TESTING=true`.
 
