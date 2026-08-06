@@ -85,3 +85,43 @@ async def test_get_user_companies_page_two_is_stable(client, seed_pagination_sta
         "current_page": 2,
         "total_pages": 2,
     }
+
+
+async def test_get_user_companies_returns_company_specific_roles(
+    client, seed_pagination_state
+):
+    headers = {"Authorization": f"Bearer {seed_pagination_state['owner_token']}"}
+
+    response = await client.get(
+        "/user/companies?limit=4&page=1",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    json_data = response.json()
+    records = json_data["data"]["records"]
+
+    assert [company["id"] for company in records] == [
+        str(company_id) for company_id in seed_pagination_state["user_company_ids"]
+    ]
+    for company in records:
+        expected_role = seed_pagination_state["owner_company_roles"][company["id"]]
+        assert company["name"].startswith("Pagination Company")
+        assert company["address"] == {
+            "street": "123 Pagination Road",
+            "city": "Johannesburg",
+            "state": "Gauteng",
+            "postal_code": "2000",
+            "country": "South Africa",
+        }
+        assert company["role"] == {
+            **expected_role,
+            "permissions": [],
+        }
+
+    assert json_data["data"]["pagination"] == {
+        "total_records": 4,
+        "limit": 4,
+        "current_page": 1,
+        "total_pages": 1,
+    }
