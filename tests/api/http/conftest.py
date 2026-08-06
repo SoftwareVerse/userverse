@@ -700,7 +700,16 @@ def seed_pagination_state():
                 )
         session.commit()
 
-        for company_id in company_ids:
+        owner_company_role_names = [
+            owner_role_name,
+            administrator_role_name,
+            viewer_role_name,
+            owner_role_name,
+        ]
+        owner_company_roles = {}
+        for company_id, owner_company_role_name in zip(
+            company_ids, owner_company_role_names
+        ):
             owner_link = (
                 session.query(AssociationUserCompany)
                 .filter_by(company_id=company_id, user_id=owner_row.id)
@@ -711,15 +720,23 @@ def seed_pagination_state():
                     session,
                     company_id=company_id,
                     user_id=owner_row.id,
-                    role_name=owner_role_name,
+                    role_name=owner_company_role_name,
                 )
             else:
                 owner_role = Role.role_belongs_to_company(
-                    session, company_id, owner_role_name
+                    session, company_id, owner_company_role_name
                 )
                 owner_link.role_id = owner_role["id"]
                 owner_link._closed_at = None
             session.commit()
+            owner_role = Role.role_belongs_to_company(
+                session, company_id, owner_company_role_name
+            )
+            owner_company_roles[str(company_id)] = {
+                "id": str(owner_role["id"]),
+                "name": owner_company_role_name,
+                "description": owner_role["description"],
+            }
 
         user_ids = []
         for user_data in extra_users:
@@ -808,6 +825,7 @@ def seed_pagination_state():
             "role_company_id": company_ids[0],
             "users_company_id": company_ids[0],
             "user_company_ids": company_ids,
+            "owner_company_roles": owner_company_roles,
             "users": user_ids,
         }
     finally:

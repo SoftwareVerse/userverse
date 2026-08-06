@@ -75,6 +75,11 @@ async def test_get_user_companies(
         }
         company_ids = {company["id"] for company in json_data["data"]["records"]}
         assert company_ids == expected_company_ids
+        for company in json_data["data"]["records"]:
+            assert company["role"]["id"]
+            assert company["role"]["name"] == "Owner"
+            assert company["role"]["description"]
+            assert company["role"]["permissions"] == []
 
         pagination = json_data["data"]["pagination"]
         assert pagination["limit"] == 10

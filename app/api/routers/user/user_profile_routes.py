@@ -9,7 +9,7 @@ from app.utils.shared_context import SharedContext
 from app.models.tags import UserverseApiTag
 from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import UserReadModel, UserUpdateModel
-from app.models.company.company import CompanyQueryParamsModel, CompanyReadModel
+from app.models.company.company import CompanyQueryParamsModel, UserCompanyReadModel
 from app.models.company.response_messages import CompanyUserResponseMessages
 from app.models.generic_response import GenericResponseModel
 from app.models.generic_pagination import PaginatedResponse
@@ -89,7 +89,7 @@ def update_user_api(
 @router.get(
     "/companies",
     status_code=status.HTTP_200_OK,
-    response_model=GenericResponseModel[PaginatedResponse[CompanyReadModel]],
+    response_model=GenericResponseModel[PaginatedResponse[UserCompanyReadModel]],
 )
 def get_user_companies_api(
     params: CompanyQueryParamsModel = Depends(),
