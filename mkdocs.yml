@@ -19,4 +19,6 @@ nav:
   - Reports and Analytics:
       - User Activity Reports: user_activity_reports.md
       - Organization Reports: organization_reports.md
+  - Potential Roadmaps:
+      - Provider-Neutral B2B Authorization: potential/provider-neutral-authorization-roadmap.md
   - FAQ: faq.md
