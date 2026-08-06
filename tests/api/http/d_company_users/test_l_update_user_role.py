@@ -83,14 +83,16 @@ def _get_link_row(company_id: str, user_id: str):
 async def test_update_company_user_role_success(
     client, login_token, login_token_superuser
 ):
+    role_name = f"User-{uuid4().hex}"
+    role_description = "Standard user role for company-user role update tests."
     company_id = await _create_company(client, login_token)
     await _create_role(
         client,
         login_token_superuser,
         company_id,
         {
-            "name": "User",
-            "description": "Standard user role for company-user role update tests.",
+            "name": role_name,
+            "description": role_description,
         },
     )
     user_id = await _add_user_to_company(
@@ -99,7 +101,7 @@ async def test_update_company_user_role_success(
 
     response = await client.patch(
         f"/company/{company_id}/user/{user_id}",
-        json={"role": "User"},
+        json={"role": role_name},
         headers={"Authorization": f"Bearer {login_token}"},
     )
 
@@ -107,23 +109,29 @@ async def test_update_company_user_role_success(
     json_data = response.json()
     assert "data" in json_data
     assert json_data["data"]["id"] == user_id
-    assert json_data["data"]["role_name"] == "User"
+    assert json_data["data"]["role"] == {
+        "id": json_data["data"]["role"]["id"],
+        "name": role_name,
+        "description": role_description,
+        "permissions": [],
+    }
 
     link_row = _get_link_row(company_id, user_id)
     assert link_row is not None
-    assert link_row.role_name == "User"
+    assert link_row.role_name == role_name
 
 
 async def test_update_company_user_role_forbidden_for_non_admin(
     client, login_token, login_token_superuser, login_token_user_two
 ):
+    role_name = f"User-{uuid4().hex}"
     company_id = await _create_company(client, login_token)
     await _create_role(
         client,
         login_token_superuser,
         company_id,
         {
-            "name": "User",
+            "name": role_name,
             "description": "Standard user role for company-user role update tests.",
         },
     )
@@ -133,7 +141,7 @@ async def test_update_company_user_role_forbidden_for_non_admin(
 
     response = await client.patch(
         f"/company/{company_id}/user/{user_id}",
-        json={"role": "User"},
+        json={"role": role_name},
         headers={"Authorization": f"Bearer {login_token_user_two}"},
     )
 
@@ -164,13 +172,14 @@ async def test_update_company_user_role_rejects_unknown_role(client, login_token
 async def test_update_company_user_role_returns_not_found_for_missing_link(
     client, login_token, login_token_superuser
 ):
+    role_name = f"User-{uuid4().hex}"
     company_id = await _create_company(client, login_token)
     await _create_role(
         client,
         login_token_superuser,
         company_id,
         {
-            "name": "User",
+            "name": role_name,
             "description": "Standard user role for company-user role update tests.",
         },
     )
@@ -178,7 +187,7 @@ async def test_update_company_user_role_returns_not_found_for_missing_link(
 
     response = await client.patch(
         f"/company/{company_id}/user/{user_id}",
-        json={"role": "User"},
+        json={"role": role_name},
         headers={"Authorization": f"Bearer {login_token}"},
     )
 

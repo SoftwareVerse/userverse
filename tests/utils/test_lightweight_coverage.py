@@ -716,7 +716,10 @@ def test_company_user_service_sends_company_invite(monkeypatch):
     added_company_user = type(
         "AddedCompanyUser",
         (),
-        {**added_user.model_dump(mode="json"), "role_name": "Viewer"},
+        {
+            **added_user.model_dump(mode="json"),
+            "role": type("Role", (), {"name": "Viewer"})(),
+        },
     )()
     company = type("Company", (), {"name": "Acme Co"})()
 

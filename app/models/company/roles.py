@@ -46,8 +46,9 @@ class RoleDeleteModel(BaseModel):
 
 class RoleReadModel(BaseModel):
     id: str | None = None
-    name: Optional[str]
-    description: Optional[str]
+    name: Optional[str] = None
+    description: Optional[str] = None
+    permissions: list[str] = Field(default_factory=list)
 
 
 class RoleAssignCompaniesModel(BaseModel):

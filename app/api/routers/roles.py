@@ -23,7 +23,15 @@ router = APIRouter()
 tag = UserverseApiTag.COMPANY_ROLE_MANAGEMENT.name
 
 
-@router.post("/roles", tags=[tag], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/roles",
+    tags=[tag],
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        201: {"model": GenericResponseModel[RoleReadModel]},
+        400: {"model": AppErrorResponseModel},
+    },
+)
 def create_role_api(
     payload: RoleCreateModel,
     common: CommonJWTRouteDependencies = Depends(),
@@ -63,7 +71,15 @@ def get_roles_api(
     )
 
 
-@router.patch("/roles/{role_id}", tags=[tag], status_code=status.HTTP_200_OK)
+@router.patch(
+    "/roles/{role_id}",
+    tags=[tag],
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"model": GenericResponseModel[RoleReadModel]},
+        400: {"model": AppErrorResponseModel},
+    },
+)
 def update_role_api(
     role_id: UUID,
     payload: RoleUpdateModel,

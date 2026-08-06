@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import status
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager
 
 from app.models.company.address import CompanyAddressModel
 from app.models.company.company import (
@@ -10,9 +10,10 @@ from app.models.company.company import (
     CompanyQueryParamsModel,
     CompanyReadModel,
     CompanyUpdateModel,
+    UserCompanyReadModel,
 )
 from app.models.company.response_messages import CompanyResponseMessages
-from app.models.company.roles import CompanyDefaultRoles
+from app.models.company.roles import CompanyDefaultRoles, RoleReadModel
 from app.models.generic_pagination import (
     PaginatedResponse,
     apply_pagination,
@@ -180,7 +181,7 @@ class CompanyRepository(BaseSQLRepository[Company]):
 
     def get_user_companies(
         self, user_id: UUID, params: CompanyQueryParamsModel
-    ) -> PaginatedResponse[CompanyReadModel]:
+    ) -> PaginatedResponse[UserCompanyReadModel]:
         query = (
             self.db_session.query(AssociationUserCompany)
             .join(AssociationUserCompany.company)
@@ -204,7 +205,10 @@ class CompanyRepository(BaseSQLRepository[Company]):
 
         total = query.count()
         results = apply_pagination(
-            query.options(joinedload(AssociationUserCompany.company)),
+            query.options(
+                contains_eager(AssociationUserCompany.company),
+                contains_eager(AssociationUserCompany.role),
+            ),
             page=params.page,
             limit=params.limit,
             order_by=[
@@ -212,8 +216,18 @@ class CompanyRepository(BaseSQLRepository[Company]):
                 Company.id.asc(),
             ],
         ).all()
-        companies = [self._to_read_model(assoc.company) for assoc in results]
-        return PaginatedResponse[CompanyReadModel](
+        companies = [
+            UserCompanyReadModel(
+                **self._to_read_model(assoc.company).model_dump(),
+                role=RoleReadModel(
+                    id=str(assoc.role.id),
+                    name=assoc.role.name,
+                    description=assoc.role.description,
+                ),
+            )
+            for assoc in results
+        ]
+        return PaginatedResponse[UserCompanyReadModel](
             records=companies,
             pagination=build_pagination_meta(
                 total_records=total,

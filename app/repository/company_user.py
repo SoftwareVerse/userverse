@@ -8,7 +8,7 @@ from app.models.company.response_messages import (
     CompanyResponseMessages,
     CompanyUserResponseMessages,
 )
-from app.models.company.roles import CompanyDefaultRoles
+from app.models.company.roles import CompanyDefaultRoles, RoleReadModel
 from app.models.company.user import CompanyUserAddModel, CompanyUserReadModel
 from app.models.generic_pagination import (
     PaginatedResponse,
@@ -39,8 +39,11 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
             phone_number=user.phone_number,
             status=metadata.get("status"),
             is_superuser=user.is_superuser,
-            role_id=str(role.id),
-            role_name=role.name,
+            role=RoleReadModel(
+                id=str(role.id),
+                name=role.name,
+                description=role.description,
+            ),
         )
 
     def is_user_linked_to_company(
