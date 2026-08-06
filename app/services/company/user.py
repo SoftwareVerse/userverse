@@ -97,7 +97,7 @@ class CompanyUserService:
             invitee_name=f"{user.first_name or ''} {user.last_name or ''}".strip()
             or user.email,
             company_name=company.name,
-            role_name=user.role_name,
+            role_name=user.role.name,
         )
         return user
 

@@ -96,6 +96,11 @@ async def test_get_users_for_company(
         records = json_data["data"]["records"]
         actual_emails = {user["email"] for user in records}
         assert actual_emails == expected_emails
+        for user in records:
+            assert "role_id" not in user
+            assert "role_name" not in user
+            assert set(user["role"]) == {"id", "name", "description", "permissions"}
+            assert user["role"]["permissions"] == []
         pagination = json_data["data"]["pagination"]
         assert pagination["limit"] == 10
         assert pagination["current_page"] == 1
@@ -107,3 +112,28 @@ async def test_get_users_for_company(
             json_data["detail"]["message"]
             == CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value
         )
+
+
+async def test_get_users_for_company_returns_nested_role_details(
+    client,
+    login_token,
+    seed_companies,
+    verify_both_users,
+):
+    response = await client.get(
+        f"/company/{seed_companies['company_one']}/users?limit=10&page=1",
+        headers={
+            "Authorization": f"Bearer {login_token}",
+            "accept": "application/json",
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    record = response.json()["data"]["records"][0]
+    assert record["email"] == "user.one@email.com"
+    assert record["role"] == {
+        "id": record["role"]["id"],
+        "name": "Owner",
+        "description": "Full access to manage users and data",
+        "permissions": [],
+    }

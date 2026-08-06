@@ -1,4 +1,5 @@
 import pytest
+from uuid import uuid4
 
 pytestmark = pytest.mark.anyio
 # TODO: cases to add
@@ -18,7 +19,15 @@ async def test_a_create_company_one_roles_success(
     Test creating roles for a company successfully.
     """
     company_id = seed_companies["company_one"]
-    roles = test_company_data["roles"]
+    suffix = uuid4().hex
+    roles = {
+        key: {
+            **value,
+            "name": f"{value['name']}-{suffix}",
+            "description": f"{value['description']} ({suffix})",
+        }
+        for key, value in test_company_data["roles"].items()
+    }
     headers = {"Authorization": f"Bearer {login_token_superuser}"}
 
     for role_key, role_value in roles.items():
@@ -37,6 +46,7 @@ async def test_a_create_company_one_roles_success(
         assert "data" in json_data
         assert json_data["data"]["name"] == role_value["name"]
         assert json_data["data"]["description"] == role_value["description"]
+        assert json_data["data"]["permissions"] == []
 
 
 async def test_a_create_company_two_roles_success(
@@ -46,7 +56,15 @@ async def test_a_create_company_two_roles_success(
     Test creating roles for a company successfully.
     """
     company_id = seed_companies["company_two"]
-    roles = test_company_data["roles"]
+    suffix = uuid4().hex
+    roles = {
+        key: {
+            **value,
+            "name": f"{value['name']}-{suffix}",
+            "description": f"{value['description']} ({suffix})",
+        }
+        for key, value in test_company_data["roles"].items()
+    }
     headers = {"Authorization": f"Bearer {login_token_superuser}"}
 
     for role_key, role_value in roles.items():
@@ -65,6 +83,7 @@ async def test_a_create_company_two_roles_success(
         assert "data" in json_data
         assert json_data["data"]["name"] == role_value["name"]
         assert json_data["data"]["description"] == role_value["description"]
+        assert json_data["data"]["permissions"] == []
 
 
 async def test_b_create_company_roles_failure(
@@ -99,10 +118,23 @@ async def test_c_create_company_roles_failure(
     Test creating roles for a company failure. When the roles already exist
     """
     company_id = seed_companies["company_two"]
-    roles = test_company_data["roles"]
+    suffix = uuid4().hex
+    roles = {
+        key: {
+            **value,
+            "name": f"{value['name']}-{suffix}",
+            "description": f"{value['description']} ({suffix})",
+        }
+        for key, value in test_company_data["roles"].items()
+    }
     headers = {"Authorization": f"Bearer {login_token_superuser}"}
 
     for role_key, role_value in roles.items():
+        first_response = await client.post(
+            f"/company/{company_id}/role", json=role_value, headers=headers
+        )
+        assert first_response.status_code in [200, 201], first_response.text
+
         response = await client.post(
             f"/company/{company_id}/role", json=role_value, headers=headers
         )

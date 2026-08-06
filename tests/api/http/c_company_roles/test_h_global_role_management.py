@@ -33,6 +33,7 @@ async def test_superuser_can_manage_global_roles_and_bulk_assign(
 ):
     payload = _role_payload()
     created = await _create_global_role(client, login_token_superuser, payload)
+    assert created["permissions"] == []
     role_id = created["id"]
     headers = {"Authorization": f"Bearer {login_token_superuser}"}
 
@@ -49,6 +50,7 @@ async def test_superuser_can_manage_global_roles_and_bulk_assign(
         update_response.json()["message"]
         == CompanyRoleResponseMessages.ROLE_UPDATED.value
     )
+    assert update_response.json()["data"]["permissions"] == []
 
     assign_response = await client.post(
         f"/roles/{role_id}/companies",
@@ -97,6 +99,7 @@ async def test_company_owner_cannot_manage_global_roles(
     )
 
     created = await _create_global_role(client, login_token_superuser, _role_payload())
+    assert created["permissions"] == []
     role_id = created["id"]
 
     update_response = await client.patch(
@@ -136,6 +139,7 @@ async def test_owner_can_assign_and_unassign_existing_role_for_company(
     client, login_token, login_token_superuser, seed_companies
 ):
     created = await _create_global_role(client, login_token_superuser, _role_payload())
+    assert created["permissions"] == []
     role_id = created["id"]
     company_id = seed_companies["company_one"]
     headers = {"Authorization": f"Bearer {login_token}"}
@@ -149,6 +153,7 @@ async def test_owner_can_assign_and_unassign_existing_role_for_company(
         assign_response.json()["message"]
         == CompanyRoleResponseMessages.ROLE_CREATION_SUCCESS.value
     )
+    assert assign_response.json()["data"]["permissions"] == []
 
     unassign_response = await client.delete(
         f"/company/{company_id}/roles/{role_id}",
@@ -165,6 +170,7 @@ async def test_non_manager_cannot_assign_or_unassign_company_role(
     client, login_token, login_token_user_two, login_token_superuser, seed_companies
 ):
     created = await _create_global_role(client, login_token_superuser, _role_payload())
+    assert created["permissions"] == []
     role_id = created["id"]
     company_id = seed_companies["company_one"]
 
