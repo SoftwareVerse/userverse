@@ -13,6 +13,12 @@ class PermissionResponseMessages(str, Enum):
     ALREADY_ASSIGNED = "Permission is already assigned to the role."
     ASSIGNMENT_NOT_FOUND = "Permission is not assigned to the role."
     MANAGEMENT_FORBIDDEN = "Access denied. You cannot manage these permissions."
+    SYSTEM_PERMISSION_PROTECTED = (
+        "System permission identities cannot be renamed or deleted."
+    )
+    SYSTEM_PERMISSION_CONFLICT = (
+        "A reserved system permission name or identifier is already in use."
+    )
 
 
 class PlatformRoleResponseMessages(str, Enum):

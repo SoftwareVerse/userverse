@@ -21,6 +21,11 @@ from app.models.permissions import (
     PermissionScope,
     PermissionUpdateModel,
 )
+from app.models.system_permissions import (
+    SYSTEM_PERMISSION_DEFINITIONS,
+    SystemPermissionDefinition,
+    is_system_permission_id,
+)
 from app.models.user.account_status import UserAccountStatus
 from app.repository.base import BaseSQLRepository
 from app.repository.database.tables import (
@@ -140,6 +145,15 @@ class GlobalPermissionRepository(BaseSQLRepository[GlobalPermission]):
         payload: PermissionUpdateModel,
     ) -> PermissionReadModel:
         permission = self.ensure_record(permission_id)
+        if (
+            is_system_permission_id(permission.id)
+            and "name" in payload.model_fields_set
+            and payload.name != permission.name
+        ):
+            raise AppError(
+                status_code=status.HTTP_409_CONFLICT,
+                message=PermissionResponseMessages.SYSTEM_PERMISSION_PROTECTED.value,
+            )
         if "name" in payload.model_fields_set:
             permission.name = payload.name
         if "description" in payload.model_fields_set:
@@ -158,12 +172,90 @@ class GlobalPermissionRepository(BaseSQLRepository[GlobalPermission]):
 
     def delete_permission(self, permission_id: UUID) -> dict[str, str]:
         permission = self.ensure_record(permission_id)
+        if is_system_permission_id(permission.id):
+            raise AppError(
+                status_code=status.HTTP_409_CONFLICT,
+                message=PermissionResponseMessages.SYSTEM_PERMISSION_PROTECTED.value,
+            )
         self.db_session.query(RoleGlobalPermission).filter(
             RoleGlobalPermission.global_permission_id == permission_id
         ).delete(synchronize_session=False)
         self.db_session.delete(permission)
         self.db_session.commit()
         return {"message": f"Permission '{permission.name}' deleted successfully."}
+
+
+class SystemPermissionRepository:
+    def __init__(self, session: Session):
+        self.db_session = session
+
+    def ensure_permissions(self) -> dict[UUID, GlobalPermission]:
+        permissions: dict[UUID, GlobalPermission] = {}
+        for definition in SYSTEM_PERMISSION_DEFINITIONS:
+            records = (
+                self.db_session.query(GlobalPermission)
+                .filter(
+                    (GlobalPermission.id == definition.id)
+                    | (GlobalPermission.name == definition.name)
+                )
+                .all()
+            )
+            permission = self._resolve_definition(definition, records)
+            if permission is None:
+                permission = GlobalPermission(
+                    id=definition.id,
+                    name=definition.name,
+                    description=definition.description,
+                    primary_meta_data={
+                        "system": True,
+                        "kind": "default_api_permission",
+                    },
+                )
+                self.db_session.add(permission)
+                self.db_session.flush()
+            permissions[definition.id] = permission
+        return permissions
+
+    def seed_new_default_roles(
+        self,
+        roles: dict[str, Role],
+        created_role_names: set[str],
+    ) -> None:
+        if not created_role_names:
+            return
+        permissions = self.ensure_permissions()
+        for definition in SYSTEM_PERMISSION_DEFINITIONS:
+            for role_name in definition.default_roles.intersection(created_role_names):
+                self.db_session.add(
+                    RoleGlobalPermission(
+                        role_id=roles[role_name].id,
+                        global_permission_id=permissions[definition.id].id,
+                        primary_meta_data={
+                            "system_default": True,
+                            "role": role_name,
+                        },
+                    )
+                )
+
+    @staticmethod
+    def _resolve_definition(
+        definition: SystemPermissionDefinition,
+        records: list[GlobalPermission],
+    ) -> GlobalPermission | None:
+        if not records:
+            return None
+        if len(records) != 1:
+            raise AppError(
+                status_code=status.HTTP_409_CONFLICT,
+                message=PermissionResponseMessages.SYSTEM_PERMISSION_CONFLICT.value,
+            )
+        permission = records[0]
+        if permission.id != definition.id or permission.name != definition.name:
+            raise AppError(
+                status_code=status.HTTP_409_CONFLICT,
+                message=PermissionResponseMessages.SYSTEM_PERMISSION_CONFLICT.value,
+            )
+        return permission
 
 
 class CompanyPermissionRepository(BaseSQLRepository[CompanyPermission]):

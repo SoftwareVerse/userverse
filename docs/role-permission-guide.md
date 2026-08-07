@@ -90,6 +90,55 @@ All endpoints require a bearer access token.
 The `is_superuser` flag remains the bootstrap administration mechanism. It does
 not create an implicit role or permission assignment.
 
+## Built-in company API permissions
+
+Userverse seeds 16 protected global permissions for its own company-management
+APIs. Their UUIDs are deterministic and their names are stable machine keys.
+They are attached to the built-in roles as follows:
+
+| Global system permission | Protected API | Owner | Administrator | Viewer |
+| --- | --- | :---: | :---: | :---: |
+| `company.read` | `GET /company` | yes | yes | yes |
+| `company.update` | `PATCH /company/{company_id}` | yes | yes | no |
+| `company.delete` | `DELETE /company/{company_id}` | yes | no | no |
+| `company.members.read` | `GET /company/{company_id}/users` | yes | yes | yes |
+| `company.members.add` | `POST /company/{company_id}/users` | yes | yes | no |
+| `company.members.role.update` | `PATCH /company/{company_id}/user/{user_id}` | yes | yes | no |
+| `company.members.remove` | `DELETE /company/{company_id}/user/{user_id}` | yes | yes | no |
+| `company.roles.read` | `GET /company/{company_id}/roles` | yes | yes | no |
+| `company.roles.assign` | `POST /company/{company_id}/roles/{role_id}` | yes | yes | no |
+| `company.roles.unassign` | `DELETE /company/{company_id}/roles/{role_id}` | yes | yes | no |
+| `company.permissions.read` | Company permission lists and effective role-permission reads | yes | yes | no |
+| `company.permissions.create` | `POST /company/{company_id}/permissions` | yes | yes | no |
+| `company.permissions.update` | `PATCH /company/{company_id}/permissions/{permission_id}` | yes | yes | no |
+| `company.permissions.delete` | `DELETE /company/{company_id}/permissions/{permission_id}` | yes | yes | no |
+| `company.permissions.assign` | Attach a company permission to a role | yes | yes | no |
+| `company.permissions.unassign` | Remove a company permission from a role | yes | yes | no |
+
+Every protected service operation checks the exact seeded global permission
+identity. A non-superuser must have an active membership whose role is still
+enabled for that company and whose global baseline contains that permission.
+A company permission with the same display name, such as a tenant-created
+`company.delete`, never authorizes a built-in Userverse API.
+
+Superusers bypass these company membership and permission checks. Direct
+platform roles do not: even a direct platform `Owner` assignment cannot read or
+change a company without company membership.
+
+The seeded permissions are system records:
+
+- Their names and UUIDs cannot be changed, and deleting them returns `409`.
+- A superuser may update their descriptions.
+- A superuser may attach or remove the real system permission from global roles.
+  Changes take effect on the next request.
+- Default links are added when built-in roles are first created or by the data
+  migration. A deliberately removed link is not silently restored later.
+
+A custom global role can authorize a built-in tenant API. A superuser must
+attach the actual seeded system permission to that role, enable the role for the
+company, and assign it through an active company membership. Matching the name
+with a new permission is insufficient.
+
 The examples below assume:
 
 ```bash
@@ -345,5 +394,6 @@ and return `404`.
 - Changing a global role permission propagates immediately to every company and
   platform user using that role.
 - Company additions are isolated: changes in company A do not change company B.
-- Permission introspection exposes effective permissions but does not yet
-  replace existing route authorization with permission-key checks.
+- Userverse's built-in company-management APIs enforce the protected system
+  permissions in their service layer. Tenant application permissions remain
+  available for application-specific authorization decisions.

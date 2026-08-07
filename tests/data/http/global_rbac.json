@@ -1,0 +1,54 @@
+{
+    "roles": {
+        "managed": {
+            "name": "Global Role",
+            "description": "Global role management fixture"
+        },
+        "hybrid_manager": {
+            "name": "Hybrid Manager",
+            "description": "Hybrid global and company permission fixture"
+        },
+        "matrix_role": {
+            "name": "Matrix Role",
+            "description": "Role used by the default permission API matrix"
+        },
+        "inactive_assignment": {
+            "name": "Inactive Assignment",
+            "description": "Role used to reject inactive platform users"
+        },
+        "permission_edge": {
+            "name": "Permission Edge Role",
+            "description": null
+        },
+        "unassigned_edge": {
+            "name": "Unassigned Edge Role",
+            "description": null
+        }
+    },
+    "permissions": {
+        "dashboard_view": {
+            "name": "app.dashboard.view",
+            "description": "View the platform dashboard"
+        },
+        "forbidden": {
+            "name": "app.forbidden",
+            "description": null
+        },
+        "duplicate": {
+            "name": "app.duplicate",
+            "description": null
+        },
+        "edge_first": {
+            "name": "app.edge.first",
+            "description": "Global permission edge-case fixture"
+        },
+        "edge_second": {
+            "name": "app.edge.second",
+            "description": null
+        },
+        "edge_renamed": {
+            "name": "app.edge.renamed",
+            "description": "Renamed global permission"
+        }
+    }
+}

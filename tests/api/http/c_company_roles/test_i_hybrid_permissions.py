@@ -4,8 +4,31 @@ import pytest
 
 from app.repository.database import session_manager
 from app.repository.database.tables import CompanyRole, Role, User
+from app.models.system_permissions import SYSTEM_PERMISSION_DEFINITIONS
 
 pytestmark = pytest.mark.anyio
+
+
+def _role_fixture(data: dict, key: str, suffix: str) -> dict:
+    payload = dict(data["roles"][key])
+    payload["name"] = f"{payload['name']} {suffix}"
+    return payload
+
+
+def _permission_fixture(
+    data: dict,
+    key: str,
+    suffix: str,
+    *,
+    padded: bool = False,
+) -> dict:
+    payload = dict(data["permissions"][key])
+    payload["name"] = f"{payload['name']}.{suffix}"
+    if padded:
+        payload["name"] = f"  {payload['name']}  "
+    if payload.get("description"):
+        payload["description"] = f"{payload['description']} {suffix}"
+    return payload
 
 
 def _user_id(email: str):
@@ -40,6 +63,8 @@ async def test_hybrid_global_company_and_platform_permissions(
     login_token_user_two,
     login_token_superuser,
     seed_companies,
+    test_company_data,
+    test_global_rbac_data,
 ):
     suffix = uuid4().hex
     super_headers = {"Authorization": f"Bearer {login_token_superuser}"}
@@ -48,23 +73,23 @@ async def test_hybrid_global_company_and_platform_permissions(
     company_one = seed_companies["company_one"]
     company_two = seed_companies["company_two"]
 
+    role_payload = _role_fixture(test_global_rbac_data, "hybrid_manager", suffix)
     role_response = await client.post(
         "/roles",
-        json={
-            "name": f"Hybrid Manager {suffix}",
-            "description": "Hybrid permission test role",
-        },
+        json=role_payload,
         headers=super_headers,
     )
     assert role_response.status_code == 201, role_response.text
     role_id = role_response.json()["data"]["id"]
 
+    global_payload = _permission_fixture(
+        test_global_rbac_data,
+        "dashboard_view",
+        suffix,
+    )
     global_response = await client.post(
         "/permissions",
-        json={
-            "name": f"app.dashboard.view.{suffix}",
-            "description": "View the platform dashboard",
-        },
+        json=global_payload,
         headers=super_headers,
     )
     assert global_response.status_code == 201, global_response.text
@@ -74,7 +99,7 @@ async def test_hybrid_global_company_and_platform_permissions(
 
     forbidden_global = await client.post(
         "/permissions",
-        json={"name": f"app.forbidden.{suffix}"},
+        json=_permission_fixture(test_global_rbac_data, "forbidden", suffix),
         headers=company_one_headers,
     )
     assert forbidden_global.status_code == 403
@@ -93,7 +118,7 @@ async def test_hybrid_global_company_and_platform_permissions(
     assert global_role_permissions.json()["data"] == [global_permission]
     global_role_list = await client.get(
         "/roles",
-        params={"name": f"Hybrid Manager {suffix}"},
+        params={"name": role_payload["name"]},
         headers=super_headers,
     )
     assert global_role_list.status_code == 200
@@ -117,12 +142,14 @@ async def test_hybrid_global_company_and_platform_permissions(
         assert response.status_code == 201, response.text
         assert response.json()["data"]["permissions"] == [global_permission]
 
+    company_permission_payload = _permission_fixture(
+        test_company_data,
+        "invoice_approve",
+        suffix,
+    )
     company_one_permission_response = await client.post(
         f"/company/{company_one}/permissions",
-        json={
-            "name": f"invoice.approve.{suffix}",
-            "description": "Approve invoices for company one",
-        },
+        json=company_permission_payload,
         headers=company_one_headers,
     )
     assert company_one_permission_response.status_code == 201
@@ -132,10 +159,7 @@ async def test_hybrid_global_company_and_platform_permissions(
 
     company_two_permission_response = await client.post(
         f"/company/{company_two}/permissions",
-        json={
-            "name": f"invoice.approve.{suffix}",
-            "description": "Same tenant-local name for company two",
-        },
+        json=company_permission_payload,
         headers=company_two_headers,
     )
     assert company_two_permission_response.status_code == 201
@@ -214,9 +238,15 @@ async def test_hybrid_global_company_and_platform_permissions(
         for record in user_companies.json()["data"]["records"]
         if record["id"] == str(company_one)
     )
+    owner_system_permission_ids = {
+        str(definition.id)
+        for definition in SYSTEM_PERMISSION_DEFINITIONS
+        if "Owner" in definition.default_roles
+    }
     assert {item["id"] for item in company_record["role"]["permissions"]} == {
         global_permission["id"],
         company_one_permission["id"],
+        *owner_system_permission_ids,
     }
 
     company_users = await client.get(
@@ -231,6 +261,7 @@ async def test_hybrid_global_company_and_platform_permissions(
     assert {item["id"] for item in owner_record["role"]["permissions"]} == {
         global_permission["id"],
         company_one_permission["id"],
+        *owner_system_permission_ids,
     }
 
     await client.delete(
@@ -325,10 +356,11 @@ async def test_hybrid_global_company_and_platform_permissions(
 async def test_duplicate_permission_and_assignment_conflicts(
     client,
     login_token_superuser,
+    test_global_rbac_data,
 ):
     suffix = uuid4().hex
     headers = {"Authorization": f"Bearer {login_token_superuser}"}
-    payload = {"name": f"app.duplicate.{suffix}"}
+    payload = _permission_fixture(test_global_rbac_data, "duplicate", suffix)
 
     created = await client.post("/permissions", json=payload, headers=headers)
     duplicate = await client.post("/permissions", json=payload, headers=headers)
@@ -383,12 +415,13 @@ async def test_inactive_users_cannot_receive_platform_roles(
     login_token_superuser,
     seed_verified_users,
     test_user_data,
+    test_global_rbac_data,
 ):
     suffix = uuid4().hex
     headers = {"Authorization": f"Bearer {login_token_superuser}"}
     role_response = await client.post(
         "/roles",
-        json={"name": f"Inactive Assignment {suffix}", "description": None},
+        json=_role_fixture(test_global_rbac_data, "inactive_assignment", suffix),
         headers=headers,
     )
     assert role_response.status_code == 201
@@ -429,6 +462,8 @@ async def test_permission_management_edge_cases(
     login_token,
     login_token_superuser,
     seed_companies,
+    test_company_data,
+    test_global_rbac_data,
 ):
     suffix = uuid4().hex
     super_headers = {"Authorization": f"Bearer {login_token_superuser}"}
@@ -442,24 +477,32 @@ async def test_permission_management_edge_cases(
     )
     assert blank_create.status_code == 422
 
+    first_global_payload = _permission_fixture(
+        test_global_rbac_data,
+        "edge_first",
+        suffix,
+        padded=True,
+    )
+    second_global_payload = _permission_fixture(
+        test_global_rbac_data,
+        "edge_second",
+        suffix,
+    )
     first_global = await client.post(
         "/permissions",
-        json={
-            "name": f"  app.edge.first.{suffix}  ",
-            "description": f"Global edge description {suffix}",
-        },
+        json=first_global_payload,
         headers=super_headers,
     )
     second_global = await client.post(
         "/permissions",
-        json={"name": f"app.edge.second.{suffix}"},
+        json=second_global_payload,
         headers=super_headers,
     )
     assert first_global.status_code == 201
     assert second_global.status_code == 201
     first_global_permission = first_global.json()["data"]
     second_global_permission = second_global.json()["data"]
-    assert first_global_permission["name"] == f"app.edge.first.{suffix}"
+    assert first_global_permission["name"] == first_global_payload["name"].strip()
 
     global_description_filter = await client.get(
         "/permissions",
@@ -484,13 +527,18 @@ async def test_permission_management_edge_cases(
     assert null_name.status_code == 422
     assert blank_name.status_code == 422
 
+    renamed_global_payload = _permission_fixture(
+        test_global_rbac_data,
+        "edge_renamed",
+        suffix,
+    )
     renamed_global = await client.patch(
         f"/permissions/{second_global_permission['id']}",
-        json={"name": f"app.edge.renamed.{suffix}"},
+        json={"name": renamed_global_payload["name"]},
         headers=super_headers,
     )
     assert renamed_global.status_code == 200
-    assert renamed_global.json()["data"]["name"] == f"app.edge.renamed.{suffix}"
+    assert renamed_global.json()["data"]["name"] == renamed_global_payload["name"]
 
     global_rename_conflict = await client.patch(
         f"/permissions/{second_global_permission['id']}",
@@ -506,24 +554,32 @@ async def test_permission_management_edge_cases(
     )
     assert missing_global_permission.status_code == 404
 
+    first_company_payload = _permission_fixture(
+        test_company_data,
+        "edge_first",
+        suffix,
+        padded=True,
+    )
+    second_company_payload = _permission_fixture(
+        test_company_data,
+        "edge_second",
+        suffix,
+    )
     first_company = await client.post(
         f"/company/{company_id}/permissions",
-        json={
-            "name": f"  invoice.edge.first.{suffix}  ",
-            "description": f"Company edge description {suffix}",
-        },
+        json=first_company_payload,
         headers=company_headers,
     )
     second_company = await client.post(
         f"/company/{company_id}/permissions",
-        json={"name": f"invoice.edge.second.{suffix}"},
+        json=second_company_payload,
         headers=company_headers,
     )
     assert first_company.status_code == 201
     assert second_company.status_code == 201
     first_company_permission = first_company.json()["data"]
     second_company_permission = second_company.json()["data"]
-    assert first_company_permission["name"] == f"invoice.edge.first.{suffix}"
+    assert first_company_permission["name"] == first_company_payload["name"].strip()
 
     duplicate_company = await client.post(
         f"/company/{company_id}/permissions",
@@ -544,21 +600,26 @@ async def test_permission_management_edge_cases(
 
     superuser_company_permissions = await client.get(
         f"/company/{company_id}/permissions",
-        params={"name": f"invoice.edge.first.{suffix}"},
+        params={"name": first_company_permission["name"]},
         headers=super_headers,
     )
     assert superuser_company_permissions.status_code == 200
 
+    renamed_company_payload = _permission_fixture(
+        test_company_data,
+        "edge_renamed",
+        suffix,
+    )
     renamed_company = await client.patch(
         f"/company/{company_id}/permissions/{second_company_permission['id']}",
         json={
-            "name": f"invoice.edge.renamed.{suffix}",
-            "description": "Renamed company permission",
+            "name": renamed_company_payload["name"],
+            "description": renamed_company_payload["description"],
         },
         headers=company_headers,
     )
     assert renamed_company.status_code == 200
-    assert renamed_company.json()["data"]["name"] == f"invoice.edge.renamed.{suffix}"
+    assert renamed_company.json()["data"]["name"] == renamed_company_payload["name"]
 
     company_rename_conflict = await client.patch(
         f"/company/{company_id}/permissions/{second_company_permission['id']}",
@@ -582,12 +643,12 @@ async def test_permission_management_edge_cases(
 
     role_response = await client.post(
         "/roles",
-        json={"name": f"Permission Edge Role {suffix}", "description": None},
+        json=_role_fixture(test_global_rbac_data, "permission_edge", suffix),
         headers=super_headers,
     )
     unassigned_role_response = await client.post(
         "/roles",
-        json={"name": f"Unassigned Edge Role {suffix}", "description": None},
+        json=_role_fixture(test_global_rbac_data, "unassigned_edge", suffix),
         headers=super_headers,
     )
     assert role_response.status_code == 201

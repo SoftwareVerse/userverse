@@ -60,6 +60,7 @@ class CompanyRepository(BaseSQLRepository[Company]):
 
     def _ensure_default_roles(self) -> dict[str, Role]:
         default_roles: dict[str, Role] = {}
+        created_role_names: set[str] = set()
         for default_role in CompanyDefaultRoles:
             role = (
                 self.db_session.query(Role)
@@ -76,9 +77,16 @@ class CompanyRepository(BaseSQLRepository[Company]):
                 )
                 self.db_session.add(role)
                 self.db_session.flush()
+                created_role_names.add(default_role.name_value)
             elif role.description != default_role.description:
                 role.description = default_role.description
             default_roles[default_role.name_value] = role
+        from app.repository.permission import SystemPermissionRepository
+
+        SystemPermissionRepository(self.db_session).seed_new_default_roles(
+            default_roles,
+            created_role_names,
+        )
         self.db_session.commit()
         return default_roles
 

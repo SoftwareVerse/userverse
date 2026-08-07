@@ -4,7 +4,6 @@ from fastapi import status
 
 from app.models.company.response_messages import CompanyRoleResponseMessages
 from app.models.company.roles import (
-    CompanyDefaultRoles,
     RoleAssignCompaniesModel,
     RoleCreateModel,
     RoleDeleteModel,
@@ -12,12 +11,13 @@ from app.models.company.roles import (
     RoleReadModel,
     RoleUpdateModel,
 )
+from app.models.system_permissions import SystemPermission
 from app.models.generic_pagination import PaginatedResponse
 from app.repository.company_role import (
     CompanyRoleAssignmentRepository,
     RoleRepository,
 )
-from app.services.company.user import CompanyUserService
+from app.services.company.authorization import CompanyAuthorizationService
 from app.utils.app_error import AppError
 from app.utils.shared_context import SharedContext
 
@@ -25,6 +25,7 @@ from app.utils.shared_context import SharedContext
 class RoleService:
     def __init__(self, context: SharedContext):
         self.context = context
+        self.authorization = CompanyAuthorizationService(context)
 
     def _ensure_superuser(self) -> None:
         if not self.context.user.is_superuser:
@@ -33,24 +34,12 @@ class RoleService:
                 message=CompanyRoleResponseMessages.ROLE_MANAGEMENT_FORBIDDEN.value,
             )
 
-    def _ensure_company_manager(self, company_id: UUID) -> None:
-        company_user_service = CompanyUserService(self.context)
-        if not (
-            company_user_service.company_user_repository.is_user_linked_to_company(
-                user_id=self.context.user.id,
-                company_id=company_id,
-                role_name=CompanyDefaultRoles.ADMINISTRATOR.name_value,
-            )
-            or company_user_service.company_user_repository.is_user_linked_to_company(
-                user_id=self.context.user.id,
-                company_id=company_id,
-                role_name=CompanyDefaultRoles.OWNER.name_value,
-            )
-        ):
-            raise AppError(
-                status_code=status.HTTP_403_FORBIDDEN,
-                message="Access denied. You are not authorized to access this company.",
-            )
+    def _ensure_company_permission(
+        self,
+        company_id: UUID,
+        permission: SystemPermission,
+    ) -> None:
+        self.authorization.require(company_id, permission)
 
     def create_role(
         self, payload: RoleCreateModel, company_id: UUID | None = None
@@ -120,7 +109,10 @@ class RoleService:
         )
 
     def assign_role_to_company(self, company_id: UUID, role_id: UUID) -> RoleReadModel:
-        self._ensure_company_manager(company_id)
+        self._ensure_company_permission(
+            company_id,
+            SystemPermission.COMPANY_ROLES_ASSIGN,
+        )
         role = RoleRepository(self.context.db_session).ensure_role_exists(role_id)
         return CompanyRoleAssignmentRepository(
             company_id=company_id,
@@ -154,7 +146,10 @@ class RoleService:
         ).assign_role(role_record, self.context.user)
 
     def unassign_role(self, company_id: UUID, role_id: UUID) -> dict:
-        self._ensure_company_manager(company_id)
+        self._ensure_company_permission(
+            company_id,
+            SystemPermission.COMPANY_ROLES_UNASSIGN,
+        )
         return CompanyRoleAssignmentRepository(
             company_id=company_id,
             session=self.context.db_session,
@@ -170,7 +165,10 @@ class RoleService:
     def get_company_roles(
         self, payload: RoleQueryParamsModel, company_id: UUID
     ) -> PaginatedResponse[RoleReadModel]:
-        self._ensure_company_manager(company_id)
+        self._ensure_company_permission(
+            company_id,
+            SystemPermission.COMPANY_ROLES_READ,
+        )
         result = CompanyRoleAssignmentRepository(
             company_id=company_id,
             session=self.context.db_session,

@@ -318,6 +318,12 @@ making company context explicit.
   permissions but never imply company membership.
 - `company_role`: global roles enabled for a company. A company membership still
   holds one enabled role in the initial implementation.
+- Deterministic protected global permissions authorize Userverse's built-in
+  company APIs in the service layer. Owner, Administrator, and Viewer receive
+  explicit default baselines; superusers remain the bootstrap bypass.
+- Core company authorization uses the seeded global permission UUID and scope,
+  so a same-named tenant permission or direct platform role cannot grant tenant
+  access without an active company membership.
 
 **Work**
 

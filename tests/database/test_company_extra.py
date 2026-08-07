@@ -209,6 +209,10 @@ def test_company_repository_ensure_default_roles_updates_description(monkeypatch
     query.filter.return_value.one_or_none.side_effect = [role, None, None]
     session.query.return_value = query
     session.commit = Mock()
+    monkeypatch.setattr(
+        "app.repository.permission.SystemPermissionRepository.seed_new_default_roles",
+        lambda self, roles, created_role_names: None,
+    )
 
     default_roles = repository._ensure_default_roles()
 

@@ -20,6 +20,7 @@ from app.models.user.account_status import UserAccountStatus
 from app.models.user.user import UserReadModel
 from app.configs import settings
 from app.repository.database.session_manager import DatabaseSessionManager
+from app.repository.company import CompanyRepository
 from app.repository.database.tables import AssociationUserCompany, Company, Role, User
 from app.repository.database.tables import CompanyRole
 import app.repository.database.session_manager as session_manager
@@ -199,6 +200,12 @@ def test_user_data():
 @pytest.fixture(scope="session")
 def test_company_data():
     with open(f"{TEST_DATA_BASE_PATH}company.json") as f:
+        return json.load(f)
+
+
+@pytest.fixture(scope="session")
+def test_global_rbac_data():
+    with open(f"{TEST_DATA_BASE_PATH}global_rbac.json") as f:
         return json.load(f)
 
 
@@ -674,6 +681,8 @@ def seed_pagination_state():
         owner_role_name = CompanyDefaultRoles.OWNER.name_value
         administrator_role_name = CompanyDefaultRoles.ADMINISTRATOR.name_value
         viewer_role_name = CompanyDefaultRoles.VIEWER.name_value
+
+        CompanyRepository(session)._ensure_default_roles()
 
         for company_id in company_ids:
             for default_role in CompanyDefaultRoles:

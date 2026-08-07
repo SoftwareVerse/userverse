@@ -10,11 +10,12 @@ from app.models.company.response_messages import (
 pytestmark = pytest.mark.anyio
 
 
-def _role_payload() -> dict:
+def _role_payload(test_global_rbac_data: dict) -> dict:
     suffix = uuid4().hex
+    role = test_global_rbac_data["roles"]["managed"]
     return {
-        "name": f"Global Role {suffix}",
-        "description": f"Global role description {suffix}",
+        "name": f"{role['name']} {suffix}",
+        "description": f"{role['description']} {suffix}",
     }
 
 
@@ -29,9 +30,9 @@ async def _create_global_role(client, token: str, payload: dict) -> dict:
 
 
 async def test_superuser_can_manage_global_roles_and_bulk_assign(
-    client, login_token_superuser, seed_companies
+    client, login_token_superuser, seed_companies, test_global_rbac_data
 ):
-    payload = _role_payload()
+    payload = _role_payload(test_global_rbac_data)
     created = await _create_global_role(client, login_token_superuser, payload)
     assert created["permissions"] == []
     role_id = created["id"]
@@ -84,12 +85,16 @@ async def test_superuser_can_manage_global_roles_and_bulk_assign(
 
 
 async def test_company_owner_cannot_manage_global_roles(
-    client, login_token, login_token_superuser, seed_companies
+    client,
+    login_token,
+    login_token_superuser,
+    seed_companies,
+    test_global_rbac_data,
 ):
     owner_headers = {"Authorization": f"Bearer {login_token}"}
     create_response = await client.post(
         "/roles",
-        json=_role_payload(),
+        json=_role_payload(test_global_rbac_data),
         headers=owner_headers,
     )
     assert create_response.status_code == 403, create_response.text
@@ -98,7 +103,11 @@ async def test_company_owner_cannot_manage_global_roles(
         == CompanyRoleResponseMessages.ROLE_MANAGEMENT_FORBIDDEN.value
     )
 
-    created = await _create_global_role(client, login_token_superuser, _role_payload())
+    created = await _create_global_role(
+        client,
+        login_token_superuser,
+        _role_payload(test_global_rbac_data),
+    )
     assert created["permissions"] == []
     role_id = created["id"]
 
@@ -136,9 +145,17 @@ async def test_company_owner_cannot_manage_global_roles(
 
 
 async def test_owner_can_assign_and_unassign_existing_role_for_company(
-    client, login_token, login_token_superuser, seed_companies
+    client,
+    login_token,
+    login_token_superuser,
+    seed_companies,
+    test_global_rbac_data,
 ):
-    created = await _create_global_role(client, login_token_superuser, _role_payload())
+    created = await _create_global_role(
+        client,
+        login_token_superuser,
+        _role_payload(test_global_rbac_data),
+    )
     assert created["permissions"] == []
     role_id = created["id"]
     company_id = seed_companies["company_one"]
@@ -167,9 +184,18 @@ async def test_owner_can_assign_and_unassign_existing_role_for_company(
 
 
 async def test_non_manager_cannot_assign_or_unassign_company_role(
-    client, login_token, login_token_user_two, login_token_superuser, seed_companies
+    client,
+    login_token,
+    login_token_user_two,
+    login_token_superuser,
+    seed_companies,
+    test_global_rbac_data,
 ):
-    created = await _create_global_role(client, login_token_superuser, _role_payload())
+    created = await _create_global_role(
+        client,
+        login_token_superuser,
+        _role_payload(test_global_rbac_data),
+    )
     assert created["permissions"] == []
     role_id = created["id"]
     company_id = seed_companies["company_one"]
