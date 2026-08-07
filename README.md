@@ -61,6 +61,9 @@ Roles are modeled as a shared global catalog. Company membership in a role is re
 
 See the [Global and Company RBAC Guide](docs/role-permission-guide.md) for the permission model, authorization rules, API workflows, and examples.
 
+See the [Superuser Administration Guide](docs/superuser-administration.md) for
+the trusted offline bootstrap procedure and the planned secured promotion API.
+
 ### Configuration
 
 Runtime settings are loaded from environment variables and `.env` through `app.configs.Settings`. Important variables include:

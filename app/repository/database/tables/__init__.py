@@ -14,6 +14,10 @@ from app.repository.database.tables.role_permission import (
 )
 from app.repository.database.tables.user import User
 from app.repository.database.tables.user_role import UserRole
+from app.repository.database.tables.superuser import (
+    PrivilegedAccessEvent,
+    SuperuserBootstrapControl,
+)
 
 __all__ = [
     "AssociationUserCompany",
@@ -24,6 +28,8 @@ __all__ = [
     "GlobalPermission",
     "Role",
     "RoleGlobalPermission",
+    "PrivilegedAccessEvent",
+    "SuperuserBootstrapControl",
     "User",
     "UserRole",
 ]
