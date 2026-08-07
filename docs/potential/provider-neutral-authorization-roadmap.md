@@ -305,20 +305,24 @@ endpoint.
 Define an authorization schema that preserves the global role catalog while
 making company context explicit.
 
-**Recommended model**
+**Implemented foundation**
 
-- `permission`: global immutable key such as `invoice.approve`, plus display
-  metadata.
-- `role`: reusable global role template.
-- `role_permission`: permissions supplied by a role template.
-- `company_role`: roles enabled for a company.
-- A membership-to-role join table so a membership can hold multiple enabled
-  company roles.
+- `global_permission`: application-wide permissions supplied by reusable global
+  roles.
+- `company_permission`: tenant-owned permissions that can be added to a role in
+  one company only.
+- `role_global_permission`: the mandatory global permission baseline for a role.
+- `company_role_permission`: additive company permissions, constrained to an
+  enabled role and permission from the same company.
+- `user_role`: direct platform role assignments that contribute global
+  permissions but never imply company membership.
+- `company_role`: global roles enabled for a company. A company membership still
+  holds one enabled role in the initial implementation.
 
 **Work**
 
-- Decide whether companies can override a global role template. Defer overrides
-  in v1 unless a concrete use case requires them.
+- Keep global permissions mandatory and company permissions additive. Defer
+  tenant overrides and deny rules until a concrete use case requires them.
 - Define names, keys, deletion behavior, and versioning for roles and
   permissions.
 - Migrate the current single `association_user_company.role_id` safely.
@@ -332,7 +336,8 @@ making company context explicit.
 
 **Look out for**
 
-- Assuming a globally shared role can be edited independently by each company.
+- Assuming a globally shared role or its global permission baseline can be
+  edited independently by each company.
 - Role-name authorization checks; use stable IDs and permission keys.
 - Soft-delete uniqueness preventing a safe recreation or causing an old record
   to regain authority.
@@ -746,8 +751,10 @@ Give company administrators practical, safe self-service workflows.
 - The current global role catalog means a role definition may be shared by
   multiple companies. Confirm that every role mutation has the intended global
   effect.
-- Do not add permissions until template-versus-company ownership is settled.
-- Use permission keys in code; display names may change.
+- Keep platform role assignments separate from company membership; platform
+  permissions alone must never authorize tenant data.
+- Permission identity includes its global or company scope; display names may
+  change and can overlap across scopes.
 
 ### Database portability and concurrency
 

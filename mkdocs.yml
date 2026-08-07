@@ -11,6 +11,7 @@ nav:
   - Settings Guide:
       - Adding Users to Organizations: add_users_to_organizations.md
       - Managing Roles: manage_roles.md
+      - Global and Company RBAC: role-permission-guide.md
       - Updating Organization Details: update_organization_details.md
   - User-Organization Linking:
       - Inviting Users: invite_users.md

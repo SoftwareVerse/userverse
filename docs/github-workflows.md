@@ -51,10 +51,10 @@ That script currently:
 uv run pytest -v --cov=app \
   --cov-report=term-missing \
   --cov-report=xml:coverage_reports/coverage.xml \
-  --cov-fail-under=96
+  --cov-fail-under=100
 ```
 
-Coverage must stay at or above `96%` or the job fails.
+Statement coverage must remain at `100%` or the job fails.
 
 ### Formatting behavior
 

@@ -32,6 +32,9 @@ from app.api.routers.company import (
     roles,
 )
 from app.api.routers import roles as global_roles
+from app.api.routers import permissions as global_permissions
+from app.api.routers import platform_roles
+from app.api.routers.company import permissions as company_permissions
 
 # utils
 from app.configs import settings
@@ -90,7 +93,10 @@ def create_app() -> FastAPI:
     app.include_router(company.router)
     app.include_router(users.router)
     app.include_router(roles.router)
+    app.include_router(company_permissions.router)
     app.include_router(global_roles.router)
+    app.include_router(global_permissions.router)
+    app.include_router(platform_roles.router)
 
     # Root route
     @app.get("/", tags=["Root"])

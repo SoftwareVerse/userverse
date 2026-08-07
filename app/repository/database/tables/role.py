@@ -31,6 +31,16 @@ class Role(BaseModel):
         back_populates="role",
         overlaps="company,companies",
     )
+    global_permission_links = relationship(
+        "RoleGlobalPermission",
+        back_populates="role",
+        cascade="all, delete-orphan",
+    )
+    platform_user_links = relationship(
+        "UserRole",
+        back_populates="role",
+        cascade="all, delete-orphan",
+    )
 
     @staticmethod
     def to_dict(obj):

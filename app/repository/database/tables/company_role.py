@@ -26,3 +26,9 @@ class CompanyRole(BaseModel):
 
     company = relationship("Company", back_populates="roles", overlaps="role")
     role = relationship("Role", back_populates="companies", overlaps="company")
+    company_permission_links = relationship(
+        "CompanyRolePermission",
+        back_populates="company_role",
+        cascade="all, delete-orphan",
+        overlaps="permission,role_links",
+    )

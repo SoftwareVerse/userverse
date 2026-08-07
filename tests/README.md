@@ -17,7 +17,7 @@ The `scripts/run_http_tests.sh` script sets these values and runs pytest with co
 ./scripts/run_http_tests.sh
 ```
 
-Coverage output is written to `coverage_reports/coverage.xml`, and CI enforces a `96%` coverage threshold.
+Coverage output is written to `coverage_reports/coverage.xml`, and CI enforces a `100%` statement-coverage threshold.
 
 ## Directory Structure
 

@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from pydantic import field_validator, Field
 
 from app.models.generic_pagination import PaginationParams
+from app.models.permissions import PermissionReadModel
 
 
 class CompanyDefaultRoles(str, Enum):
@@ -48,7 +49,7 @@ class RoleReadModel(BaseModel):
     id: str | None = None
     name: Optional[str] = None
     description: Optional[str] = None
-    permissions: list[str] = Field(default_factory=list)
+    permissions: list[PermissionReadModel] = Field(default_factory=list)
 
 
 class RoleAssignCompaniesModel(BaseModel):

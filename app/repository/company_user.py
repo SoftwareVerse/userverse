@@ -9,6 +9,7 @@ from app.models.company.response_messages import (
     CompanyUserResponseMessages,
 )
 from app.models.company.roles import CompanyDefaultRoles, RoleReadModel
+from app.models.permissions import PermissionReadModel
 from app.models.company.user import CompanyUserAddModel, CompanyUserReadModel
 from app.models.generic_pagination import (
     PaginatedResponse,
@@ -29,7 +30,11 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         super().__init__(session)
 
     @staticmethod
-    def _to_company_user(user: User, role: Role) -> CompanyUserReadModel:
+    def _to_company_user(
+        user: User,
+        role: Role,
+        permissions: list[PermissionReadModel] | None = None,
+    ) -> CompanyUserReadModel:
         metadata = user.primary_meta_data or {}
         return CompanyUserReadModel(
             id=user.id,
@@ -43,6 +48,7 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
                 id=str(role.id),
                 name=role.name,
                 description=role.description,
+                permissions=permissions or [],
             ),
         )
 
@@ -109,7 +115,12 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
             primary_meta_data={"added_by": added_by.model_dump(mode="json")},
             secondary_meta_data={"_legacy_role_name": role.name},
         )
-        return self._to_company_user(user, role)
+        from app.repository.permission import RolePermissionRepository
+
+        permissions = RolePermissionRepository(
+            self.db_session
+        ).get_company_role_permissions(company_id, role.id)
+        return self._to_company_user(user, role, permissions)
 
     def remove_user_from_company(
         self, company_id: UUID, user_id: UUID, removed_by
@@ -142,7 +153,12 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         self.db_session.refresh(assoc)
 
         user = self.db_session.query(User).filter(User.id == user_id).one()
-        return self._to_company_user(user, assoc.role)
+        from app.repository.permission import RolePermissionRepository
+
+        permissions = RolePermissionRepository(
+            self.db_session
+        ).get_company_role_permissions(company_id, assoc.role.id)
+        return self._to_company_user(user, assoc.role, permissions)
 
     def update_user_role(
         self, company_id: UUID, user_id: UUID, role_name: str, updated_by
@@ -173,7 +189,12 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
         self.db_session.refresh(assoc)
 
         user = self.db_session.query(User).filter(User.id == user_id).one()
-        return self._to_company_user(user, role)
+        from app.repository.permission import RolePermissionRepository
+
+        permissions = RolePermissionRepository(
+            self.db_session
+        ).get_company_role_permissions(company_id, role.id)
+        return self._to_company_user(user, role, permissions)
 
     def get_company_users(
         self, company_id: UUID, params: UserQueryParams
@@ -212,7 +233,21 @@ class CompanyUserRepository(BaseSQLRepository[AssociationUserCompany]):
             ],
         ).all()
 
-        users = [self._to_company_user(assoc.user, assoc.role) for assoc in results]
+        from app.repository.permission import RolePermissionRepository
+
+        permission_map = RolePermissionRepository(
+            self.db_session
+        ).effective_permissions_by_assignments(
+            [(company_id, assoc.role_id) for assoc in results]
+        )
+        users = [
+            self._to_company_user(
+                assoc.user,
+                assoc.role,
+                permission_map.get((company_id, assoc.role_id), []),
+            )
+            for assoc in results
+        ]
         return PaginatedResponse[CompanyUserReadModel](
             records=users,
             pagination=build_pagination_meta(

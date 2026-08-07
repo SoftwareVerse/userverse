@@ -16,16 +16,30 @@ class DatabaseSessionManager:
     expected_tables = (
         "association_user_company",
         "company",
+        "company_permission",
         "company_role",
+        "company_role_permission",
+        "global_permission",
         "role",
+        "role_global_permission",
         "user",
+        "user_role",
     )
     expected_columns = {
         "association_user_company": {"user_id", "company_id", "role_id"},
         "company": {"id", "email"},
+        "company_permission": {"id", "company_id", "name"},
         "company_role": {"company_id", "role_id"},
+        "company_role_permission": {
+            "company_id",
+            "role_id",
+            "company_permission_id",
+        },
+        "global_permission": {"id", "name"},
         "role": {"id", "name", "description"},
+        "role_global_permission": {"role_id", "global_permission_id"},
         "user": {"id", "email", "password"},
+        "user_role": {"user_id", "role_id"},
     }
     forbidden_columns = {
         "association_user_company": {"role_name", "user_level"},
@@ -91,9 +105,14 @@ class DatabaseSessionManager:
         from app.repository.database.tables import (  # noqa: F401
             AssociationUserCompany,
             Company,
+            CompanyPermission,
             CompanyRole,
+            CompanyRolePermission,
+            GlobalPermission,
             Role,
+            RoleGlobalPermission,
             User,
+            UserRole,
         )
 
     def _table_state(self) -> str:

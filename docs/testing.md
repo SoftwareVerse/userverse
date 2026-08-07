@@ -22,7 +22,7 @@ It then runs:
 pytest -v --cov=app \
   --cov-report=term-missing \
   --cov-report=xml:coverage_reports/coverage.xml \
-  --cov-fail-under=96
+  --cov-fail-under=100
 ```
 
 For local development, prefer focused runs:
@@ -43,6 +43,9 @@ uv run --no-cache pytest tests/utils
 ```
 
 By default, the HTTP suite uses a temporary SQLite database and patches email dispatch so tests do not perform network SMTP calls.
+
+The configured statement-coverage gate is 100%. New executable application
+paths must therefore include a focused test in the same change.
 
 If you need to seed or validate a non-temporary environment, pass `--http-env-file`:
 

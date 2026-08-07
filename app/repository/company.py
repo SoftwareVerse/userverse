@@ -216,6 +216,13 @@ class CompanyRepository(BaseSQLRepository[Company]):
                 Company.id.asc(),
             ],
         ).all()
+        from app.repository.permission import RolePermissionRepository
+
+        permission_map = RolePermissionRepository(
+            self.db_session
+        ).effective_permissions_by_assignments(
+            [(assoc.company_id, assoc.role_id) for assoc in results]
+        )
         companies = [
             UserCompanyReadModel(
                 **self._to_read_model(assoc.company).model_dump(),
@@ -223,6 +230,10 @@ class CompanyRepository(BaseSQLRepository[Company]):
                     id=str(assoc.role.id),
                     name=assoc.role.name,
                     description=assoc.role.description,
+                    permissions=permission_map.get(
+                        (assoc.company_id, assoc.role_id),
+                        [],
+                    ),
                 ),
             )
             for assoc in results

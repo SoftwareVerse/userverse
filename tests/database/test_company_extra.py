@@ -196,7 +196,9 @@ def test_company_repository_get_user_companies_uses_fixed_select_count(test_sess
         event.remove(test_session.bind, "before_cursor_execute", record_select)
 
     assert len(result.records) == 3
-    assert len(select_statements) == 2
+    # Count + page + one bulk query per permission scope. The query count stays
+    # constant as company memberships are added.
+    assert len(select_statements) == 4
 
 
 def test_company_repository_ensure_default_roles_updates_description(monkeypatch):
