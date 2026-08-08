@@ -14,9 +14,12 @@ from app.models.company.response_messages import CompanyUserResponseMessages
 from app.models.generic_response import GenericResponseModel
 from app.models.generic_pagination import PaginatedResponse
 from app.models.app_error import AppErrorResponseModel
+from app.models.permission_response_messages import PermissionResponseMessages
+from app.models.permissions import PermissionReadModel
 
 # Logic
 from app.services.user.profile import UserProfileService
+from app.services.permission import PermissionService
 
 router = APIRouter(
     prefix="/user",
@@ -113,6 +116,30 @@ def get_user_companies_api(
         content=GenericResponseModel(
             message=CompanyUserResponseMessages.GET_COMPANY_USERS.value,
             data=response.model_dump(mode="json"),
+        ).model_dump(mode="json"),
+    )
+
+
+@router.get(
+    "/permissions",
+    status_code=status.HTTP_200_OK,
+    response_model=GenericResponseModel[list[PermissionReadModel]],
+)
+def get_my_platform_permissions_api(
+    common: CommonJWTRouteDependencies = Depends(),
+):
+    service = PermissionService(
+        SharedContext(
+            user=common.user,
+            db_session=common.session,
+            enforce_status_check=True,
+        )
+    )
+    response = service.get_my_platform_permissions()
+    return JSONResponse(
+        content=GenericResponseModel(
+            message=PermissionResponseMessages.FOUND.value,
+            data=response,
         ).model_dump(mode="json"),
     )
 

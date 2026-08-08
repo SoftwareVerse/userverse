@@ -55,9 +55,14 @@ Business logic lives in `app/services`. Services coordinate authorization checks
 
 ### Repository and Database Layer
 
-Repository classes live in `app/repository`. SQLAlchemy models and session management live under `app/repository/database`. The canonical tables are `User`, `Company`, `Role`, `CompanyRole`, and `AssociationUserCompany`.
+Repository classes live in `app/repository`. SQLAlchemy models and session management live under `app/repository/database`. The authorization schema includes users, companies, the global role catalog, global and company permissions, company-role links, company memberships, and direct platform role assignments.
 
 Roles are modeled as a shared global catalog. Company membership in a role is represented by `company_role`, and user assignments point at the shared role record through `association_user_company.role_id`.
+
+See the [Global and Company RBAC Guide](docs/role-permission-guide.md) for the permission model, authorization rules, API workflows, and examples.
+
+See the [Superuser Administration Guide](docs/superuser-administration.md) for
+the trusted offline bootstrap procedure and the planned secured promotion API.
 
 ### Configuration
 
@@ -153,7 +158,7 @@ uv run pytest tests/api/http -q --http-env-file /home/sandile/projects/pj-userve
 
 Use the env-backed mode carefully: it does not create an isolated temporary database, and the HTTP test fixtures may update or seed the target database.
 
-Coverage is generated with `pytest-cov` and written to `coverage_reports/coverage.xml`. The current CI threshold is `96%`.
+Coverage is generated with `pytest-cov` and written to `coverage_reports/coverage.xml`. The CI statement-coverage threshold is `100%`.
 
 See [tests/README.md](tests/README.md) and [docs/testing.md](docs/testing.md) for more detail.
 

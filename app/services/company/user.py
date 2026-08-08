@@ -15,13 +15,14 @@ from app.models.generic_pagination import PaginatedResponse
 from app.utils.app_error import AppError
 
 from app.models.company.roles import CompanyDefaultRoles
+from app.models.system_permissions import SystemPermission
+from app.services.company.authorization import CompanyAuthorizationService
 
 
 from app.models.user.user import UserQueryParams
 
 
 from app.models.company.response_messages import (
-    CompanyResponseMessages,
     CompanyUserResponseMessages,
 )
 from app.utils.shared_context import SharedContext
@@ -35,6 +36,7 @@ class CompanyUserService:
         self.context = context
         self.company_user_repository = CompanyUserRepository(context.db_session)
         self.company_repository = CompanyRepository(context.db_session)
+        self.authorization = CompanyAuthorizationService(context)
 
     def send_company_invite(
         self,
@@ -72,22 +74,10 @@ class CompanyUserService:
     def add_user_to_company(
         self, company_id: UUID, payload: CompanyUserAddModel
     ) -> CompanyUserReadModel:
-        if not (
-            self.company_user_repository.is_user_linked_to_company(
-                user_id=self.context.user.id,
-                company_id=company_id,
-                role_name=CompanyDefaultRoles.ADMINISTRATOR.name_value,
-            )
-            or self.company_user_repository.is_user_linked_to_company(
-                user_id=self.context.user.id,
-                company_id=company_id,
-                role_name=CompanyDefaultRoles.OWNER.name_value,
-            )
-        ):
-            raise AppError(
-                status_code=status.HTTP_403_FORBIDDEN,
-                message=CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value,
-            )
+        self.authorization.require(
+            company_id,
+            SystemPermission.COMPANY_MEMBERS_ADD,
+        )
         user = self.company_user_repository.add_user_to_company(
             company_id=company_id, payload=payload, added_by=self.context.user
         )
@@ -107,22 +97,10 @@ class CompanyUserService:
         user_id: UUID,
         payload: CompanyUserRoleUpdateModel,
     ) -> CompanyUserReadModel:
-        if not (
-            self.company_user_repository.is_user_linked_to_company(
-                user_id=self.context.user.id,
-                company_id=company_id,
-                role_name=CompanyDefaultRoles.ADMINISTRATOR.name_value,
-            )
-            or self.company_user_repository.is_user_linked_to_company(
-                user_id=self.context.user.id,
-                company_id=company_id,
-                role_name=CompanyDefaultRoles.OWNER.name_value,
-            )
-        ):
-            raise AppError(
-                status_code=status.HTTP_403_FORBIDDEN,
-                message=CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value,
-            )
+        self.authorization.require(
+            company_id,
+            SystemPermission.COMPANY_MEMBERS_ROLE_UPDATE,
+        )
         return self.company_user_repository.update_user_role(
             company_id=company_id,
             user_id=user_id,
@@ -135,22 +113,10 @@ class CompanyUserService:
         company_id: UUID,
         user_id: UUID,
     ) -> CompanyUserReadModel:
-        if not (
-            self.company_user_repository.is_user_linked_to_company(
-                user_id=self.context.user.id,
-                company_id=company_id,
-                role_name=CompanyDefaultRoles.ADMINISTRATOR.name_value,
-            )
-            or self.company_user_repository.is_user_linked_to_company(
-                user_id=self.context.user.id,
-                company_id=company_id,
-                role_name=CompanyDefaultRoles.OWNER.name_value,
-            )
-        ):
-            raise AppError(
-                status_code=status.HTTP_403_FORBIDDEN,
-                message=CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value,
-            )
+        self.authorization.require(
+            company_id,
+            SystemPermission.COMPANY_MEMBERS_REMOVE,
+        )
         if self.company_user_repository.is_user_linked_to_company(
             user_id=user_id,
             company_id=company_id,
@@ -172,30 +138,11 @@ class CompanyUserService:
         company_id: UUID,
         params: UserQueryParams,
     ) -> PaginatedResponse[CompanyUserReadModel]:
-        self.check_if_user_is_in_company(
-            user_id=self.context.user.id,
-            company_id=company_id,
+        self.authorization.require(
+            company_id,
+            SystemPermission.COMPANY_MEMBERS_READ,
         )
         return self.company_user_repository.get_company_users(
             company_id=company_id,
             params=params,
         )
-
-    def check_if_user_is_in_company(
-        self, user_id: UUID, company_id: UUID, role: str | None = None
-    ) -> bool:
-        """
-        Check if the user is linked to the company.
-        If a role is provided, check if the user has that role.
-        """
-        linked_company = self.company_user_repository.is_user_linked_to_company(
-            user_id=user_id,
-            company_id=company_id,
-            role_name=role,
-        )
-        if not linked_company:
-            raise AppError(
-                status_code=status.HTTP_403_FORBIDDEN,
-                message=CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value,
-            )
-        return linked_company

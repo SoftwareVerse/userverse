@@ -27,7 +27,7 @@ echo "Generating Coverage Report Summary:"
 uv run pytest -v --cov=app \
     --cov-report=term-missing \
     --cov-report=xml:"$COVERAGE_DIR/coverage.xml" \
-    --cov-fail-under=96
+    --cov-fail-under=100
 
 
 echo "========================================="

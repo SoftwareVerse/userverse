@@ -48,6 +48,7 @@ async def test_get_user_companies(
     query_params,
     expected_company_ids,
     expected_status,
+    test_company_data,
 ):
     """
     Test /user/companies with various filters and users.
@@ -75,11 +76,14 @@ async def test_get_user_companies(
         }
         company_ids = {company["id"] for company in json_data["data"]["records"]}
         assert company_ids == expected_company_ids
+        owner_role = test_company_data["default_roles"]["owner"]
         for company in json_data["data"]["records"]:
             assert company["role"]["id"]
-            assert company["role"]["name"] == "Owner"
-            assert company["role"]["description"]
-            assert company["role"]["permissions"] == []
+            assert company["role"]["name"] == owner_role["name"]
+            assert company["role"]["description"] == owner_role["description"]
+            assert {
+                permission["name"] for permission in company["role"]["permissions"]
+            } == set(owner_role["permissions"])
 
         pagination = json_data["data"]["pagination"]
         assert pagination["limit"] == 10

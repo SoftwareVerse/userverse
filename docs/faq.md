@@ -39,4 +39,4 @@ When `TESTING=true` or `ENVIRONMENT=testing`, SMTP delivery is skipped so tests 
 
 ## How is coverage configured?
 
-Coverage is configured in `pyproject.toml` under `[tool.coverage.*]`. CI enforces `96%` coverage and writes XML output to `coverage_reports/coverage.xml`.
+Coverage is configured in `pyproject.toml` under `[tool.coverage.*]`. CI enforces `100%` statement coverage and writes XML output to `coverage_reports/coverage.xml`.

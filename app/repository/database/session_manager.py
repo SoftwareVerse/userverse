@@ -16,16 +16,47 @@ class DatabaseSessionManager:
     expected_tables = (
         "association_user_company",
         "company",
+        "company_permission",
         "company_role",
+        "company_role_permission",
+        "global_permission",
         "role",
+        "role_global_permission",
+        "privileged_access_event",
+        "superuser_bootstrap_control",
         "user",
+        "user_role",
     )
     expected_columns = {
         "association_user_company": {"user_id", "company_id", "role_id"},
         "company": {"id", "email"},
+        "company_permission": {"id", "company_id", "name"},
         "company_role": {"company_id", "role_id"},
+        "company_role_permission": {
+            "company_id",
+            "role_id",
+            "company_permission_id",
+        },
+        "global_permission": {"id", "name"},
         "role": {"id", "name", "description"},
+        "role_global_permission": {"role_id", "global_permission_id"},
+        "privileged_access_event": {
+            "id",
+            "target_user_id",
+            "action",
+            "source",
+            "reason",
+            "previous_superuser",
+            "resulting_superuser",
+        },
+        "superuser_bootstrap_control": {
+            "id",
+            "bootstrap_user_id",
+            "bootstrap_completed_at",
+            "bootstrap_method",
+        },
         "user": {"id", "email", "password"},
+        "user_role": {"user_id", "role_id"},
     }
     forbidden_columns = {
         "association_user_company": {"role_name", "user_level"},
@@ -91,9 +122,16 @@ class DatabaseSessionManager:
         from app.repository.database.tables import (  # noqa: F401
             AssociationUserCompany,
             Company,
+            CompanyPermission,
             CompanyRole,
+            CompanyRolePermission,
+            GlobalPermission,
             Role,
+            RoleGlobalPermission,
+            PrivilegedAccessEvent,
+            SuperuserBootstrapControl,
             User,
+            UserRole,
         )
 
     def _table_state(self) -> str:

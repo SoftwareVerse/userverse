@@ -6,7 +6,6 @@ from fastapi import status
 from app.utils.app_error import AppError
 
 # service and repository
-from app.services.company.user import CompanyUserService
 from app.repository.company import CompanyRepository
 
 # database
@@ -17,20 +16,19 @@ from app.models.company.company import (
     CompanyUpdateModel,
     CompanyReadModel,
 )
-from app.models.company.roles import CompanyDefaultRoles
-
-
 from app.utils.shared_context import SharedContext
 
 
 from app.models.company.response_messages import CompanyResponseMessages
+from app.models.system_permissions import SystemPermission
+from app.services.company.authorization import CompanyAuthorizationService
 
 
 class CompanyService:
     def __init__(self, context: SharedContext):
         self.context = context
         self.company_repository = CompanyRepository(context.db_session)
-        self.company_user_service = CompanyUserService(context)
+        self.authorization = CompanyAuthorizationService(context)
 
     def create_company(self, payload: CompanyCreateModel) -> CompanyReadModel:
         """
@@ -63,10 +61,7 @@ class CompanyService:
         if email:
             company = self.company_repository.get_company_by_email(email)
 
-        self.company_user_service.check_if_user_is_in_company(
-            user_id=self.context.user.id,
-            company_id=company.id,
-        )
+        self.authorization.require(company.id, SystemPermission.COMPANY_READ)
 
         return company
 
@@ -76,22 +71,7 @@ class CompanyService:
         """
         Update a company by its ID.
         """
-        if not (
-            self.company_user_service.company_user_repository.is_user_linked_to_company(
-                user_id=self.context.user.id,
-                company_id=company_id,
-                role=CompanyDefaultRoles.ADMINISTRATOR.name_value,
-            )
-            or self.company_user_service.company_user_repository.is_user_linked_to_company(
-                user_id=self.context.user.id,
-                company_id=company_id,
-                role=CompanyDefaultRoles.OWNER.name_value,
-            )
-        ):
-            raise AppError(
-                status_code=status.HTTP_403_FORBIDDEN,
-                message=CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value,
-            )
+        self.authorization.require(company_id, SystemPermission.COMPANY_UPDATE)
 
         company = self.company_repository.update_company(
             payload, company_id, self.context.user
@@ -104,9 +84,5 @@ class CompanyService:
         return company
 
     def delete_company(self, company_id: UUID) -> None:
-        self.company_user_service.check_if_user_is_in_company(
-            user_id=self.context.user.id,
-            company_id=company_id,
-            role=CompanyDefaultRoles.OWNER.name_value,
-        )
+        self.authorization.require(company_id, SystemPermission.COMPANY_DELETE)
         self.company_repository.delete_company(company_id)

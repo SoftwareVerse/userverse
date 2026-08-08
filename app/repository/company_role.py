@@ -18,7 +18,15 @@ from app.models.company.roles import (
 )
 from app.models.user.user import UserReadModel
 from app.repository.base import BaseSQLRepository
-from app.repository.database.tables import AssociationUserCompany, CompanyRole, Role
+from app.repository.database.tables import (
+    AssociationUserCompany,
+    CompanyRole,
+    CompanyRolePermission,
+    Role,
+    RoleGlobalPermission,
+    User,
+    UserRole,
+)
 from app.utils.app_error import AppError
 
 
@@ -39,10 +47,28 @@ class RoleRepository(BaseSQLRepository[Role]):
         self.company_id = company_id
 
     @staticmethod
-    def _to_read_model(role: Role) -> RoleReadModel:
+    def _to_read_model(
+        role: Role,
+    ) -> RoleReadModel:
         data = BaseSQLRepository.serialize(role)
         data["id"] = str(role.id)
         return RoleReadModel(**data)
+
+    @staticmethod
+    def _to_scoped_read_model(
+        role: Role,
+        session: Session,
+        company_id: UUID | None = None,
+    ) -> RoleReadModel:
+        base_model = RoleRepository._to_read_model(role)
+        if isinstance(session, Session):
+            from app.repository.permission import RolePermissionRepository
+
+            permission_repository = RolePermissionRepository(session)
+            if company_id is not None:
+                return permission_repository.company_role_read(company_id, role)
+            return permission_repository.global_role_read(role)
+        return base_model
 
     def get_roles(self, payload: RoleQueryParamsModel) -> dict:
         try:
@@ -51,12 +77,22 @@ class RoleRepository(BaseSQLRepository[Role]):
                 query = query.filter(Role.name.ilike(f"%{payload.name}%"))
             if payload.description:
                 query = query.filter(Role.description.ilike(f"%{payload.description}%"))
-            return self.paginate(
+            result = self.paginate(
                 query,
                 page=payload.page,
                 limit=payload.limit,
                 order_by=[Role.name.asc()],
             )
+            from app.repository.permission import RolePermissionRepository
+
+            permission_map = RolePermissionRepository(
+                self.db_session
+            ).global_permissions_by_role_ids(
+                {record["id"] for record in result["records"]}
+            )
+            for record in result["records"]:
+                record["permissions"] = permission_map.get(record["id"], [])
+            return result
         except Exception as exc:
             raise AppError(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -126,7 +162,7 @@ class RoleRepository(BaseSQLRepository[Role]):
                 key="created_by",
                 value=created_by.model_dump(mode="json"),
             )
-            return self._to_read_model(role)
+            return self._to_scoped_read_model(role, self.db_session)
         except IntegrityError as exc:
             self.db_session.rollback()
             raise AppError(
@@ -162,7 +198,7 @@ class RoleRepository(BaseSQLRepository[Role]):
                 role.description = payload.description
             self.db_session.commit()
             self.db_session.refresh(role)
-            return self._to_read_model(role)
+            return self._to_scoped_read_model(role, self.db_session)
         except Exception as exc:
             self.db_session.rollback()
             raise AppError(
@@ -223,6 +259,29 @@ class RoleRepository(BaseSQLRepository[Role]):
                 raise ValueError(
                     "Cannot delete a role that is still assigned to active company users."
                 )
+            if isinstance(self.db_session, Session) and (
+                self.db_session.query(UserRole)
+                .join(User, User.id == UserRole.user_id)
+                .filter(
+                    UserRole.role_id == role_id,
+                    UserRole._closed_at.is_(None),
+                    User._closed_at.is_(None),
+                )
+                .count()
+            ):
+                raise ValueError(
+                    "Cannot delete a role that is still assigned to active platform users."
+                )
+
+            self.db_session.query(RoleGlobalPermission).filter(
+                RoleGlobalPermission.role_id == role_id
+            ).delete(synchronize_session=False)
+            self.db_session.query(CompanyRolePermission).filter(
+                CompanyRolePermission.role_id == role_id
+            ).delete(synchronize_session=False)
+            self.db_session.query(UserRole).filter(UserRole.role_id == role_id).delete(
+                synchronize_session=False
+            )
 
             role._closed_at = self._now_sql()
             self.db_session.add(role)
@@ -265,17 +324,24 @@ class CompanyRoleAssignmentRepository(BaseSQLRepository[CompanyRole]):
                 query = query.filter(Role.name.ilike(f"%{payload.name}%"))
             if payload.description:
                 query = query.filter(Role.description.ilike(f"%{payload.description}%"))
-            return self.paginate(
+            result = self.paginate(
                 query,
                 page=payload.page,
                 limit=payload.limit,
                 order_by=[Role.name.asc()],
             )
-            records = []
-            for role in result["records"]:
-                role["id"] = str(role["id"])
-                records.append(role)
-            result["records"] = records
+            from app.repository.permission import RolePermissionRepository
+
+            permission_map = RolePermissionRepository(
+                self.db_session
+            ).effective_permissions_by_assignments(
+                [(self.company_id, record["id"]) for record in result["records"]]
+            )
+            for record in result["records"]:
+                record["permissions"] = permission_map.get(
+                    (self.company_id, record["id"]),
+                    [],
+                )
             return result
         except Exception as exc:
             raise AppError(
@@ -351,7 +417,11 @@ class CompanyRoleAssignmentRepository(BaseSQLRepository[CompanyRole]):
                 role.description = payload.description
             self.db_session.commit()
             self.db_session.refresh(role)
-            return RoleRepository._to_read_model(role)
+            return RoleRepository._to_scoped_read_model(
+                role,
+                self.db_session,
+                self.company_id,
+            )
         except Exception as exc:
             self.db_session.rollback()
             raise AppError(
@@ -376,7 +446,11 @@ class CompanyRoleAssignmentRepository(BaseSQLRepository[CompanyRole]):
             key="assigned_by",
             value=assigned_by.model_dump(mode="json"),
         )
-        return RoleRepository._to_read_model(role)
+        return RoleRepository._to_scoped_read_model(
+            role,
+            self.db_session,
+            self.company_id,
+        )
 
     def assign_role_to_companies(
         self,
@@ -423,6 +497,10 @@ class CompanyRoleAssignmentRepository(BaseSQLRepository[CompanyRole]):
                 error="Cannot unassign a role that is still assigned to active company users.",
             )
         assignment._closed_at = self._now_sql()
+        self.db_session.query(CompanyRolePermission).filter(
+            CompanyRolePermission.company_id == self.company_id,
+            CompanyRolePermission.role_id == role_id,
+        ).delete(synchronize_session=False)
         self.db_session.add(assignment)
         self.db_session.commit()
         return {"message": "Role unassigned successfully."}
@@ -474,6 +552,10 @@ class CompanyRoleAssignmentRepository(BaseSQLRepository[CompanyRole]):
                 error=f"Role '{payload.role_name_to_delete}' not found.",
             )
         assignment._closed_at = self._now_sql()
+        self.db_session.query(CompanyRolePermission).filter(
+            CompanyRolePermission.company_id == self.company_id,
+            CompanyRolePermission.role_id == role_to_delete.id,
+        ).delete(synchronize_session=False)
         self.db_session.add(assignment)
         self.db_session.commit()
         self.update_json_field(

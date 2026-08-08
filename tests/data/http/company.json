@@ -13,7 +13,7 @@
         "industry": "Technology",
         "phone_number": "+27123456789"
     },
-    "roles":{
+    "roles": {
         "user": {
             "name": "User",
             "description": "Standard user role with limited access."
@@ -22,6 +22,90 @@
             "name": "Client",
             "description": "Client role with access to client-specific features."
         }
+    },
+    "default_roles": {
+        "owner": {
+            "name": "Owner",
+            "description": "Full access to manage users and data",
+            "permissions": [
+                "company.read",
+                "company.update",
+                "company.delete",
+                "company.members.read",
+                "company.members.add",
+                "company.members.role.update",
+                "company.members.remove",
+                "company.roles.read",
+                "company.roles.assign",
+                "company.roles.unassign",
+                "company.permissions.read",
+                "company.permissions.create",
+                "company.permissions.update",
+                "company.permissions.delete",
+                "company.permissions.assign",
+                "company.permissions.unassign"
+            ]
+        },
+        "administrator": {
+            "name": "Administrator",
+            "description": "Full access to manage users and data",
+            "permissions": [
+                "company.read",
+                "company.update",
+                "company.members.read",
+                "company.members.add",
+                "company.members.role.update",
+                "company.members.remove",
+                "company.roles.read",
+                "company.roles.assign",
+                "company.roles.unassign",
+                "company.permissions.read",
+                "company.permissions.create",
+                "company.permissions.update",
+                "company.permissions.delete",
+                "company.permissions.assign",
+                "company.permissions.unassign"
+            ]
+        },
+        "viewer": {
+            "name": "Viewer",
+            "description": "Read-only access to company data",
+            "permissions": [
+                "company.read",
+                "company.members.read"
+            ]
+        }
+    },
+    "permissions": {
+        "invoice_approve": {
+            "name": "invoice.approve",
+            "description": "Approve invoices for this company"
+        },
+        "matrix_permission": {
+            "name": "matrix.permission",
+            "description": "Permission used by the default-role API matrix"
+        },
+        "edge_first": {
+            "name": "invoice.edge.first",
+            "description": "Company permission edge-case fixture"
+        },
+        "edge_second": {
+            "name": "invoice.edge.second",
+            "description": null
+        },
+        "edge_renamed": {
+            "name": "invoice.edge.renamed",
+            "description": "Renamed company permission"
+        },
+        "system_name_collision": {
+            "name": "company.delete",
+            "description": "Tenant permission that must not grant company deletion"
+        }
+    },
+    "rbac_company": {
+        "name": "Permission Matrix Company",
+        "email_prefix": "permission-matrix",
+        "description": "Company used to verify default permission enforcement"
     },
     "update_company_one": {
         "name": "Updated Company One",

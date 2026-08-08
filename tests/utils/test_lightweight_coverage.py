@@ -724,7 +724,7 @@ def test_company_user_service_sends_company_invite(monkeypatch):
     company = type("Company", (), {"name": "Acme Co"})()
 
     service = CompanyUserService(SharedContext(db_session=object(), user=acting_user))
-    monkeypatch.setattr(service, "check_if_user_is_in_company", lambda **kwargs: True)
+    monkeypatch.setattr(service.authorization, "require", lambda *args: None)
     monkeypatch.setattr(
         service.company_user_repository,
         "is_user_linked_to_company",
@@ -1332,11 +1332,7 @@ def test_company_service_branches_for_falsey_repository_results(monkeypatch):
         == CompanyResponseMessages.COMPANY_ID_OR_EMAIL_REQUIRED.value
     )
 
-    monkeypatch.setattr(
-        service.company_user_service.company_user_repository,
-        "is_user_linked_to_company",
-        lambda **kwargs: True,
-    )
+    monkeypatch.setattr(service.authorization, "require", lambda *args: None)
     monkeypatch.setattr(
         service.company_repository,
         "update_company",
@@ -1553,7 +1549,7 @@ def test_role_service_happy_path_branches(monkeypatch):
     role = RoleReadModel(id=str(role_id), name="Viewer", description="Read only")
 
     monkeypatch.setattr(service, "_ensure_superuser", lambda: None)
-    monkeypatch.setattr(service, "_ensure_company_manager", lambda cid: None)
+    monkeypatch.setattr(service, "_ensure_company_permission", lambda *args: None)
     monkeypatch.setattr(
         RoleRepository,
         "get_roles",

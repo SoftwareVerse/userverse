@@ -76,6 +76,25 @@ def test_decode_refresh_token_invalid_version_defaults_to_zero():
     assert refresh_token_version == 0
 
 
+def test_decode_access_token_invalid_version_defaults_to_zero():
+    jwt_manager = JWTManager()
+    token = jwt.encode(
+        {
+            "user": sample_user.model_dump(mode="json"),
+            "type": "access",
+            "refresh_token_version": {"invalid": "mapping"},
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+        },
+        jwt_manager.JWT_SECRET,
+        algorithm=jwt_manager.JWT_ALGORITHM,
+    )
+
+    user, refresh_token_version = jwt_manager.decode_access_token(token)
+
+    assert user.email == sample_user.email
+    assert refresh_token_version == 0
+
+
 def test_decode_token_missing_user_data():
     jwt_manager = JWTManager()
     token = jwt.encode(

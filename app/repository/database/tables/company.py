@@ -31,6 +31,11 @@ class Company(BaseModel):
         cascade="all, delete-orphan",
         overlaps="role",
     )
+    permissions = relationship(
+        "CompanyPermission",
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
 
     @classmethod
     def get_company_by_email(cls, session, email: str) -> dict:

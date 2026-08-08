@@ -88,7 +88,7 @@ async def test_get_user_companies_page_two_is_stable(client, seed_pagination_sta
 
 
 async def test_get_user_companies_returns_company_specific_roles(
-    client, seed_pagination_state
+    client, seed_pagination_state, test_company_data
 ):
     headers = {"Authorization": f"Bearer {seed_pagination_state['owner_token']}"}
 
@@ -114,10 +114,18 @@ async def test_get_user_companies_returns_company_specific_roles(
             "postal_code": "2000",
             "country": "South Africa",
         }
-        assert company["role"] == {
-            **expected_role,
-            "permissions": [],
-        }
+        permissions = company["role"].pop("permissions")
+        assert company["role"] == expected_role
+        default_role = next(
+            role
+            for role in test_company_data["default_roles"].values()
+            if role["name"] == expected_role["name"]
+        )
+        assert {permission["name"] for permission in permissions} == set(
+            default_role["permissions"]
+        )
+        assert all(permission["scope"] == "global" for permission in permissions)
+        assert all(permission["company_id"] is None for permission in permissions)
 
     assert json_data["data"]["pagination"] == {
         "total_records": 4,

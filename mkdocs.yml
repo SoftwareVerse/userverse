@@ -11,6 +11,8 @@ nav:
   - Settings Guide:
       - Adding Users to Organizations: add_users_to_organizations.md
       - Managing Roles: manage_roles.md
+      - Global and Company RBAC: role-permission-guide.md
+      - Superuser Administration: superuser-administration.md
       - Updating Organization Details: update_organization_details.md
   - User-Organization Linking:
       - Inviting Users: invite_users.md
@@ -19,4 +21,6 @@ nav:
   - Reports and Analytics:
       - User Activity Reports: user_activity_reports.md
       - Organization Reports: organization_reports.md
+  - Potential Roadmaps:
+      - Provider-Neutral B2B Authorization: potential/provider-neutral-authorization-roadmap.md
   - FAQ: faq.md

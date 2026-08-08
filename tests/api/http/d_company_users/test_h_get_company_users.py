@@ -66,6 +66,7 @@ async def test_get_users_for_company(
     query_params,
     expected_emails,
     expected_status,
+    test_company_data,
 ):
     """
     Test retrieving users in a company using both users' tokens and checking role/user filters.
@@ -100,7 +101,9 @@ async def test_get_users_for_company(
             assert "role_id" not in user
             assert "role_name" not in user
             assert set(user["role"]) == {"id", "name", "description", "permissions"}
-            assert user["role"]["permissions"] == []
+            assert {
+                permission["name"] for permission in user["role"]["permissions"]
+            } == set(test_company_data["default_roles"]["owner"]["permissions"])
         pagination = json_data["data"]["pagination"]
         assert pagination["limit"] == 10
         assert pagination["current_page"] == 1
@@ -119,6 +122,7 @@ async def test_get_users_for_company_returns_nested_role_details(
     login_token,
     seed_companies,
     verify_both_users,
+    test_company_data,
 ):
     response = await client.get(
         f"/company/{seed_companies['company_one']}/users?limit=10&page=1",
@@ -131,9 +135,10 @@ async def test_get_users_for_company_returns_nested_role_details(
     assert response.status_code == 200, response.text
     record = response.json()["data"]["records"][0]
     assert record["email"] == "user.one@email.com"
-    assert record["role"] == {
-        "id": record["role"]["id"],
-        "name": "Owner",
-        "description": "Full access to manage users and data",
-        "permissions": [],
-    }
+    assert record["role"]["id"]
+    owner_role = test_company_data["default_roles"]["owner"]
+    assert record["role"]["name"] == owner_role["name"]
+    assert record["role"]["description"] == owner_role["description"]
+    assert {permission["name"] for permission in record["role"]["permissions"]} == set(
+        owner_role["permissions"]
+    )

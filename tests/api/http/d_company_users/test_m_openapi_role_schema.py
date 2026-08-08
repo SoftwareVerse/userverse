@@ -25,7 +25,7 @@ def test_openapi_documents_nested_company_user_role_schema():
         "$ref": "#/components/schemas/RoleReadModel"
     }
     assert role_schema["properties"]["permissions"] == {
-        "items": {"type": "string"},
+        "items": {"$ref": "#/components/schemas/PermissionReadModel"},
         "type": "array",
         "title": "Permissions",
     }

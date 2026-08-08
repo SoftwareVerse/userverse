@@ -24,6 +24,11 @@ class User(BaseModel):
     is_superuser: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     companies = relationship("AssociationUserCompany", back_populates="user")
+    platform_role_links = relationship(
+        "UserRole",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     @classmethod
     def get_user_by_email(cls, session: Session, email: str) -> dict:

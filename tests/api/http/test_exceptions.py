@@ -1,4 +1,7 @@
+import builtins
 from types import SimpleNamespace
+
+import app.exceptions as exception_module
 
 import pytest
 from fastapi import FastAPI, HTTPException
@@ -194,3 +197,31 @@ def test_unwrap_exception_handles_exception_groups():
     root, trail = unwrap_exception(group)
     assert isinstance(root, ValueError)
     assert trail == ["ExceptionGroup", "ValueError"]
+
+
+def test_unwrap_exception_handles_empty_group_compatible_object(monkeypatch):
+    class EmptyGroup(Exception):
+        exceptions = []
+
+    monkeypatch.setattr(
+        exception_module,
+        "BaseExceptionGroup",
+        EmptyGroup,
+        raising=False,
+    )
+    empty_group = EmptyGroup("empty")
+
+    root, trail = unwrap_exception(empty_group)
+
+    assert root is empty_group
+    assert trail == ["EmptyGroup"]
+
+
+def test_unwrap_exception_supports_python_without_exception_groups(monkeypatch):
+    monkeypatch.delattr(builtins, "BaseExceptionGroup")
+    error = RuntimeError("legacy runtime")
+
+    root, trail = unwrap_exception(error)
+
+    assert root is error
+    assert trail == ["RuntimeError"]
