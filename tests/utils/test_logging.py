@@ -68,6 +68,25 @@ def test_json_formatter_includes_exception_traceback():
     assert "RuntimeError: database schema is stale" in payload["exception"]
 
 
+def test_json_formatter_includes_stack_info():
+    formatter = JsonFormatter()
+    stack_info = "Stack (most recent call last):\n  test frame"
+    record = logging.LogRecord(
+        name="app",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=12,
+        msg="request handled",
+        args=(),
+        exc_info=None,
+        sinfo=stack_info,
+    )
+
+    payload = json.loads(formatter.format(record))
+
+    assert payload["stack"] == stack_info
+
+
 def test_get_uvicorn_log_config_verbose_mode_uses_debug_root_level():
     config = get_uvicorn_log_config(verbose=True)
 
