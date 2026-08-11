@@ -55,7 +55,7 @@ class DatabaseSessionManager:
             "bootstrap_completed_at",
             "bootstrap_method",
         },
-        "user": {"id", "email", "password"},
+        "user": {"id", "email", "password", "is_superuser"},
         "user_role": {"user_id", "role_id"},
     }
     forbidden_columns = {

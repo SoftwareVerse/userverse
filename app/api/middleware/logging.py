@@ -11,7 +11,12 @@ class LogMiddleware(BaseHTTPMiddleware):
         start_time = time.time()
 
         # Reuse incoming request id if present, otherwise create one
-        request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+        request_id = (
+            request.headers.get("x-correlation-id")
+            or request.headers.get("x-request-id")
+            or str(uuid.uuid4())
+        )
+        request.state.correlation_id = request_id
 
         # Basic request context
         ctx = {
@@ -52,5 +57,6 @@ class LogMiddleware(BaseHTTPMiddleware):
 
         # Return useful response headers for correlation/latency
         response.headers["X-Request-ID"] = request_id
+        response.headers["X-Correlation-ID"] = request_id
         response.headers["X-Process-Time-ms"] = str(duration_ms)
         return response

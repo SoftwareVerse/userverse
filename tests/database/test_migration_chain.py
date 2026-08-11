@@ -8,7 +8,7 @@ from app.configs import settings
 
 PROJECT_ROOT = Path(__file__).parents[2]
 LEGACY_DATA_REVISION = "9e858906b135"
-HEAD_REVISION = "d1e5f7a9b302"
+HEAD_REVISION = "e2f6a8c1d403"
 
 
 def _alembic_config() -> Config:
@@ -60,6 +60,9 @@ def test_full_migration_chain_from_empty_database_preserves_legacy_membership(
             "user",
             "user_role",
         }.issubset(inspector.get_table_names())
+        assert "is_superuser" in {
+            column["name"] for column in inspector.get_columns("user")
+        }
         assert (
             connection.execute(
                 text("SELECT version_num FROM alembic_version")

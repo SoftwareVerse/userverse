@@ -265,3 +265,7 @@ def test_schema_matches_models_rejects_missing_required_columns():
     inspector.get_columns.return_value = [{"name": "id"}]
 
     assert manager._schema_matches_models(inspector) is False
+
+
+def test_expected_user_schema_includes_superuser_flag():
+    assert "is_superuser" in DatabaseSessionManager.expected_columns["user"]
