@@ -3,7 +3,6 @@ import logging
 import json
 from datetime import datetime, timezone
 
-
 _STANDARD_LOG_RECORD_FIELDS = set(
     logging.LogRecord(
         name="",
