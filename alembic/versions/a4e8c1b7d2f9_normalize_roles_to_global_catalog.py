@@ -33,6 +33,8 @@ def _reflect_table(connection, table_name: str) -> sa.Table:
 
 def _has_column(connection, table_name: str, column_name: str) -> bool:
     inspector = sa.inspect(connection)
+    if not inspector.has_table(table_name):
+        return False
     return any(
         column["name"] == column_name for column in inspector.get_columns(table_name)
     )
