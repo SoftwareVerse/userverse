@@ -50,9 +50,9 @@ jobs:
           source .venv/bin/activate
           ./scripts/run_http_tests.sh
 
-      - name: Upload Coverage Report to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          name: coverage-report
-          files: coverage_reports/coverage.xml
+      # - name: Upload Coverage Report to Codecov
+      #   uses: codecov/codecov-action@v5
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     name: coverage-report
+      #     files: coverage_reports/coverage.xml

@@ -1,7 +1,7 @@
 [project]
-name = "userverse"
-version = "0.7.0"
-description = "Userverse is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient."
+name = "vestabooks"
+version = "0.6.33"
+description = "Vestabooks is an open-source platform designed to make managing users, organizations, and their relationships simple and efficient."
 readme = "README.md"
 requires-python = ">=3.12"
 
@@ -53,8 +53,8 @@ build-backend = "setuptools.build_meta"
 include = ["app*"]
 
 [project.urls]
-Repository = "https://github.com/SoftwareVerse/userverse.git"
-Documentation = "https://userverse.softwareverse.co.za/docs"
+Repository = "https://github.com/Vesta-Books/main-backend"
+Documentation = "https://apps.vestabooks-api.co.za/userverse/docs"
 
 
 [tool.pytest.ini_options]
