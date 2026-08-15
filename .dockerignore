@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+.env
+*.db
+*.sqlite
+*.sqlite3
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage*
+coverage_reports/
+docs/
+site/
+tests/
+scripts/
+.codex*

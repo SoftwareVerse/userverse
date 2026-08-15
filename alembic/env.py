@@ -23,7 +23,10 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from app.configs import get_settings
 from app.database.base_model import BaseModel
+
+config.set_main_option("sqlalchemy.url", get_settings().database_url.replace("%", "%%"))
 
 target_metadata = BaseModel.metadata
 

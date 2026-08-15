@@ -1,193 +1,85 @@
-# 📘 Application Configuration Guide
+# Application configuration
 
-This guide explains how to manage and load configuration for the **Userverse** backend API. Configuration can be supplied through two sources:
-
-1. `pyproject.toml` (preferred)
-2. `sample-config.json` (fallback)
-
----
-
-## 🔧 Configuration Loader
-
-The app uses a flexible `ConfigLoader` class that allows selecting a configuration source. If no source is specified, it attempts to load from `pyproject.toml`, and falls back to JSON if unavailable.
-
-### ✅ Usage
-
-```python
-from config_loader import ConfigLoader
-
-loader = ConfigLoader(source="toml")  # or "json"
-config = loader.load()
-```
-
----
-
-## 1️⃣ `pyproject.toml` Format (Recommended)
-
-Place your configuration under `[tool.userverse.config]`:
-
-```toml
-[tool.userverse.config]
-environment = "production"
-version = "1.0.0"
-name = "Userverse"
-description = "Userverse backend API"
-
-[tool.userverse.config.database]
-development = "sqlite:///dev.db"
-production = "postgresql://user:pass@host:port/dbname"
-
-[tool.userverse.config.jwt]
-secret_key = "supersecret"
-algorithm = "HS256"
-
-[tool.userverse.config.email]
-smtp_host = "smtp.mailserver.com"
-smtp_port = 587
-username = "no-reply@domain.com"
-password = "emailpassword"
-
-[tool.userverse.config.cor_origins]
-allowed = ["https://yourdomain.com"]
-blocked = ["http://localhost:3000"]
-```
-
----
-
-## 2️⃣ `sample-config.json` Format (Fallback)
-
-A simplified JSON alternative with the same structure:
-
-```json
-{
-  "environment": "development",
-  "version": "1.0.0",
-  "name": "Userverse",
-  "description": "Userverse backend API",
-  "database": {
-    "development": "sqlite:///dev.db",
-    "production": "postgresql://user:pass@host/db"
-  },
-  "jwt": {
-    "secret_key": "supersecret",
-    "algorithm": "HS256"
-  },
-  "email": {
-    "smtp_host": "smtp.mailserver.com",
-    "smtp_port": 587,
-    "username": "no-reply@domain.com",
-    "password": "emailpassword"
-  },
-  "cor_origins": {
-    "allowed": ["https://yourdomain.com"],
-    "blocked": ["http://localhost:3000"]
-  }
-}
-```
-
----
-
-# Userverse Project: Database Setup and Model Integration Guide
-
-## Configure the Database
-
-Ensure that the `sqlalchemy.url` in your `alembic.ini` file is correctly configured to point to your PostgreSQL database. Example:
-
-```ini
-sqlalchemy.url = postgresql://user:password@host:port/database_name
-```
-
-## Applying Database Changes (Migrations)
-
-### 1. Fetch the Latest Changes
-
-Before applying any migrations, make sure you have the latest changes from the repository:
+Userverse reads application settings from environment variables and a `.env` file
+in the current working directory. Environment variables take priority over `.env`.
+Start with the tracked template:
 
 ```bash
-git pull origin main
+cp .env.example .env
 ```
 
-### 2. Apply Migrations
+Keep `.env` out of version control. It is already ignored.
 
-Use Alembic to apply the latest database migrations:
+## Configuration sources
+
+Settings are handled by `pydantic-settings` in `app/configs.py`, in this order:
+
+1. Process environment variables (shell, container, or hosting platform)
+2. Values in `.env`
+3. Defaults in the settings models
+
+`pyproject.toml` supplies default API metadata from `[project]`; it is not used for
+application secrets. The old `sample-config.json`, `JSON_CONFIG_PATH`, and
+`ConfigLoader` interfaces are not part of the current configuration system.
+
+## Variables
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `ENV` | Runtime environment | `development` |
+| `SERVER_URL` | Base server URL | `http://localhost:8500` |
+| `APP_NAME`, `APP_DESCRIPTION`, `APP_VERSION` | API metadata overrides | `pyproject.toml` metadata |
+| `REPOSITORY`, `DOCUMENTATION` | Project URL overrides | `pyproject.toml` URLs |
+| `DATABASE_URL` | Complete SQLAlchemy URL | unset |
+| `DB_TYPE` | `sqlite`, `postgresql`, or `mysql` | unset |
+| `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_HOST`, `DB_PORT` | Split database connection fields | port `5432` |
+| `COR_ORIGINS__ALLOWED` | Allowed origins (JSON array) | `["*"]` |
+| `COR_ORIGINS__BLOCKED` | Blocked origins (JSON array) | localhost:3000 |
+| `JWT__SECRET` | Token-signing secret | development placeholder |
+| `JWT__ALGORITHM` | JWT algorithm | `HS256` |
+| `JWT__TIMEOUT`, `JWT__REFRESH_TIMEOUT` | Token lifetimes in minutes | `15`, `60` |
+| `EMAIL__HOST`, `EMAIL__PORT` | SMTP server | unset |
+| `EMAIL__USERNAME`, `EMAIL__PASSWORD` | SMTP credentials | unset |
+| `EMAIL__EMAIL_TLS`, `EMAIL__EMAIL_SSL` | SMTP transport flags | unset |
+
+`DATABASE_URL` takes precedence over `DB_*`. If neither provides a complete
+connection, Userverse uses `sqlite:///<ENV>.db`. Nested values use `__`. Complex
+values such as lists must be JSON:
+
+```dotenv
+COR_ORIGINS__ALLOWED=["https://app.example.com","https://admin.example.com"]
+EMAIL__EMAIL_TLS=true
+JWT__TIMEOUT=30
+```
+
+A production PostgreSQL configuration can use one URL:
+
+```dotenv
+ENV=production
+DATABASE_URL=postgresql+psycopg2://userverse:replace-me@db:5432/userverse
+JWT__SECRET=replace-with-a-long-random-secret
+COR_ORIGINS__ALLOWED=["https://app.example.com"]
+```
+
+Run commands from the repository root so `.env` is discovered:
 
 ```bash
-alembic upgrade head
+uv run python -m app.main --reload --port 8500
+uv run alembic upgrade head
 ```
 
-This command will bring your database schema up to date with the latest changes defined in the migration scripts.
+Alembic resolves the database through the same `DATABASE_URL` or `DB_*` settings
+as the application. See the [production deployment guide](production.md) for the
+recommended migration workflow.
 
-### 3. Verify the Changes
+## Container migrations
 
-Connect to your database using a tool like `psql` or pgAdmin and verify that the database schema has been updated as expected.
+The container entrypoint applies `alembic upgrade head` before starting the API,
+using the same `DATABASE_URL` or `DB_*` settings as the application. Startup stops
+if a migration fails. In platforms where several replicas may start concurrently,
+run one dedicated migration job and set `RUN_MIGRATIONS=false` on the API replicas.
 
-## Adding New Application Models
-
-### 1. Create the Model File
-
-Create a new Python file (e.g., `app/database/new_model.py`) to define your new SQLAlchemy model.
-
-### 2. Define the Model
-
-Define your model class, inheriting from `BaseModel` (or your base model class):
-
-```python
-from sqlalchemy import Column, Integer, String
-from app.database.base_model import BaseModel
-
-class NewModel(BaseModel):
-    __tablename__ = "new_model"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(255))
-
-    def __repr__(self):
-        return f"<NewModel(name='{self.name}')>"
-```
-
-### 3. Import the Model
-
-Import the new model in your `alembic/env.py` file to ensure Alembic is aware of it:
-
-```python
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-from app.database.base_model import BaseModel
-from app.database.user import User
-from app.database.company import Company
-from app.database.association_user_company import AssociationUserCompany
-from app.database.new_model import NewModel  # Import the new model here
-
-target_metadata = BaseModel.metadata
-```
-
-### 4. Generate a Migration
-
-Generate a new Alembic migration to create the table in the database:
-
-```bash
-alembic revision --autogenerate -m "Add new_model table"
-```
-
-### 5. Apply the Migration
-
-Apply the generated migration to update the database schema:
-
-```bash
-alembic upgrade head
-```
-
-## Best Practices
-
-- Always create a virtual environment to manage project dependencies.
-- Keep your database connection details secure and avoid committing them to version control.
-- Test migrations in a development environment before applying them to production.
-- Review autogenerated migrations to ensure they accurately reflect the intended changes.
-- Commit your model definitions and migration scripts to version control.
-
----
-
-**By following these steps, you can easily configure your database, apply schema changes, and add new models to the Userverse project.**
+Both PostgreSQL (`postgresql+psycopg2://...`) and MySQL
+(`mysql+mysqldb://...` or `mysql+pymysql://...`) drivers are installed. SQLite is
+kept as a development/testing fallback and is not part of the production container
+workflow.

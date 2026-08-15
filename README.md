@@ -64,65 +64,48 @@ Userverse is an open-source platform designed to make managing users, organizati
 ### Tests
  - Comprehensive test suite mirroring application structure for unit and integration testing
 
-# 📘 Running the Userverse API
 
-This project uses **FastAPI**, **Uvicorn**, and a dynamic configuration system with support for both CLI and hot-reload development.
+# Running the Userverse API
 
----
-
-## 🚀 Development Mode with Auto-Reload
-
-Use `uvicorn` in **factory mode** to support reload and dynamic config loading via environment variables:
+Userverse uses FastAPI, Uvicorn, and `pydantic-settings`. Copy the sample settings,
+replace the JWT secret, then start the development server:
 
 ```bash
-# To generate JWT
+cp .env.example .env
 openssl rand -base64 64
-
-# Set environment variables and run the app
-export ENV=development 
-export JSON_CONFIG_PATH=/userverse/local_config.json 
-# run with python - NOTE: I prefer this since all my logs are json
--  python -m app.main --reload --host 0.0.0.0 --port 8500
-
-# run with uv
-uv run --no-sync uvicorn app.main:create_app \
-  --factory \
-  --reload \
-  --host 0.0.0.0 \
-  --port 8500
-
-# run with uvicorn
-- uvicorn app.main:create_app --factory --reload --host 0.0.0.0 --port 8500
-
+uv sync
+uv run python -m app.main --reload --host 0.0.0.0 --port 8500
 ```
 
-✅ This supports live code reload and is ideal for development workflows.
+The sample uses SQLite. Shell variables override `.env`; nested settings use two
+underscores (for example `JWT__SECRET`) and CORS lists use JSON array syntax. See
+the [configuration guide](docs/configuration.md) for all settings.
 
----
-
-## ⚙️ Production or CLI Mode (No Reload)
-
-Use the built-in CLI to run the app with full control over config, port, and worker count:
+You can also run Uvicorn directly:
 
 ```bash
-
-
-uv run -m app.main --port 8500 \
-  --env production \
-  --json_config_path local_config.json \
-  --host 0.0.0.0 \
-  --workers 2
+uv run --no-sync uvicorn app.main:create_app --factory --reload --port 8500
 ```
 
-✅ This mode supports scaling with Uvicorn workers and does not enable reload.
+## Production
 
----
+```bash
+uv run python -m app.main --env production --host 0.0.0.0 --port 8500 --workers 2
+```
 
--  docker build --pull --rm -f 'Dockerfile' -t 'userverse:latest' '.'
+For Docker, pass the same settings without copying secrets into the image:
 
-docker run -d \
-  --name userverse \
-  --restart unless-stopped \
-  -p 8500:8500 \
-  -e JSON_CONFIG_PATH=/code/sample-config.json \
-  userverse:latest
+```bash
+docker build --pull --rm -f Dockerfile -t userverse:latest .
+docker run -d --name userverse --restart unless-stopped -p 8500:8500 \
+  --env-file .env userverse:latest
+```
+
+The production image runs `alembic upgrade head` before starting the API. Set
+`RUN_MIGRATIONS=false` only when migrations are managed as a separate deployment
+job. The same `DATABASE_URL` or `DB_*` settings are used by Alembic and the app.
+Both PostgreSQL and MySQL drivers are included in the image.
+
+For complete release setup, one-off migration jobs, multi-replica deployments,
+health verification, and rollback guidance, see the
+[production deployment guide](docs/production.md).

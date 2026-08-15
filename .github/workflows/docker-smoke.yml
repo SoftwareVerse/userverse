@@ -1,0 +1,77 @@
+name: CI - Docker Smoke Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  docker-smoke:
+    name: Build, migrate, and health-check
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: userverse
+          POSTGRES_PASSWORD: userverse
+          POSTGRES_DB: userverse
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U userverse -d userverse"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: userverse
+          MYSQL_USER: userverse
+          MYSQL_PASSWORD: userverse
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uuserverse -puserverse"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build production image
+        run: docker build --tag userverse:ci .
+
+      - name: Verify MySQL migrations
+        run: >-
+          docker run --rm --network host
+          --env DATABASE_URL=mysql+pymysql://userverse:userverse@127.0.0.1:3306/userverse
+          --env JWT__SECRET=ci-smoke-secret
+          userverse:ci python -c "print('MySQL migrations completed')"
+
+      - name: Start image with PostgreSQL migrations
+        run: >-
+          docker run --detach --name userverse-smoke --network host
+          --env DATABASE_URL=postgresql+psycopg2://userverse:userverse@127.0.0.1:5432/userverse
+          --env JWT__SECRET=ci-smoke-secret
+          userverse:ci
+
+      - name: Wait for the health endpoint
+        run: timeout 60 sh -c 'until curl --fail --silent http://127.0.0.1:8500/ >/dev/null; do sleep 2; done'
+
+      - name: Verify Docker health status
+        run: timeout 60 sh -c 'until test "$(docker inspect --format="{{.State.Health.Status}}" userverse-smoke)" = healthy; do sleep 2; done'
+
+      - name: Show container logs
+        if: always()
+        run: docker logs userverse-smoke || true
+
+      - name: Remove smoke-test container
+        if: always()
+        run: docker rm --force userverse-smoke || true
