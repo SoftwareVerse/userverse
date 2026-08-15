@@ -1,1 +1,9 @@
-Generic single-database configuration.
+# Scripts
+
+- `setup_dev.sh [postgres|mysql]`: create a safe local `.env` when absent, install locked developer dependencies, start the selected Compose database, validate configuration, migrate, and install pre-commit hooks.
+- `run_tests.sh`: run all tests with the required 100% statement-coverage gate and write `coverage_reports/coverage.xml`.
+- `run_http_tests.sh`: backward-compatible deprecated wrapper around `run_tests.sh`.
+- `lint_dockerfile.sh`: lint the production Dockerfile with pinned Hadolint in Docker.
+- `publish_image.sh [--no-push]`: build, scan, migrate PostgreSQL/MySQL, health-test, and optionally publish a release-tagged image.
+
+Run `make help` from the repository root for the supported developer commands. See `docs/development.md`, `docs/testing.md`, and `docs/production.md` for complete workflows.

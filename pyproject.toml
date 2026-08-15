@@ -8,11 +8,9 @@ requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.15.2",
     "beautifulsoup4>=4.13.4",
-    "black>=26.3.1",
     "fastapi[standard]>=0.139.2",
     "httpx>=0.28.1",
     "idna>=3.15",
-    "mkdocs>=1.6.1",
     "opentelemetry-exporter-otlp>=1.32.1",
     "opentelemetry-instrumentation-fastapi>=0.53b1",
     "opentelemetry-instrumentation-requests>=0.53b1",
@@ -25,20 +23,18 @@ dependencies = [
     "pydantic-settings>=2.14.2",
     "pyjwt>=2.13.0",
     "python-dotenv>=1.2.2",
-    "pytest>=9.0.3",
-    "pytest-cov>=6.1.1",
     "requests>=2.33.0",
     "sqlalchemy>=2.0.40",
     "sqlalchemy-utils>=0.41.2",
     "click>=8.2.1",
     "phonenumbers>=9.0.19",
     "pymysql>=1.1.2",
-    "yappi>=1.6.0",
     "mysqlclient>=2.2.8",
     "mako>=1.3.12",
     "python-multipart>=0.0.30",
     "soupsieve>=2.8.4",
     "urllib3>=2.7.0",
+    "yappi>=1.6.0",
     "starlette>=1.3.1",
 ]
 
@@ -82,12 +78,20 @@ show_missing = true
 
 [dependency-groups]
 dev = [
-    "black>=25.1.0",
-    "mkdocs>=1.6.1",
+    "black>=26.3.1",
+    "detect-secrets>=1.5.0",
+    "pre-commit>=4.3.0",
+    "pytest>=9.0.3",
     "pytest-cov>=6.1.1",
+    "pytest-repeat>=0.9.4",
+    "ruff>=0.12.0",
+    "yamllint>=1.37.0",
+]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.6.0",
+]
+profiling = [
     "memory-profiler>=0.61.0",
     "memray>=1.19.2",
-    "pytest>=9.0.3",
-    "pytest-repeat>=0.9.4",
-    "mkdocs-material>=9.6.0",
 ]

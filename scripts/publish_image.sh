@@ -26,7 +26,8 @@ Environment overrides:
   GHCR_TOKEN     Optional token passed to `docker login --password-stdin`
   TRIVY_IMAGE    Pinned Trivy container reference
 
-The current commit must be exactly the repository's latest semantic version tag.
+Tag and clean-tree checks apply only when pushing. --no-push accepts feature branches.
+When pushing, the current commit must be exactly the repository's latest semantic version tag.
 The script publishes IMAGE_NAME:<version> and IMAGE_NAME:latest, not a new package
 name for every version.
 USAGE
@@ -60,6 +61,7 @@ done
 REPOSITORY_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPOSITORY_ROOT"
 
+if [[ "$PUSH_IMAGE" == true ]]; then
 LATEST_TAG=$(git tag --sort=-v:refname | head -n 1)
 HEAD_TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || true)
 
@@ -83,6 +85,10 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 
 VERSION="${LATEST_TAG#v}"
+else
+    LATEST_TAG="working tree"
+    VERSION="dev-$(git rev-parse --short HEAD)"
+fi
 NORMALIZED_NAMESPACE=$(printf '%s' "$NAMESPACE" | tr '[:upper:]' '[:lower:]')
 NORMALIZED_IMAGE_NAME=$(printf '%s' "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
 REMOTE_IMAGE="$REGISTRY/$NORMALIZED_NAMESPACE/$NORMALIZED_IMAGE_NAME"
@@ -93,6 +99,7 @@ POSTGRES_NAME="userverse-postgres-$RUN_ID"
 MYSQL_NAME="userverse-mysql-$RUN_ID"
 APP_NAME="userverse-api-$RUN_ID"
 TRIVY_CACHE=$(mktemp -d /tmp/userverse-trivy.XXXXXX)
+TRIVY_DOCKER_GID=$(stat --format=%g /var/run/docker.sock)
 
 cleanup() {
     docker rm --force "$APP_NAME" "$POSTGRES_NAME" "$MYSQL_NAME" >/dev/null 2>&1 || true
@@ -133,8 +140,11 @@ docker build \
 echo "Scanning the image with Trivy..."
 docker run --rm \
     --volume /var/run/docker.sock:/var/run/docker.sock \
-    --volume "$TRIVY_CACHE:/root/.cache" \
+    --user "$(id -u):$(id -g)" \
+    --group-add "$TRIVY_DOCKER_GID" \
+    --volume "$TRIVY_CACHE:/tmp/trivy-cache" \
     "$TRIVY_IMAGE" image \
+    --cache-dir /tmp/trivy-cache \
     --scanners vuln \
     --pkg-types os,library \
     --severity HIGH,CRITICAL \

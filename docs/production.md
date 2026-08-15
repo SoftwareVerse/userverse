@@ -8,8 +8,9 @@ or MySQL in production; SQLite is intended only for local development and tests.
 Build once and give the image an immutable release tag:
 
 ```bash
-docker build --pull -t registry.example.com/userverse:0.6.16 .
-docker push registry.example.com/userverse:0.6.16
+IMAGE=ghcr.io/softwareverse/userverse:sha-0123456789abcdef
+docker build --pull -t "$IMAGE" .
+docker push "$IMAGE"
 ```
 
 Use the same image tag for the migration job and API deployment. Do not use
@@ -25,8 +26,8 @@ ENV=production
 SERVER_URL=https://users.example.com
 DATABASE_URL=postgresql+psycopg2://userverse:replace-me@database:5432/userverse
 JWT__SECRET=replace-with-at-least-32-random-bytes
-COR_ORIGINS__ALLOWED=["https://app.example.com"]
-COR_ORIGINS__BLOCKED=[]
+CORS_ALLOWED=["https://app.example.com"]
+CORS_BLOCKED=[]
 ```
 
 For MySQL, use either supported driver:
@@ -61,7 +62,7 @@ docker run -d \
   --restart unless-stopped \
   --env-file .env.production \
   -p 8500:8500 \
-  registry.example.com/userverse:0.6.16
+  "$IMAGE"
 ```
 
 If migration fails, the entrypoint exits and the API does not start. Inspect the
@@ -75,9 +76,9 @@ normal entrypoint migrate and then exit successfully:
 
 ```bash
 docker run --rm \
-  --name userverse-migrate-0-6-16 \
+  --name userverse-migrate \
   --env-file .env.production \
-  registry.example.com/userverse:0.6.16 \
+  "$IMAGE" \
   true
 ```
 
@@ -90,7 +91,7 @@ docker run -d \
   --env-file .env.production \
   -e RUN_MIGRATIONS=false \
   -p 8500:8500 \
-  registry.example.com/userverse:0.6.16
+  "$IMAGE"
 ```
 
 Apply the same pattern on Kubernetes, ECS, Nomad, or another orchestrator:
@@ -119,7 +120,7 @@ when troubleshooting or auditing a release:
 docker run --rm \
   --entrypoint alembic \
   --env-file .env.production \
-  registry.example.com/userverse:0.6.16 \
+  "$IMAGE" \
   current
 ```
 
