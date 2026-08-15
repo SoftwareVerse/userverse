@@ -149,3 +149,63 @@ application versions to operate during a rolling deployment.
 - Send container logs to centralized storage.
 - Configure CPU, memory, restart, and replica limits in the orchestrator.
 - Monitor both container health and the database connection pool.
+
+## Container vulnerability scanning
+
+The Docker CI workflow scans the built production image with Trivy before running
+migrations or starting the API. It performs two image scans:
+
+1. A SARIF scan uploads findings to the repository's **Security → Code scanning**
+   view for supported GitHub repositories.
+2. A policy scan fails the workflow when a fix is available for a `HIGH` or
+   `CRITICAL` operating-system or Python dependency vulnerability.
+
+Unfixed findings remain visible to Trivy but do not block deployment. Review them
+regularly and rebuild images often so updated base-image packages are included.
+The workflow pins both the Trivy action and Trivy binary versions; update those
+pins deliberately after reviewing upstream releases and security notices.
+
+## Public GitHub Container Registry image
+
+After security scanning, database migration checks, and the health smoke test pass,
+the workflow publishes the verified image to:
+
+```text
+ghcr.io/softwareverse/userverse
+```
+
+A push to `main` publishes `latest` and an immutable `sha-<full-commit-sha>` tag.
+A Git tag such as `v0.6.17` additionally publishes `0.6.17` and `0.6`. Pull
+requests, scheduled scans, and manual scans never publish images.
+
+Pull a public image without authentication:
+
+```bash
+docker pull ghcr.io/softwareverse/userverse:latest
+```
+
+The first package version may initially be private. An organization package admin
+must open the package on GitHub, choose **Package settings → Change visibility**,
+and select **Public**. Confirm the package is linked to the repository; the image's
+`org.opencontainers.image.source` label establishes that link during first publish.
+Changing visibility is a one-time GitHub organization setting and cannot be safely
+assumed by the build workflow.
+
+### Publishing from a trusted workstation
+
+Maintainers can run the same release checks locally with:
+
+```bash
+scripts/publish_image.sh --no-push
+scripts/publish_image.sh
+```
+
+The script requires the current commit to be the latest Git tag and the working
+tree to be clean. It builds the tagged image, blocks on fixable high/critical Trivy
+findings, tests migrations against disposable PostgreSQL and MySQL containers,
+checks API health, and then pushes both `<version>` and `latest` tags. It never uses
+a production database and removes its disposable containers and network on exit.
+
+Authenticate first with `docker login ghcr.io`, or provide `GHCR_USERNAME` and a
+`GHCR_TOKEN` with `write:packages`. Use `--no-push` to exercise the entire release
+process without changing the registry.

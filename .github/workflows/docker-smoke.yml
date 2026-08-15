@@ -1,17 +1,23 @@
-name: CI - Docker Smoke Test
+name: CI - Docker Security and Smoke Test
 
 on:
   push:
     branches: [main]
+    tags: ["v*.*.*"]
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
   pull_request:
     branches: [main]
 
 permissions:
   contents: read
+  security-events: write
+  packages: write
 
 jobs:
   docker-smoke:
-    name: Build, migrate, and health-check
+    name: Build, scan, migrate, and health-check
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -43,10 +49,62 @@ jobs:
           --health-retries 20
 
     steps:
+      - name: Generate container metadata
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7 # v5.5.1
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
       - uses: actions/checkout@v4
 
       - name: Build production image
-        run: docker build --tag userverse:ci .
+        run: >-
+          docker build --tag userverse:ci
+          --label org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          --label org.opencontainers.image.revision=${{ github.sha }}
+          .
+
+      - name: Generate Trivy SARIF report
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.72.0
+          scan-type: image
+          image-ref: userverse:ci
+          scanners: vuln
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-results.sarif
+          exit-code: "0"
+          limit-severities-for-sarif: true
+
+      - name: Upload Trivy results to GitHub Security
+        if: >-
+          always() &&
+          (github.event_name != 'pull_request' ||
+          github.event.pull_request.head.repo.full_name == github.repository)
+        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-container-image
+
+      - name: Enforce image vulnerability policy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.72.0
+          scan-type: image
+          image-ref: userverse:ci
+          scanners: vuln
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: "1"
 
       - name: Verify MySQL migrations
         run: >-
@@ -67,6 +125,26 @@ jobs:
 
       - name: Verify Docker health status
         run: timeout 60 sh -c 'until test "$(docker inspect --format="{{.State.Health.Status}}" userverse-smoke)" = healthy; do sleep 2; done'
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1 # v3.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish verified image to GHCR
+        if: github.event_name == 'push'
+        env:
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          while IFS= read -r image_tag; do
+            docker tag userverse:ci "$image_tag"
+            docker push "$image_tag"
+          done <<EOF
+          $IMAGE_TAGS
+          EOF
 
       - name: Show container logs
         if: always()
