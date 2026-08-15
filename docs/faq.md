@@ -30,7 +30,7 @@ uv run pytest tests/api/http --http-env-file .env
 Use:
 
 ```bash
-./scripts/run_http_tests.sh
+make coverage
 ```
 
 ## Why is SMTP not sending during tests?

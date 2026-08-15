@@ -1,11 +1,10 @@
-name: CI - HTTP Integration Tests with uv
+name: CI - Python Checks
 
 on:
   push:
     branches: [main]
-
   pull_request:
-    branches: [main]   
+    branches: [main]
 
 permissions:
   contents: read
@@ -14,45 +13,23 @@ jobs:
   test:
     if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
-    env:
-      UV_SKIP_WHEEL_FILENAME_CHECK: "1"
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          ref: ${{ github.head_ref || github.ref_name }}
-          fetch-depth: 0
-          persist-credentials: true
+          version: 0.11.33
+          enable-cache: true
 
-      - name: Install uv (latest release)
-        run: |
-          wget -qO- https://astral.sh/uv/install.sh | sh
-          uv --version
-
-      - name: Install Python 3.12 with uv and create venv
+      - name: Install Python and locked development dependencies
         run: |
           uv python install 3.12
-          uv venv
-          echo "✅ Virtual environment created at .venv"
+          uv sync --locked --group dev
 
-      - name: Activate venv and sync dependencies
-        run: |
-          source .venv/bin/activate
-          uv sync
+      - name: Run static checks
+        run: make lint
 
-      - name: Check formatting with Black
-        run: |
-          source .venv/bin/activate
-          black --check .
-
-      - name: Run HTTP Integration Tests
-        run: |
-          source .venv/bin/activate
-          ./scripts/run_http_tests.sh
-
-      # - name: Upload Coverage Report to Codecov
-      #   uses: codecov/codecov-action@v5
-      #   with:
-      #     token: ${{ secrets.CODECOV_TOKEN }}
-      #     name: coverage-report
-      #     files: coverage_reports/coverage.xml
+      - name: Run tests and enforce coverage
+        run: make coverage

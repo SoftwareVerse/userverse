@@ -1,0 +1,41 @@
+name: userverse-dev
+
+services:
+  postgres:
+    image: postgres:17
+    profiles: [postgres]
+    environment:
+      POSTGRES_USER: userverse
+      POSTGRES_PASSWORD: userverse
+      POSTGRES_DB: userverse
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U userverse -d userverse"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  mysql:
+    image: mysql:8.4
+    profiles: [mysql]
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: userverse
+      MYSQL_USER: userverse
+      MYSQL_PASSWORD: userverse
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: [CMD-SHELL, "mysqladmin ping -h 127.0.0.1 -uuserverse -puserverse"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  postgres-data:
+  mysql-data:

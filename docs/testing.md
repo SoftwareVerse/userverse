@@ -1,90 +1,51 @@
-# Testing
+# Testing and quality checks
 
-Userverse uses `pytest` and `pytest-cov`.
-
-Run the CI-style test command:
+Run the same fast checks used by Python CI:
 
 ```bash
-./scripts/run_http_tests.sh
+make check
 ```
 
-The script sets:
+`make lint` runs Black, Ruff, yamllint, and `git diff --check`. `make coverage` runs all tests with statement coverage and writes `coverage_reports/coverage.xml`. The measured application threshold is 100%.
+
+For a faster local loop:
 
 ```bash
-ENVIRONMENT=testing
-TESTING=true
-REQUIRE_EMAIL_VERIFICATION=true
-```
-
-It then runs:
-
-```bash
-pytest -v --cov=app \
-  --cov-report=term-missing \
-  --cov-report=xml:coverage_reports/coverage.xml \
-  --cov-fail-under=100
-```
-
-For local development, prefer focused runs:
-
-```bash
+make test
 uv run pytest tests/api/http/a_user
-uv run pytest tests/api/http/b_company
+uv run pytest tests/database/test_session_manager.py
+```
+
+The default suite uses isolated temporary SQLite databases for fast tests. Production-database compatibility is separately exercised by the Docker smoke workflow against PostgreSQL 17 and MySQL 8.4.
+
+## Environment-backed HTTP tests
+
+To deliberately validate a configured database:
+
+```bash
 uv run pytest tests/api/http --http-env-file .env
-uv run pytest tests/api/security
-uv run pytest tests/database
-uv run pytest tests/utils
 ```
 
-If `uv` cannot write to its default cache in a sandboxed environment, use:
+This mode may create, update, or seed records in the target database. Never point it at production. Without `--http-env-file`, test-safe settings and temporary storage are used.
+
+## Container verification
+
+Changes to dependencies, Dockerfiles, entrypoints, or migrations should run:
 
 ```bash
-uv run --no-cache pytest tests/utils
+make docker-test
 ```
 
-By default, the HTTP suite uses a temporary SQLite database and patches email dispatch so tests do not perform network SMTP calls.
+This uses disposable PostgreSQL and MySQL containers, scans the built production image with Trivy, applies migrations, starts the API, and checks `/` and Docker health. It does not push when invoked through the Make target.
 
-The configured statement-coverage gate is 100%. New executable application
-paths must therefore include a focused test in the same change.
+## Pre-commit
 
-If you need to seed or validate a non-temporary environment, pass `--http-env-file`:
+`./scripts/setup_dev.sh` installs hooks automatically. Manual installation:
 
 ```bash
-uv run pytest tests/api/http/c_company_roles -q --http-env-file .env
-uv run pytest tests/api/http -q --http-env-file /path/to/.env
+uv sync --locked --group dev
+uv run pre-commit install
+uv run pre-commit run --all-files
 ```
 
-The env-backed mode loads variables from the specified dotenv file and uses its `DATABASE_URL` instead of the isolated test database. This is intended for explicit local seeding or environment verification, not default development or CI runs.
-
-The env file should define at least:
-
-```bash
-DATABASE_URL=sqlite:///./development.db
-```
-
-If omitted, the HTTP test harness falls back to:
-
-- `ENV=testing`
-- `ENVIRONMENT=testing`
-- `TESTING=true`
-- `DB_AUTO_CREATE=true`
-- `FRONTEND_URL=https://frontend.example.com/reset-password`
-- `JWT_SECRET=testing-secret-key-with-at-least-32-bytes`
-
-Use `--http-env-file` carefully: the HTTP fixtures can create, update, and reseed records in the target database.
-
-If you want to exercise the non-verification flow locally, run tests or manual API checks with:
-
-```bash
-REQUIRE_EMAIL_VERIFICATION=false
-```
-
-The resend-verification endpoint is now unauthenticated and rate-limited, so local manual checks should use a JSON body rather than a bearer token:
-
-```bash
-curl -X POST \
-  'http://127.0.0.1:8000/userverse/user/resend-verification' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"user@example.com"}'
-```
+Hooks run Black, Ruff, yamllint, detect-secrets, and Hadolint. Review secret scanner findings; never add real credentials to the baseline.

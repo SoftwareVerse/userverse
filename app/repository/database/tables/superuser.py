@@ -12,7 +12,7 @@ class SuperuserBootstrapControl(BaseModel):
 
     SINGLETON_ID = 1
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=False)
     bootstrap_user_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("user.id", ondelete="RESTRICT"),

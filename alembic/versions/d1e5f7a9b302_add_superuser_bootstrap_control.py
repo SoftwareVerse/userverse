@@ -37,7 +37,7 @@ def _audit_columns() -> list[sa.Column]:
 def upgrade() -> None:
     op.create_table(
         "superuser_bootstrap_control",
-        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("id", sa.Integer(), autoincrement=False, nullable=False),
         sa.Column("bootstrap_user_id", sa.Uuid(), nullable=True),
         sa.Column("bootstrap_completed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("bootstrap_method", sa.String(length=64), nullable=True),

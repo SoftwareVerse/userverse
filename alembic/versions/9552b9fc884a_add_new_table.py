@@ -2,8 +2,6 @@
 
 Revision ID: 9552b9fc884a
 Revises: 9e858906b135
-Create Date: 2025-05-10 23:29:29.420332
-
 """
 
 from typing import Sequence, Union
@@ -11,7 +9,6 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-# revision identifiers, used by Alembic.
 revision: str = "9552b9fc884a"
 down_revision: Union[str, None] = "9e858906b135"
 branch_labels: Union[str, Sequence[str], None] = None

@@ -1,0 +1,30 @@
+repos:
+  - repo: local
+    hooks:
+      - id: black
+        name: black
+        entry: uv run black --check
+        language: system
+        types: [python]
+      - id: ruff
+        name: ruff
+        entry: uv run ruff check --select E7,E9
+        language: system
+        types: [python]
+      - id: yamllint
+        name: yamllint
+        entry: uv run yamllint -c .yamllint.yml
+        language: system
+        types: [yaml]
+      - id: detect-secrets
+        name: detect secrets
+        entry: uv run detect-secrets-hook --baseline .secrets.baseline
+        language: system
+        types: [text]
+        exclude: ^(\.env\.example|docs/|tests/)
+      - id: dockerfile
+        name: hadolint
+        entry: scripts/lint_dockerfile.sh
+        language: system
+        files: (^|/)Dockerfile$
+        pass_filenames: false
