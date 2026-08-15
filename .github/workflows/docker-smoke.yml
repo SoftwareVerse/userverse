@@ -86,6 +86,7 @@ jobs:
       - name: Upload Trivy results to GitHub Security
         if: >-
           always() &&
+          hashFiles('trivy-results.sarif') != '' &&
           (github.event_name != 'pull_request' ||
           github.event.pull_request.head.repo.full_name == github.repository)
         uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0

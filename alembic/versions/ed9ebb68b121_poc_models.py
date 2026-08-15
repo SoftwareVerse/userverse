@@ -1,11 +1,17 @@
-"""Preserve the historical revision without recreating existing tables.
+"""POC models
 
 Revision ID: ed9ebb68b121
 Revises: 84fe79d842e9
+Create Date: 2025-05-10 16:51:03.904106
+
 """
 
 from typing import Sequence, Union
 
+from alembic import op
+import sqlalchemy as sa
+
+# revision identifiers, used by Alembic.
 revision: str = "ed9ebb68b121"
 down_revision: Union[str, None] = "84fe79d842e9"
 branch_labels: Union[str, Sequence[str], None] = None
