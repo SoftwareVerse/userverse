@@ -178,37 +178,3 @@ def get_settings(environment: Optional[str] = None) -> RuntimeSettings:
     return _resolve_settings(environment, _settings_env_snapshot()).model_copy(
         deep=True
     )
-
-
-def get_config(environment: Optional[str] = None) -> dict[str, Any]:
-    runtime_settings = get_settings(environment=environment)
-    dict_config = {
-        "environment": runtime_settings.environment,
-        "database_url": runtime_settings.database_url,
-        "server_url": runtime_settings.server_url,
-        "cor_origins": {
-            "allowed": runtime_settings.cor_origins.allowed,
-            "blocked": runtime_settings.cor_origins.blocked,
-        },
-        "jwt": {
-            "SECRET": runtime_settings.jwt.secret,
-            "ALGORITHM": runtime_settings.jwt.algorithm,
-            "TIMEOUT": int(runtime_settings.jwt.timeout),
-            "REFRESH_TIMEOUT": int(runtime_settings.jwt.refresh_timeout),
-        },
-        "email": {
-            "HOST": runtime_settings.email.host,
-            "PORT": runtime_settings.email.port,
-            "USERNAME": runtime_settings.email.username,
-            "PASSWORD": runtime_settings.email.password,
-            "EMAIL_TLS": runtime_settings.email.email_tls,
-            "EMAIL_SSL": runtime_settings.email.email_ssl,
-        },
-        "name": runtime_settings.name,
-        "version": runtime_settings.version,
-        "description": runtime_settings.description,
-        "repository": runtime_settings.repository,
-        "documentation": runtime_settings.documentation,
-    }
-    print(f"\n Current environment: {dict_config} \n")
-    return dict_config
