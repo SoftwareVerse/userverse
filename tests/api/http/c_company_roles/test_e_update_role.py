@@ -1,0 +1,91 @@
+import pytest
+
+from app.models.company.response_messages import (
+    CompanyRoleResponseMessages,
+)
+
+pytestmark = pytest.mark.anyio
+
+
+async def test_a_update_role_description_success(
+    client, login_token_superuser, test_company_data, seed_company_roles
+):
+    """
+    Test updating a role's description successfully.
+    """
+    company_id = seed_company_roles["company_one"]
+    headers = {"Authorization": f"Bearer {login_token_superuser}"}
+    # Assume company 1 and role 'Admin' exist
+    payload = test_company_data["roles"]
+    for role_key, role_value in payload.items():
+        name = role_value["name"]
+        data = {
+            "name": name + " Updated",
+            "description": role_value["description"] + " Updated",
+        }
+        response = await client.patch(
+            f"/company/{company_id}/role/{name}", json=data, headers=headers
+        )
+        #
+        assert response.status_code == 201
+        json_data = response.json()
+        #
+        assert "message" in json_data
+        assert json_data["message"] == CompanyRoleResponseMessages.ROLE_UPDATED.value
+        assert "data" in json_data
+        assert json_data["data"]["name"] == data["name"]
+        assert json_data["data"]["description"] == data["description"]
+
+
+async def test_b_update_role_description_forbidden(
+    client, login_token_user_two, seed_company_roles
+):
+    """
+    Test updating a role's description fails if not admin.
+    """
+    company_id = seed_company_roles["company_one"]
+    headers = {"Authorization": f"Bearer {login_token_user_two}"}
+    payload = {
+        "name": None,
+        "description": "Should not update",
+    }
+    response = await client.patch(
+        f"/company/{company_id}/role/Admin", json=payload, headers=headers
+    )
+    assert response.status_code == 403
+    json_data = response.json()
+
+    assert "detail" in json_data
+    assert (
+        json_data["detail"]["message"]
+        == CompanyRoleResponseMessages.ROLE_MANAGEMENT_FORBIDDEN.value
+    )
+
+
+async def test_c_update_role_description_not_found(
+    client, login_token_superuser, seed_company_roles
+):
+    """
+    Test updating a role that does not exist
+    """
+    company_id = seed_company_roles["company_one"]
+    headers = {"Authorization": f"Bearer {login_token_superuser}"}
+    payload = {
+        "name": "Should not update",
+        "description": "Should not update",
+    }
+    response = await client.patch(
+        f"/company/{company_id}/role/string", json=payload, headers=headers
+    )
+    assert response.status_code in [400, 403]
+    json_data = response.json()
+
+    assert "detail" in json_data
+    assert (
+        json_data["detail"]["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
+    assert (
+        json_data["detail"]["error"]
+        == f"Role with company_id={company_id} and name='string' not found."
+    )

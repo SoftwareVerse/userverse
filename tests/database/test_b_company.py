@@ -1,4 +1,4 @@
-from app.database.company import Company
+from app.repository.database.tables import Company
 
 
 def test_create_company_one(test_session, test_company_data):

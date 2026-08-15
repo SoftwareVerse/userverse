@@ -12,7 +12,8 @@ __pycache__/
 *.db
 *.sqlite
 *.sqlite3
-
+# AI
+.codex
 # Distribution / packaging
 .Python
 build/

@@ -1,0 +1,170 @@
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
+
+# Dependencies
+from app.api.dependencies.common import CommonJWTRouteDependencies
+from app.utils.shared_context import SharedContext
+
+# Tags & Models
+from app.models.tags import UserverseApiTag
+from app.models.user.response_messages import UserResponseMessages
+from app.models.user.user import UserReadModel, UserUpdateModel
+from app.models.company.company import CompanyQueryParamsModel, UserCompanyReadModel
+from app.models.company.response_messages import CompanyUserResponseMessages
+from app.models.generic_response import GenericResponseModel
+from app.models.generic_pagination import PaginatedResponse
+from app.models.app_error import AppErrorResponseModel
+from app.models.permission_response_messages import PermissionResponseMessages
+from app.models.permissions import PermissionReadModel
+
+# Logic
+from app.services.user.profile import UserProfileService
+from app.services.permission import PermissionService
+
+router = APIRouter(
+    prefix="/user",
+    tags=[UserverseApiTag.USER_MANAGEMENT_PROFILE.name],
+    responses={
+        400: {"model": AppErrorResponseModel},
+        404: {"model": AppErrorResponseModel},
+        500: {"model": AppErrorResponseModel},
+    },
+)
+
+
+@router.get(
+    "/get",
+    status_code=status.HTTP_200_OK,
+    response_model=GenericResponseModel[UserReadModel],
+)
+def get_user_api(
+    common: CommonJWTRouteDependencies = Depends(),
+):
+    """
+    Get user details API endpoint.
+    - **Requires**: JWT token for authentication
+    - **Returns**: User details on successful retrieval
+    """
+    service = UserProfileService(
+        SharedContext(user=common.user, db_session=common.session)
+    )
+    response = service.get_user(user_email=common.user.email)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "message": UserResponseMessages.USER_FOUND.value,
+            "data": response.model_dump(mode="json"),
+        },
+    )
+
+
+@router.patch(
+    "/update",
+    status_code=status.HTTP_201_CREATED,
+    response_model=GenericResponseModel[UserReadModel],
+)
+def update_user_api(
+    user_updates: UserUpdateModel,
+    common: CommonJWTRouteDependencies = Depends(),
+):
+    """
+    Update user details API endpoint.
+    - **Requires**: JWT token for authentication
+    - **Returns**: Updated user details on successful update
+    """
+    service = UserProfileService(
+        SharedContext(user=common.user, db_session=common.session)
+    )
+    user_db = service.get_user(user_email=common.user.email)
+    response = service.update_user(
+        user_id=user_db.id,
+        user_data=user_updates,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content={
+            "message": UserResponseMessages.USER_UPDATED.value,
+            "data": response.model_dump(mode="json"),
+        },
+    )
+
+
+@router.get(
+    "/companies",
+    status_code=status.HTTP_200_OK,
+    response_model=GenericResponseModel[PaginatedResponse[UserCompanyReadModel]],
+)
+def get_user_companies_api(
+    params: CompanyQueryParamsModel = Depends(),
+    common: CommonJWTRouteDependencies = Depends(),
+):
+    """
+    Get companies associated with the user API endpoint.
+    - **Requires**: JWT token for authentication
+    - **Returns**: List of companies associated with the user
+    """
+    service = UserProfileService(
+        SharedContext(
+            user=common.user,
+            db_session=common.session,
+            enforce_status_check=True,
+        )
+    )
+    response = service.get_user_companies(params=params)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=GenericResponseModel(
+            message=CompanyUserResponseMessages.GET_COMPANY_USERS.value,
+            data=response.model_dump(mode="json"),
+        ).model_dump(mode="json"),
+    )
+
+
+@router.get(
+    "/permissions",
+    status_code=status.HTTP_200_OK,
+    response_model=GenericResponseModel[list[PermissionReadModel]],
+)
+def get_my_platform_permissions_api(
+    common: CommonJWTRouteDependencies = Depends(),
+):
+    service = PermissionService(
+        SharedContext(
+            user=common.user,
+            db_session=common.session,
+            enforce_status_check=True,
+        )
+    )
+    response = service.get_my_platform_permissions()
+    return JSONResponse(
+        content=GenericResponseModel(
+            message=PermissionResponseMessages.FOUND.value,
+            data=response,
+        ).model_dump(mode="json"),
+    )
+
+
+@router.delete(
+    "/me",
+    status_code=status.HTTP_200_OK,
+    response_model=GenericResponseModel[None],
+)
+def delete_user_api(
+    common: CommonJWTRouteDependencies = Depends(),
+):
+    """
+    Delete the authenticated user's account.
+    - **Requires**: JWT token for authentication
+    - **Returns**: Success message on soft deletion
+    """
+    service = UserProfileService(
+        SharedContext(user=common.user, db_session=common.session)
+    )
+    service.delete_user(user_id=common.user.id)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "message": UserResponseMessages.USER_DELETED.value,
+            "data": None,
+        },
+    )

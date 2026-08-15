@@ -1,155 +1,98 @@
 # Userverse Testing
 
-    -   To run the first suite 
-    ```bash
-    export TEST_ENVIRONMENT=true
-    ```
+The test suite covers API integration behavior, database/repository behavior, security helpers, middleware, email utilities, and shared utilities.
 
-## Database
+## Test Runtime
 
-Unit testing for db models
+The CI runner uses:
 
 ```bash
-
-# User Model testing, tests/database/test_b_company.py
-(userverse) $: pytest -v tests/database/test_a_user.py -s
-
-# company tests
-(userverse) $: pytest -v tests/database/test_b_company.py -s
-
-# role tests
-(userverse) $: pytest -v tests/database/test_c_role.py -s
-
-# association
-(userverse) $: pytest -v tests/database/test_e_association.py -s
-
+ENVIRONMENT=testing
+TESTING=true
 ```
 
-
-## 📡 HTTP Integration Testing
-
-### ⚙️ Setup
-
-Ensure your environment uses a **dedicated test database** to avoid conflicts with development data.
+The `scripts/run_http_tests.sh` script sets these values and runs pytest with coverage:
 
 ```bash
-# Activate testing environment flag
-export TEST_ENVIRONMENT=True
+./scripts/run_http_tests.sh
 ```
 
----
+Coverage output is written to `coverage_reports/coverage.xml`, and CI enforces a `100%` statement-coverage threshold.
 
-### 🌲 Directory Structure (3 Levels)
+## Directory Structure
 
-```
-tests/http/
-├── a_user/
-│   ├── test_a_create_user_api.py
-│   ├── test_b_user_login_api.py
-│   ├── test_c_get_user.py
-│   ├── test_d_update_user_api.py
-│   ├── test_e_password_reset_request.py
-│   └── test_f_password_otp_verify.py
-├── b_company/
-│   ├── test_a_create_company.py
-│   ├── test_b_get_company.py
-│   └── test_c_update_company.py
-├── c_company_roles/
-│   ├── test_d_create_role.py
-│   ├── test_e_update_role.py
-│   ├── test_f_delete_role.py
-│   └── test_g_get_roles.py
-├── d_company_users/
-│   ├── test_h_get_company_users.py
-│   ├── test_i_get_user_companies.py
-│   ├── test_j_add_user_to_company.py
-│   └── test_k_remove_user_from_company.py
-├── test_main.py
-├── test_security.py
-└── conftest.py
+```text
+tests/
+├── api/
+│   ├── http/
+│   │   ├── a_user/
+│   │   ├── b_company/
+│   │   ├── c_company_roles/
+│   │   ├── d_company_users/
+│   │   ├── conftest.py
+│   │   ├── test_exceptions.py
+│   │   ├── test_main.py
+│   │   ├── test_main_cli.py
+│   │   ├── test_pagination_regressions.py
+│   │   └── test_profiling.py
+│   ├── middleware/
+│   └── security/
+├── data/
+│   ├── database/
+│   └── http/
+├── database/
+├── jobs/
+└── utils/
+    └── email/
 ```
 
----
+## Running Focused Suites
 
-### 🚀 Running Tests
+API HTTP tests:
 
-#### 🧪 Main & Security
 ```bash
-pytest -v tests/http/test_main.py
-pytest -v tests/http/test_security.py
+uv run pytest tests/api/http
+uv run pytest tests/api/http --http-env-file .env
 ```
 
-#### 👤 User APIs
+User API tests:
+
 ```bash
-pytest -v tests/http/a_user/test_a_create_user_api.py
-pytest -v tests/http/a_user/test_b_user_login_api.py
-pytest -v tests/http/a_user/test_c_get_user.py
-pytest -v tests/http/a_user/test_d_update_user_api.py
-pytest -v tests/http/a_user/test_e_password_reset_request.py
-pytest -v tests/http/a_user/test_f_password_otp_verify.py
+uv run pytest tests/api/http/a_user
 ```
 
-#### 🏢 Company APIs
+Company API tests:
+
 ```bash
-pytest -v tests/http/b_company/test_a_create_company.py
-pytest -v tests/http/b_company/test_b_get_company.py
-pytest -v tests/http/b_company/test_c_update_company.py
+uv run pytest tests/api/http/b_company
+uv run pytest tests/api/http/c_company_roles
+uv run pytest tests/api/http/d_company_users
 ```
 
-#### 🧑‍💼 Company Role APIs
+Security and middleware tests:
+
 ```bash
-pytest -v tests/http/c_company_roles/test_d_create_role.py
-pytest -v tests/http/c_company_roles/test_e_update_role.py
-pytest -v tests/http/c_company_roles/test_f_delete_role.py
-pytest -v tests/http/c_company_roles/test_g_get_roles.py
+uv run pytest tests/api/security
+uv run pytest tests/api/middleware
 ```
 
-#### 👥 Company User APIs
+Database and repository tests:
+
 ```bash
-pytest -v tests/http/d_company_users/test_h_get_company_users.py
-pytest -v tests/http/d_company_users/test_i_get_user_companies.py
-pytest -v tests/http/d_company_users/test_j_add_user_to_company.py
-pytest -v tests/http/d_company_users/test_k_remove_user_from_company.py
+uv run pytest tests/database
 ```
 
+Utility tests:
 
-
-## 🧰 Utility Testing
-
-### 📂 Directory Structure
-
-```
-tests/utils/
-├── basic_auth.py
-├── config/
-│   ├── test_cors.py
-│   ├── test_database_config.py
-│   └── test_environment_manager.py
-├── email/
-│   ├── __init__.py
-│   ├── test_renderer.py
-│   └── test_sender.py
-└── __init__.py
-```
-
----
-
-### 🚀 Running Utility Tests
-
-#### 🔐 Basic Auth Utilities
 ```bash
-pytest -v tests/utils/basic_auth.py
+uv run pytest tests/utils
 ```
 
-#### ⚙️ Configuration Tests
-```bash
-pytest -v tests/utils/config/test_cors.py
-pytest -v tests/utils/config/test_database_config.py
-pytest -v tests/utils/config/test_environment_manager.py
-```
+## Notes
 
-#### 📧 Email Utilities
-```bash
-pytest -v tests/utils/email/test_renderer.py
-pytest -v tests/utils/email/test_sender.py
-```
+- HTTP integration tests use FastAPI `TestClient` and, by default, a temporary SQLite database.
+- Pass `--http-env-file /path/to/.env` to run the HTTP suite against the `DATABASE_URL` from a specific env file for explicit seeding or environment validation.
+- The env-backed mode is not isolated; its fixtures may create, update, or restore records in the target database.
+- Email delivery is patched/skipped in test mode so tests do not contact SMTP servers.
+- Pagination tests seed their dedicated data directly to keep setup fast and stable.
+- Coverage intentionally omits infrastructure adapters such as SMTP delivery and request/profiling/OTel middleware wrappers.

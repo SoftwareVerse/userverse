@@ -1,8 +1,13 @@
 import pytest
 
-from app.database.base_model import BaseModel, RecordNotFoundError
-from app.database.company import Company
-from app.database.user import User
+from app.repository.database.base_model import BaseModel, RecordNotFoundError
+from app.repository.base import BaseSQLRepository
+from app.repository.database.tables import Company
+from app.repository.database.tables import User
+
+
+class UserSQLRepository(BaseSQLRepository[User]):
+    model = User
 
 
 def test_to_dict_handles_none_and_model_lists(test_session, test_user_data):
@@ -14,7 +19,7 @@ def test_to_dict_handles_none_and_model_lists(test_session, test_user_data):
         first_name="Two",
     )
 
-    records = test_session.query(User).order_by(User.id).all()
+    records = test_session.query(User).order_by(User._created_at, User.email).all()
 
     assert BaseModel.to_dict(None) == {}
     assert BaseModel.to_dict(records)[0]["id"] == user_one["id"]
@@ -35,6 +40,18 @@ def test_update_by_filters_missing_record_raises_value_error(test_session):
         User.update_by_filters(
             test_session, filters={"email": "missing@example.com"}, first_name="missing"
         )
+
+
+def test_update_by_filters_updates_existing_record(test_session, test_user_data):
+    created = User.create(test_session, **test_user_data["create_user"])
+
+    updated = User.update_by_filters(
+        test_session,
+        filters={"email": created["email"]},
+        first_name="Updated",
+    )
+
+    assert updated["first_name"] == "Updated"
 
 
 def test_delete_missing_record_raises_record_not_found(test_session):
@@ -58,6 +75,37 @@ def test_bulk_create_creates_multiple_companies(test_session):
 
     assert result == {"message": "2 records added successfully"}
     assert test_session.query(Company).count() == 2
+
+
+def test_get_all_uses_page_based_pagination(test_session):
+    Company.create(test_session, email="page-one@example.com", name="Page One")
+    Company.create(test_session, email="page-two@example.com", name="Page Two")
+    Company.create(test_session, email="page-three@example.com", name="Page Three")
+
+    result = Company.get_all(test_session, limit=2, page=2)
+
+    assert result["pagination"] == {
+        "total_records": 3,
+        "limit": 2,
+        "current_page": 2,
+        "total_pages": 2,
+    }
+    assert len(result["records"]) == 1
+    assert result["records"][0]["email"] == "page-three@example.com"
+
+
+def test_get_all_applies_explicit_filters(test_session):
+    Company.create(test_session, email="alpha@example.com", name="Alpha")
+    Company.create(test_session, email="beta@example.com", name="Beta")
+
+    result = Company.get_all(
+        test_session,
+        filters={"email": Company.email == "beta@example.com"},
+        limit=10,
+        page=1,
+    )
+
+    assert [record["email"] for record in result["records"]] == ["beta@example.com"]
 
 
 def test_update_json_field_initializes_none_json_column(test_session, test_user_data):
@@ -116,6 +164,64 @@ def test_bulk_update_json_field_initializes_none_json_column(
     assert updated["secondary_meta_data"]["source"] == "tests"
 
 
+def test_base_sql_repository_crud_helpers(test_session):
+    repository = UserSQLRepository(test_session)
+
+    user = repository.create(
+        email="repo-user@example.com",
+        password="secret",
+        first_name="Repo",
+    )
+    assert repository.get_by_id(user.id).email == "repo-user@example.com"
+
+    updated = repository.update(user, first_name="Updated")
+    assert updated.first_name == "Updated"
+
+    repository.soft_delete(updated)
+    assert updated._closed_at is not None
+
+
+def test_base_sql_repository_get_by_id_raises_for_missing_record(test_session):
+    repository = UserSQLRepository(test_session)
+
+    with pytest.raises(RecordNotFoundError):
+        repository.get_by_id(999)
+
+
+def test_base_sql_repository_update_json_field_branches(test_session):
+    repository = UserSQLRepository(test_session)
+    user = repository.create(
+        email="repo-json@example.com",
+        password="secret",
+        first_name="Json",
+    )
+
+    user.primary_meta_data = None
+    updated = repository.update_json_field(
+        user,
+        column_name="primary_meta_data",
+        key="status",
+        value="Active",
+    )
+    assert updated.primary_meta_data == {"status": "Active"}
+
+    with pytest.raises(ValueError, match="Column missing does not exist"):
+        repository.update_json_field(
+            user,
+            column_name="missing",
+            key="status",
+            value="Active",
+        )
+
+    with pytest.raises(ValueError, match="Column email is not a JSON field"):
+        repository.update_json_field(
+            user,
+            column_name="email",
+            key="status",
+            value="Active",
+        )
+
+
 def test_bulk_update_json_field_rejects_invalid_column(test_session, test_user_data):
     created = User.create(test_session, **test_user_data["create_user"])
 
@@ -150,3 +256,21 @@ def test_bulk_update_json_field_missing_record_raises_record_not_found(test_sess
             "primary_meta_data",
             {"source": "tests"},
         )
+
+
+def test_create_rolls_back_and_wraps_non_integrity_errors(test_session, monkeypatch):
+    rollback_calls = []
+    monkeypatch.setattr(test_session, "rollback", lambda: rollback_calls.append(True))
+    monkeypatch.setattr(
+        test_session, "commit", lambda: (_ for _ in ()).throw(RuntimeError("boom"))
+    )
+
+    with pytest.raises(ValueError, match="Error creating User: boom"):
+        User.create(
+            test_session,
+            email="broken@example.com",
+            password="secret",
+            first_name="Broken",
+        )
+
+    assert rollback_calls == [True]

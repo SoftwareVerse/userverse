@@ -3,12 +3,12 @@ import pytest
 from app.utils.app_error import AppError
 
 
-def test_app_error_uses_fallback_error_message_when_error_missing():
+def test_app_error_omits_error_when_error_missing():
     error = AppError(log_error=False, depth=0)
 
     assert error.status_code == 400
     assert error.detail["message"] == "Request failed, please try again."
-    assert "An error occurred" in error.detail["error"]
+    assert "error" not in error.detail
 
 
 def test_get_caller_details_with_excessive_depth_returns_empty_fields():

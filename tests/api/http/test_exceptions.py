@@ -1,0 +1,227 @@
+import builtins
+from types import SimpleNamespace
+
+import app.exceptions as exception_module
+
+import pytest
+from fastapi import FastAPI, HTTPException
+from httpx import ASGITransport, AsyncClient
+
+from app.exceptions import (
+    get_correlation_id,
+    json_error,
+    register_exception_handlers,
+    unwrap_exception,
+)
+from app.models.response_messages import ErrorResponseMessagesModel
+from app.utils.app_error import AppError
+
+pytestmark = pytest.mark.anyio
+
+
+@pytest.fixture
+async def exception_client():
+    app = FastAPI()
+    register_exception_handlers(app)
+
+    @app.get("/raise-http-str")
+    async def raise_http_str():
+        raise HTTPException(status_code=400, detail="Bad request")
+
+    @app.get("/raise-http-dict")
+    async def raise_http_dict():
+        raise HTTPException(status_code=403, detail={"reason": "forbidden"})
+
+    @app.get("/raise-validation")
+    async def raise_validation(limit: int):
+        return {"limit": limit}
+
+    @app.get("/raise-app-error")
+    async def raise_app_error():
+        raise AppError(
+            status_code=409,
+            message="Business rule violated",
+            error="role_conflict",
+            log_error=False,
+        )
+
+    @app.get("/raise-unhandled")
+    async def raise_unhandled():
+        raise RuntimeError("boom")
+
+    @app.get("/raise-chained")
+    async def raise_chained():
+        try:
+            raise ValueError("inner problem")
+        except ValueError as exc:
+            raise RuntimeError("outer problem") from exc
+
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
+
+
+async def test_not_found_handler_returns_plain_text(exception_client: AsyncClient):
+    response = await exception_client.get("/missing-endpoint")
+    assert response.status_code == 404
+    assert response.text == "Not found"
+
+
+async def test_http_exception_with_string_detail(exception_client: AsyncClient):
+    response = await exception_client.get(
+        "/raise-http-str", headers={"x-correlation-id": "cid-1"}
+    )
+
+    body = response.json()
+    assert response.status_code == 400
+    assert body["detail"]["message"] == "Bad request"
+    assert body["detail"]["code"] == "http_error"
+    assert body["detail"]["correlation_id"] == "cid-1"
+
+
+async def test_http_exception_with_dict_detail(exception_client: AsyncClient):
+    response = await exception_client.get(
+        "/raise-http-dict", headers={"x-request-id": "req-42"}
+    )
+
+    body = response.json()
+    assert response.status_code == 403
+    assert body["detail"]["message"] == "Request failed"
+    assert body["detail"]["code"] == "http_error"
+    assert body["detail"]["correlation_id"] == "req-42"
+    assert body["detail"]["extra"] == {"detail": {"reason": "forbidden"}}
+
+
+async def test_request_validation_error_handler(exception_client: AsyncClient):
+    response = await exception_client.get("/raise-validation?limit=abc")
+
+    body = response.json()
+    assert response.status_code == 422
+    assert body["detail"]["message"] == "Validation failed"
+    assert body["detail"]["code"] == "validation_error"
+    assert "correlation_id" in body["detail"]
+    assert "errors" in body["detail"]["extra"]
+    assert body["detail"]["extra"]["errors"]
+
+
+async def test_app_error_handler(exception_client: AsyncClient):
+    response = await exception_client.get("/raise-app-error")
+
+    body = response.json()
+    assert response.status_code == 409
+    assert body["detail"]["message"] == "Business rule violated"
+    assert body["detail"]["code"] == "app_error"
+    assert body["detail"]["extra"] == {"error": "role_conflict"}
+
+
+async def test_unhandled_exception_handler_in_prod_mode(exception_client: AsyncClient):
+    response = await exception_client.get("/raise-unhandled")
+
+    body = response.json()
+    assert response.status_code == 500
+    assert body["detail"]["message"] == ErrorResponseMessagesModel.GENERIC_ERROR
+    assert body["detail"]["code"] == "internal_error"
+    assert "correlation_id" in body["detail"]
+
+
+async def test_unhandled_exception_handler_in_debug_mode(
+    exception_client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr("app.exceptions.DEBUG_ERRORS", True)
+    response = await exception_client.get("/raise-chained")
+
+    body = response.json()
+    assert response.status_code == 500
+    assert body["detail"]["message"] == "inner problem"
+    assert body["detail"]["code"] == "ValueError"
+    assert body["detail"]["extra"]["exception_type"] == "ValueError"
+    assert body["detail"]["extra"]["exception_message"] == "inner problem"
+    assert body["detail"]["extra"]["exception_trail"] == [
+        "RuntimeError",
+        "ValueError",
+    ]
+
+
+def test_get_correlation_id_prefers_request_state_then_headers():
+    request_with_state = SimpleNamespace(
+        state=SimpleNamespace(correlation_id="state-cid"),
+        headers={},
+    )
+    assert get_correlation_id(request_with_state) == "state-cid"
+
+    request_with_header = SimpleNamespace(
+        state=SimpleNamespace(),
+        headers={"x-correlation-id": "header-cid", "x-request-id": "req-cid"},
+    )
+    assert get_correlation_id(request_with_header) == "header-cid"
+
+    request_with_request_id = SimpleNamespace(
+        state=SimpleNamespace(),
+        headers={"x-request-id": "req-cid"},
+    )
+    assert get_correlation_id(request_with_request_id) == "req-cid"
+
+
+def test_json_error_promotes_legacy_error_fields():
+    response = json_error(
+        status_code=418,
+        correlation_id="cid-legacy",
+        message="Teapot",
+        extra={"error": "short", "errors": [{"field": "name"}]},
+    )
+
+    body = response.body.decode("utf-8")
+    assert response.status_code == 418
+    assert '"error":"short"' in body
+    assert '"errors":[{"field":"name"}]' in body
+
+
+def test_unwrap_exception_handles_cause_and_cycles():
+    inner = ValueError("inner")
+    outer = RuntimeError("outer")
+    outer.__cause__ = inner
+
+    root, trail = unwrap_exception(outer)
+    assert root is inner
+    assert trail == ["RuntimeError", "ValueError"]
+
+    cycled = RuntimeError("cycle")
+    cycled.__cause__ = cycled
+    root, trail = unwrap_exception(cycled)
+    assert root is cycled
+    assert trail == ["RuntimeError", "RuntimeError(cycle)"]
+
+
+def test_unwrap_exception_handles_exception_groups():
+    group = ExceptionGroup("top", [ValueError("grouped")])
+    root, trail = unwrap_exception(group)
+    assert isinstance(root, ValueError)
+    assert trail == ["ExceptionGroup", "ValueError"]
+
+
+def test_unwrap_exception_handles_empty_group_compatible_object(monkeypatch):
+    class EmptyGroup(Exception):
+        exceptions = []
+
+    monkeypatch.setattr(
+        exception_module,
+        "BaseExceptionGroup",
+        EmptyGroup,
+        raising=False,
+    )
+    empty_group = EmptyGroup("empty")
+
+    root, trail = unwrap_exception(empty_group)
+
+    assert root is empty_group
+    assert trail == ["EmptyGroup"]
+
+
+def test_unwrap_exception_supports_python_without_exception_groups(monkeypatch):
+    monkeypatch.delattr(builtins, "BaseExceptionGroup")
+    error = RuntimeError("legacy runtime")
+
+    root, trail = unwrap_exception(error)
+
+    assert root is error
+    assert trail == ["RuntimeError"]

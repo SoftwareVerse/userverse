@@ -1,4 +1,4 @@
-"""Add roles and link company users to roles.
+"""Link company memberships to company-scoped roles.
 
 Revision ID: 9552b9fc884a
 Revises: 9e858906b135
@@ -14,142 +14,129 @@ down_revision: Union[str, None] = "9e858906b135"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+ROLE_FOREIGN_KEY = "fk_association_user_company_role"
+
 
 def upgrade() -> None:
-    op.create_table(
-        "role",
-        sa.Column("company_id", sa.Integer(), nullable=False),
-        sa.Column("name", sa.String(length=256), nullable=False),
-        sa.Column("description", sa.String(length=256), nullable=True),
-        sa.Column(
-            "_created_at",
-            sa.DateTime(),
-            server_default=sa.func.now(),
+    """Replace the legacy membership level with a role reference."""
+    with op.batch_alter_table("association_user_company") as batch_op:
+        batch_op.add_column(
+            sa.Column("role_name", sa.String(length=256), nullable=True)
+        )
+
+    connection = op.get_bind()
+    connection.execute(sa.text("""
+            INSERT INTO role (company_id, name, description, _created_at)
+            SELECT DISTINCT
+                membership.company_id,
+                COALESCE(membership.user_level, 'Member'),
+                NULL,
+                CURRENT_TIMESTAMP
+            FROM association_user_company AS membership
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM role
+                WHERE role.company_id = membership.company_id
+                  AND role.name = COALESCE(membership.user_level, 'Member')
+            )
+            """))
+    connection.execute(sa.text("""
+            UPDATE association_user_company
+            SET role_name = COALESCE(user_level, 'Member')
+            """))
+
+    with op.batch_alter_table("association_user_company") as batch_op:
+        batch_op.alter_column(
+            "role_name",
+            existing_type=sa.String(length=256),
             nullable=False,
-        ),
-        sa.Column("_updated_at", sa.DateTime(), nullable=True),
-        sa.Column("_closed_at", sa.DateTime(), nullable=True),
-        sa.Column("primary_meta_data", sa.JSON(), nullable=True),
-        sa.Column("secondary_meta_data", sa.JSON(), nullable=True),
-        sa.ForeignKeyConstraint(["company_id"], ["company.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("company_id", "name"),
-    )
-    op.add_column(
-        "association_user_company",
-        sa.Column("role_name", sa.String(length=256), nullable=True),
-    )
-
-    # Preserve existing associations when upgrading an older deployed database.
-    op.execute(
-        sa.text(
-            "INSERT INTO role (company_id, name, description) "
-            "SELECT DISTINCT company_id, 'MEMBER', 'Migrated default role' "
-            "FROM association_user_company"
         )
-    )
-    op.execute(
-        sa.text(
-            "UPDATE association_user_company SET role_name = 'MEMBER' "
-            "WHERE role_name IS NULL"
+        batch_op.create_foreign_key(
+            ROLE_FOREIGN_KEY,
+            "role",
+            ["company_id", "role_name"],
+            ["company_id", "name"],
+            ondelete="CASCADE",
         )
-    )
+        batch_op.drop_column("user_level")
 
-    op.alter_column(
-        "association_user_company",
-        "role_name",
-        existing_type=sa.String(length=256),
-        nullable=False,
-    )
-    op.create_foreign_key(
-        "fk_association_user_company_role",
-        "association_user_company",
-        "role",
-        ["company_id", "role_name"],
-        ["company_id", "name"],
-        ondelete="CASCADE",
-    )
-    op.drop_column("association_user_company", "user_level")
-    op.alter_column(
-        "company",
-        "name",
-        existing_type=sa.String(length=255),
-        type_=sa.String(length=256),
-        existing_nullable=True,
-    )
-    op.alter_column(
-        "company",
-        "description",
-        existing_type=sa.String(length=255),
-        type_=sa.String(length=512),
-        existing_nullable=True,
-    )
-    op.alter_column(
-        "company",
-        "industry",
-        existing_type=sa.String(length=255),
-        type_=sa.String(length=128),
-        existing_nullable=True,
-    )
-    op.alter_column(
-        "company",
-        "email",
-        existing_type=sa.String(length=255),
-        type_=sa.String(length=256),
-        existing_nullable=False,
-    )
-    op.alter_column(
-        "company",
-        "phone_number",
-        existing_type=sa.String(length=255),
-        type_=sa.String(length=16),
-        existing_nullable=True,
-    )
+    with op.batch_alter_table("company") as batch_op:
+        batch_op.alter_column(
+            "name",
+            existing_type=sa.String(length=255),
+            type_=sa.String(length=256),
+            existing_nullable=True,
+        )
+        batch_op.alter_column(
+            "description",
+            existing_type=sa.String(length=255),
+            type_=sa.String(length=512),
+            existing_nullable=True,
+        )
+        batch_op.alter_column(
+            "industry",
+            existing_type=sa.String(length=255),
+            type_=sa.String(length=128),
+            existing_nullable=True,
+        )
+        batch_op.alter_column(
+            "email",
+            existing_type=sa.String(length=255),
+            type_=sa.String(length=256),
+            existing_nullable=False,
+        )
+        batch_op.alter_column(
+            "phone_number",
+            existing_type=sa.String(length=255),
+            type_=sa.String(length=16),
+            existing_nullable=True,
+        )
 
 
 def downgrade() -> None:
-    op.alter_column(
-        "company",
-        "phone_number",
-        existing_type=sa.String(length=16),
-        type_=sa.String(length=255),
-        existing_nullable=True,
-    )
-    op.alter_column(
-        "company",
-        "email",
-        existing_type=sa.String(length=256),
-        type_=sa.String(length=255),
-        existing_nullable=False,
-    )
-    op.alter_column(
-        "company",
-        "industry",
-        existing_type=sa.String(length=128),
-        type_=sa.String(length=255),
-        existing_nullable=True,
-    )
-    op.alter_column(
-        "company",
-        "description",
-        existing_type=sa.String(length=512),
-        type_=sa.String(length=255),
-        existing_nullable=True,
-    )
-    op.alter_column(
-        "company",
-        "name",
-        existing_type=sa.String(length=256),
-        type_=sa.String(length=255),
-        existing_nullable=True,
-    )
-    op.add_column(
-        "association_user_company",
-        sa.Column("user_level", sa.String(length=255), nullable=True),
-    )
-    op.drop_constraint(
-        "fk_association_user_company_role",
-        "association_user_company",
-        type_="foreignkey",
-    )
-    op.drop_column("association_user_company", "role_name")
-    op.drop_table("role")
+    """Restore the legacy membership level column."""
+    with op.batch_alter_table("company") as batch_op:
+        batch_op.alter_column(
+            "phone_number",
+            existing_type=sa.String(length=16),
+            type_=sa.String(length=255),
+            existing_nullable=True,
+        )
+        batch_op.alter_column(
+            "email",
+            existing_type=sa.String(length=256),
+            type_=sa.String(length=255),
+            existing_nullable=False,
+        )
+        batch_op.alter_column(
+            "industry",
+            existing_type=sa.String(length=128),
+            type_=sa.String(length=255),
+            existing_nullable=True,
+        )
+        batch_op.alter_column(
+            "description",
+            existing_type=sa.String(length=512),
+            type_=sa.String(length=255),
+            existing_nullable=True,
+        )
+        batch_op.alter_column(
+            "name",
+            existing_type=sa.String(length=256),
+            type_=sa.String(length=255),
+            existing_nullable=True,
+        )
+
+    with op.batch_alter_table("association_user_company") as batch_op:
+        batch_op.add_column(
+            sa.Column("user_level", sa.String(length=255), nullable=True)
+        )
+
+    op.execute(sa.text("""
+            UPDATE association_user_company
+            SET user_level = role_name
+            """))
+
+    with op.batch_alter_table("association_user_company") as batch_op:
+        batch_op.drop_constraint(ROLE_FOREIGN_KEY, type_="foreignkey")
+        batch_op.drop_column("role_name")

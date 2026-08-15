@@ -1,12 +1,15 @@
 from typing import Optional
+from uuid import UUID
+
 from app.models.company.address import CompanyAddressModel
+from app.models.company.roles import RoleReadModel
 from pydantic import BaseModel, EmailStr, field_validator, Field
 from app.models.phone_number import validate_phone_number_format
 from app.models.generic_pagination import PaginationParams
 
 
 class CompanyReadModel(BaseModel):
-    id: int
+    id: UUID
     name: Optional[str] = None
     description: Optional[str] = None
     industry: Optional[str] = None
@@ -15,6 +18,10 @@ class CompanyReadModel(BaseModel):
     )
     email: EmailStr
     address: Optional[CompanyAddressModel] = None
+
+
+class UserCompanyReadModel(CompanyReadModel):
+    role: RoleReadModel
 
 
 class CompanyUpdateModel(BaseModel):

@@ -1,15 +1,18 @@
+from uuid import UUID, uuid4
+from types import SimpleNamespace
+
 import pytest
 
-from app.database.association_user_company import AssociationUserCompany
-from app.database.company import Company
-from app.database.role import Role
-from app.database.user import User
+from app.repository.database.tables import AssociationUserCompany
+from app.repository.database.tables import Company
+from app.repository.database.tables import Role
+from app.repository.database.tables import User
 from app.models.user.account_status import UserAccountStatus
 from app.models.user.user import UserReadModel
 from app.utils.app_error import AppError
 
 
-def _acting_user(*, user_id: int) -> UserReadModel:
+def _acting_user(*, user_id: UUID) -> UserReadModel:
     return UserReadModel(
         id=user_id,
         first_name="Admin",
@@ -64,7 +67,7 @@ def test_link_user_rejects_duplicate_active_link(
         name=test_role_data["admin_role"]["name"],
         description=test_role_data["admin_role"]["description"],
     )
-    acting_user = _acting_user(user_id=999)
+    acting_user = _acting_user(user_id=uuid4())
     AssociationUserCompany.link_user(
         test_session, company["id"], user["id"], role["name"], acting_user
     )
@@ -80,7 +83,7 @@ def test_unlink_user_rejects_missing_link(test_session, test_company_data):
 
     with pytest.raises(AppError, match="User has already been removed"):
         AssociationUserCompany.unlink_user(
-            test_session, company["id"], 1, _acting_user(user_id=999)
+            test_session, company["id"], uuid4(), _acting_user(user_id=uuid4())
         )
 
 
@@ -96,10 +99,49 @@ def test_unlink_user_rejects_self_removal_for_administrator(
         description=test_role_data["admin_role"]["description"],
     )
     AssociationUserCompany.link_user(
-        test_session, company["id"], user["id"], role["name"], _acting_user(user_id=999)
+        test_session,
+        company["id"],
+        user["id"],
+        role["name"],
+        _acting_user(user_id=uuid4()),
     )
 
     with pytest.raises(AppError, match="You cannot remove super admin from company."):
         AssociationUserCompany.unlink_user(
             test_session, company["id"], user["id"], _acting_user(user_id=user["id"])
         )
+
+
+def test_unlink_user_soft_deletes_link_and_records_removed_by_metadata(
+    test_session, test_company_data, test_user_data, test_role_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+    user = User.create(test_session, **test_user_data["create_user"])
+    role = Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["viewer_role"]["name"],
+        description=test_role_data["viewer_role"]["description"],
+    )
+    added_by = _acting_user(user_id=uuid4())
+    removed_by = _acting_user(user_id=uuid4())
+
+    AssociationUserCompany.link_user(
+        test_session, company["id"], user["id"], role["name"], added_by
+    )
+
+    unlinked = AssociationUserCompany.unlink_user(
+        test_session, company["id"], user["id"], removed_by
+    )
+
+    assert unlinked._closed_at is not None
+    assert unlinked.primary_meta_data["removed_by"]["id"] == str(removed_by.id)
+    assert unlinked.primary_meta_data["removed_by"]["email"] == removed_by.email
+
+
+def test_role_name_property_prefers_loaded_role_name():
+    association = AssociationUserCompany()
+    association.__dict__["role"] = SimpleNamespace(name="Viewer")
+    association.secondary_meta_data = {"_legacy_role_name": "Legacy"}
+
+    assert association.role_name == "Viewer"

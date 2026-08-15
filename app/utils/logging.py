@@ -3,6 +3,18 @@ import logging
 import json
 from datetime import datetime, timezone
 
+_STANDARD_LOG_RECORD_FIELDS = set(
+    logging.LogRecord(
+        name="",
+        level=0,
+        pathname="",
+        lineno=0,
+        msg="",
+        args=(),
+        exc_info=None,
+    ).__dict__
+)
+
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -19,9 +31,26 @@ class JsonFormatter(logging.Formatter):
             "line": record.lineno,
             "process": record.process,
         }
+
+        # Values supplied through logging's ``extra={...}`` argument are added
+        # directly to the LogRecord, rather than under a field named ``extra``.
+        # Preserve them so request IDs, paths, durations, and exception types
+        # are actually present in structured logs.
+        for key, value in record.__dict__.items():
+            if key not in _STANDARD_LOG_RECORD_FIELDS and key != "extra":
+                log[key] = value
+
+        # Retain compatibility with callers that explicitly attach a nested
+        # context dictionary to the record.
         if hasattr(record, "extra") and isinstance(record.extra, dict):
             log.update(record.extra)
-        return json.dumps(log)
+
+        if record.exc_info:
+            log["exception"] = self.formatException(record.exc_info)
+        if record.stack_info:
+            log["stack"] = self.formatStack(record.stack_info)
+
+        return json.dumps(log, default=str)
 
 
 logger = logging.getLogger("app")

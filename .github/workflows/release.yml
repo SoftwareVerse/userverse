@@ -8,8 +8,13 @@ on:
 permissions:
   contents: write  # push tags/commits & create releases
 
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
 jobs:
   release:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
 
     steps:
@@ -24,24 +29,53 @@ jobs:
         id: get_tag
         run: |
           git fetch --tags --force
-          latest_tag=$(git tag --sort=-v:refname | head -n 1)
+          latest_tag=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1)
           echo "Latest tag: ${latest_tag:-<none>}"
           echo "tag=${latest_tag}" >> "$GITHUB_OUTPUT"
 
+      - name: Collect Release Commits
+        id: release_commits
+        run: |
+          prev="${{ steps.get_tag.outputs.tag }}"
+          if [ -n "$prev" ]; then
+            range="${prev}..HEAD"
+          else
+            range="HEAD"
+          fi
+
+          git log $range --no-merges --pretty=format:'%s%x09%h%x09%an' > raw_release_commits.tsv
+          awk -F '\t' '
+            $1 != "style: auto-format code with Black" &&
+            $1 !~ /^chore: bump version to v[0-9]+\.[0-9]+\.[0-9]+( \[skip ci\])?$/
+          ' raw_release_commits.tsv > release_commits.tsv
+
+          echo "Releaseable commits:"
+          cat release_commits.tsv || true
+
+          if [ -s release_commits.tsv ]; then
+            echo "has_commits=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_commits=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Determine Version Bump
         id: version
+        if: ${{ steps.release_commits.outputs.has_commits == 'true' }}
         run: |
           bump="patch"
-          message=$(git log -1 --pretty=%B)
-          if echo "$message" | grep -iqE '\[major\]'; then
+          subjects=$(cut -f1 release_commits.tsv)
+          if echo "$subjects" | grep -iqE '\[major\]'; then
             bump="major"
-          elif echo "$message" | grep -iqE '\[minor\]'; then
+          elif echo "$subjects" | grep -iqE '\[minor\]'; then
             bump="minor"
           fi
+
+          echo "Detected bump: $bump"
           echo "bump=$bump" >> "$GITHUB_OUTPUT"
 
       - name: Calculate Next Version
         id: semver
+        if: ${{ steps.release_commits.outputs.has_commits == 'true' }}
         run: |
           current=${{ steps.get_tag.outputs.tag }}
           # default when no tag exists
@@ -63,20 +97,17 @@ jobs:
 
       - name: Generate Release Notes (commits since last tag)
         id: notes
+        if: ${{ steps.release_commits.outputs.has_commits == 'true' }}
         run: |
           prev="${{ steps.get_tag.outputs.tag }}"
-          if [ -z "$prev" ]; then
-            # No previous tag; include all commits on main
-            range="--no-merges"
-            echo "# Release notes for v${{ steps.semver.outputs.new_version }}" > release_notes.md
-            git log --pretty=format:'- %s (%h) by %an' $range >> release_notes.md
-          else
-            echo "# Release notes for v${{ steps.semver.outputs.new_version }}" > release_notes.md
-            echo "" >> release_notes.md
+
+          echo "# Release notes for v${{ steps.semver.outputs.new_version }}" > release_notes.md
+          echo "" >> release_notes.md
+          if [ -n "$prev" ]; then
             echo "Changes since ${prev}:" >> release_notes.md
             echo "" >> release_notes.md
-            git log "${prev}..HEAD" --no-merges --pretty=format:'- %s (%h) by %an' >> release_notes.md
           fi
+          awk -F '\t' '{printf "- %s (%s) by %s\n", $1, $2, $3}' release_commits.tsv >> release_notes.md
 
           echo "---"
           cat release_notes.md
@@ -85,19 +116,22 @@ jobs:
           echo "notes=$notes" >> "$GITHUB_OUTPUT"
 
       - name: Set up Git credentials
+        if: ${{ steps.release_commits.outputs.has_commits == 'true' }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
       - name: Update version in pyproject.toml
+        if: ${{ steps.release_commits.outputs.has_commits == 'true' }}
         run: |
           new_version=${{ steps.semver.outputs.new_version }}
           sed -i -E '/^\[project\]/,/^\[.*\]/ s/^version = ".*"/version = "'"$new_version"'"/' pyproject.toml
           git add pyproject.toml
-          git commit -m "chore: bump version to v${new_version}" || echo "No changes to commit"
+          git commit -m "chore: bump version to v${new_version} [skip ci]" || echo "No changes to commit"
 
       - name: Create Annotated Tag with Release Notes
+        if: ${{ steps.release_commits.outputs.has_commits == 'true' }}
         run: |
           new_tag="v${{ steps.semver.outputs.new_version }}"
           # annotated tag (-a) with message including release notes
@@ -113,11 +147,13 @@ jobs:
           git tag -a "$new_tag" -F TAG_MSG.txt
 
       - name: Push Main and Tag
+        if: ${{ steps.release_commits.outputs.has_commits == 'true' }}
         run: |
           git push origin main
           git push origin "v${{ steps.semver.outputs.new_version }}"
 
       - name: Create GitHub Release (with notes)
+        if: ${{ steps.release_commits.outputs.has_commits == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -128,3 +164,7 @@ jobs:
           else
             gh release create "$new_tag" --title "$new_tag" --notes-file release_notes.md
           fi
+
+      - name: Skip Release
+        if: ${{ steps.release_commits.outputs.has_commits != 'true' }}
+        run: echo "No releaseable commits found since the latest tag."

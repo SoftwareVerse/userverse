@@ -1,6 +1,6 @@
 import pytest
-from app.database.company import Company
-from app.database.role import Role
+from app.repository.database.tables import Company
+from app.repository.database.tables import Role
 
 
 def test_create_admin_role(test_session, test_company_data, test_role_data):

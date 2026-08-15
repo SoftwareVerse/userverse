@@ -19,6 +19,8 @@ class UserResponseMessages(str, Enum):
     USER_DELETION_FAILED = "User deletion failed"
     # user login
     USER_LOGGED_IN = "User logged in successfully"
+    USER_TOKEN_REFRESHED = "User token refreshed successfully"
+    USER_REFRESH_TOKEN_REVOKED = "User refresh token revoked successfully"
     USER_LOGGED_OUT = "User logged out successfully"
     INVALID_CREDENTIALS = "Invalid credentials"
     # user password
@@ -27,18 +29,27 @@ class UserResponseMessages(str, Enum):
     PASSWORD_RESET_FAILED = "Password reset failed"
     USER_ACCOUNT_VERIFIED = "User account verified successfully"
     VERIFICATION_EMAIL_RESENT = "Verification email resent successfully"
+    VERIFICATION_RATE_LIMITED = (
+        "Too many verification email requests. Please try again later."
+    )
     EMAIL_VERIFICATION_FAILED = "Email verification failed"
     INVALID_VERIFICATION_TOKEN = "Invalid token type for verification"
     ACCOUNT_LOCKED = "Account is locked"
     INVALID_REQUEST_MESSAGE = "Invalid request"
     USER_ACCOUNT_ALREADY_ACTIVE = "User account is already active"
+    USER_ACCOUNT_INACTIVE = "User account is not active"
 
 
 class PasswordResetResponseMessages(str, Enum):
     OTP_SENT = "If an account exists for that email, we’ve sent a reset link."
     OTP_VERIFIED = "OTP verified successfully"
     OTP_VERIFICATION_FAILED = "OTP verification failed"
+    MAGIC_LINK_VERIFICATION_FAILED = "Magic link verification failed"
     PASSWORD_CHANGED = "Password changed successfully"
     PASSWORD_CHANGE_FAILED = "Password change failed"
     ERROR = "Invalid OTP, does not match or expired"
+    TOKEN_ERROR = "Invalid reset token, does not match or expired"
     RATE_LIMITED = "Too many password reset requests. Please try again later."
+    FRONTEND_URL_NOT_CONFIGURED = (
+        "FRONTEND_URL must be configured for magic link password resets."
+    )

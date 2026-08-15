@@ -1,4 +1,6 @@
 from typing import Optional, Literal
+from uuid import UUID
+
 from pydantic import BaseModel, EmailStr, field_validator, Field
 from app.models.phone_number import validate_phone_number_format
 from app.models.generic_pagination import PaginationParams
@@ -35,7 +37,7 @@ class UserCreateModel(BaseModel):
 
 
 class UserReadModel(BaseModel):
-    id: int
+    id: UUID
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     email: EmailStr
@@ -60,6 +62,17 @@ class TokenResponseModel(BaseModel):
     refresh_token: str = Field(..., description="JWT refresh token")
     refresh_token_expiration: str = Field(
         ..., description="Refresh token expiration time in 'YYYY-MM-DD HH:MM:SS' format"
+    )
+
+
+class RefreshTokenRequestModel(BaseModel):
+    refresh_token: str = Field(..., description="JWT refresh token")
+
+
+class TokenRevocationResponseModel(BaseModel):
+    revoked: bool = Field(
+        True,
+        description="Indicates whether the presented refresh token family was revoked",
     )
 
 

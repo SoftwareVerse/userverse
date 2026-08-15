@@ -67,8 +67,15 @@ def json_error(
 def unwrap_exception(exc: BaseException) -> Tuple[BaseException, list[str]]:
     trail: list[str] = []
     current: BaseException = exc
+    seen: set[int] = set()
 
     while True:
+        current_id = id(current)
+        if current_id in seen:
+            trail.append(f"{type(current).__name__}(cycle)")
+            break
+        seen.add(current_id)
+
         trail.append(type(current).__name__)
 
         try:
@@ -96,6 +103,18 @@ def unwrap_exception(exc: BaseException) -> Tuple[BaseException, list[str]]:
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(404)
     async def not_found_handler(request: Request, exc: Exception):
+        if isinstance(exc, HTTPException) and exc.detail != "Not Found":
+            detail = exc.detail if isinstance(exc.detail, dict) else {}
+            message = detail.get("message", "Request failed")
+            error = detail.get("error")
+            return json_error(
+                status_code=404,
+                correlation_id=get_correlation_id(request),
+                message=message,
+                code="app_error" if isinstance(exc, AppError) else "http_error",
+                extra={"error": error},
+            )
+
         logger.info(
             "Endpoint not found",
             extra={
@@ -177,7 +196,9 @@ def register_exception_handlers(app: FastAPI) -> None:
             correlation_id=correlation_id,
             message=message,
             code="app_error",
-            extra={"error": error} if error is not None else None,
+            # Preserve the legacy detail.error field for existing tests/clients,
+            # even when the originating AppError did not include a specific code.
+            extra={"error": error},
         )
 
     @app.exception_handler(Exception)

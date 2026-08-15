@@ -4,9 +4,11 @@ from pydantic import BaseModel
 from pydantic import field_validator, Field
 
 from app.models.generic_pagination import PaginationParams
+from app.models.permissions import PermissionReadModel
 
 
 class CompanyDefaultRoles(str, Enum):
+    OWNER = "Owner: Full access to manage users and data"
     ADMINISTRATOR = "Administrator: Full access to manage users and data"
     VIEWER = "Viewer: Read-only access to company data"
 
@@ -44,8 +46,14 @@ class RoleDeleteModel(BaseModel):
 
 
 class RoleReadModel(BaseModel):
-    name: Optional[str]
-    description: Optional[str]
+    id: str | None = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    permissions: list[PermissionReadModel] = Field(default_factory=list)
+
+
+class RoleAssignCompaniesModel(BaseModel):
+    company_ids: list[str]
 
 
 class RoleQueryParamsModel(PaginationParams):

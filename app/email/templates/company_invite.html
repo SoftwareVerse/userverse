@@ -1,8 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
-<p class="content">
-    Hello {{ invitee }},<br/>
-    You are invited to join {{ company }} for the role of {{ role }}.
-</p>
-<p class="content">Didn’t request this? Ignore this email or contact support.</p>
+<div class="content">
+    <p class="eyebrow">{{ app_name }}</p>
+    <h3>Company Invitation</h3>
+    <p class="body-copy">Hello {{ invitee }}, you have been invited to join a company workspace.</p>
+    <p class="body-copy">Your access details are below.</p>
+
+    <div class="detail-card">
+        <p class="detail-label">Invitation Details</p>
+        <p class="detail-value">{{ company }}</p>
+        <p class="detail-copy">Role assigned: {{ role }}</p>
+    </div>
+
+    <p class="fine-print">If you were not expecting this invitation, you can safely ignore this email or contact support for assistance.</p>
+</div>
 {% endblock %}

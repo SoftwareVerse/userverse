@@ -1,16 +1,20 @@
+from uuid import uuid4
+
 import pytest
 
-from app.database.association_user_company import AssociationUserCompany
-from app.database.company import Company
-from app.database.role import Role
-from app.database.user import User
+from app.models.company.response_messages import CompanyRoleResponseMessages
+from app.repository.company_role import RoleRepository
+from app.repository.database.tables import AssociationUserCompany
+from app.repository.database.tables import Company
+from app.repository.database.tables import Role
+from app.repository.database.tables import User
 from app.models.user.user import UserReadModel
 from app.utils.app_error import AppError
 
 
 def _deleted_by_user() -> UserReadModel:
     return UserReadModel(
-        id=99,
+        id=uuid4(),
         first_name="Admin",
         last_name="User",
         email="admin@example.com",
@@ -46,18 +50,64 @@ def test_role_belongs_to_company_raises_when_role_missing(
 
 
 def test_update_role_raises_when_role_missing(test_session):
+    company_id = uuid4()
     with pytest.raises(
-        ValueError, match="Role with company_id=1 and name='Missing' not found."
+        ValueError,
+        match=f"Role with company_id={company_id} and name='Missing' not found.",
     ):
-        Role.update_role(test_session, 1, "Missing", new_name="Renamed")
+        Role.update_role(test_session, company_id, "Missing", new_name="Renamed")
+
+
+def test_update_role_updates_description_when_provided(
+    test_session, test_company_data, test_role_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+    role = Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["admin_role"]["name"],
+        description=test_role_data["admin_role"]["description"],
+    )
+
+    updated = Role.update_role(
+        test_session,
+        company["id"],
+        role["name"],
+        new_description="Updated admin description",
+    )
+
+    assert updated["description"] == "Updated admin description"
+
+
+def test_update_role_updates_name_when_provided(
+    test_session, test_company_data, test_role_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+    role = Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["viewer_role"]["name"],
+        description=test_role_data["viewer_role"]["description"],
+    )
+
+    updated = Role.update_role(
+        test_session,
+        company["id"],
+        role["name"],
+        new_name="Read Only",
+    )
+
+    assert updated["name"] == "Read Only"
 
 
 def test_update_role_json_field_rejects_missing_role(test_session):
+    company_id = uuid4()
     with pytest.raises(
-        ValueError, match="Role with company_id=1 and name='Missing' not found."
+        ValueError,
+        match=f"Role with company_id={company_id} and name='Missing' not found.",
     ):
         Role.update_json_field(
-            test_session, 1, "Missing", "primary_meta_data", "key", "value"
+            test_session, company_id, "Missing", "primary_meta_data", "key", "value"
         )
 
 
@@ -98,7 +148,83 @@ def test_update_role_json_field_rejects_non_dict_column(
 def test_delete_role_and_reassign_users_rejects_same_replacement_name(test_session):
     with pytest.raises(ValueError, match="Cannot replace a role with itself."):
         Role.delete_role_and_reassign_users(
-            test_session, 1, "Admin", "Admin", _deleted_by_user()
+            test_session, uuid4(), "Admin", "Admin", _deleted_by_user()
+        )
+
+
+def test_delete_by_filters_soft_deletes_company_assignment(
+    test_session, test_company_data, test_role_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+    role = Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["viewer_role"]["name"],
+        description=test_role_data["viewer_role"]["description"],
+    )
+
+    deleted = Role.delete_by_filters(
+        test_session,
+        filters={"company_id": company["id"], "name": role["name"]},
+    )
+
+    assert "deleted" in deleted["message"]
+
+
+def test_update_and_delete_by_filters_fall_back_without_company_scope(
+    test_session, test_role_data
+):
+    created = Role.create(
+        test_session,
+        name="Global Viewer",
+        description=test_role_data["viewer_role"]["description"],
+    )
+
+    updated = Role.update_by_filters(
+        test_session,
+        filters={"name": created["name"]},
+        description="Updated globally",
+    )
+    assert updated["description"] == "Updated globally"
+
+    deleted = Role.delete_by_filters(
+        test_session,
+        filters={"name": created["name"]},
+    )
+    assert "deleted" in deleted["message"]
+
+
+def test_update_json_field_updates_company_scoped_role(
+    test_session, test_company_data, test_role_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+    role = Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["viewer_role"]["name"],
+        description=test_role_data["viewer_role"]["description"],
+    )
+
+    updated = Role.update_json_field(
+        test_session,
+        company["id"],
+        role["name"],
+        "primary_meta_data",
+        "source",
+        "tests",
+    )
+
+    assert updated.primary_meta_data["source"] == "tests"
+
+
+def test_delete_role_and_reassign_users_rejects_missing_target_role_immediately(
+    test_session, test_company_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+
+    with pytest.raises(ValueError, match="Role 'Missing' not found."):
+        Role.delete_role_and_reassign_users(
+            test_session, company["id"], "Missing", "Viewer", _deleted_by_user()
         )
 
 
@@ -172,3 +298,76 @@ def test_delete_role_and_reassign_users_soft_deletes_and_reassigns_users(
     assert updated_link.role_name == viewer_role["name"]
     assert deleted_role.primary_meta_data["deleted_by"]["email"] == "admin@example.com"
     assert deleted_role._closed_at is not None
+
+
+def test_role_repository_delete_role_rejects_missing_replacement_role(
+    test_session, test_company_data, test_role_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+    Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["admin_role"]["name"],
+        description=test_role_data["admin_role"]["description"],
+    )
+    repository = RoleRepository(company_id=company["id"], session=test_session)
+
+    with pytest.raises(AppError) as exc_info:
+        repository.delete_role(
+            payload=type(
+                "Payload",
+                (),
+                {
+                    "role_name_to_delete": test_role_data["admin_role"]["name"],
+                    "replacement_role_name": "Viewer",
+                },
+            )(),
+            deleted_by=_deleted_by_user(),
+        )
+
+    assert (
+        exc_info.value.detail["message"]
+        == CompanyRoleResponseMessages.ROLE_UPDATE_FAILED.value
+    )
+
+
+def test_role_repository_delete_role_reassigns_users(
+    test_session, test_company_data, test_role_data, test_user_data
+):
+    company = Company.create(test_session, **test_company_data["company_one"])
+    admin_role = Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["admin_role"]["name"],
+        description=test_role_data["admin_role"]["description"],
+    )
+    viewer_role = Role.create(
+        test_session,
+        company_id=company["id"],
+        name=test_role_data["viewer_role"]["name"],
+        description=test_role_data["viewer_role"]["description"],
+    )
+    user = User.create(test_session, **test_user_data["create_user"])
+    AssociationUserCompany.create(
+        test_session,
+        user_id=user["id"],
+        company_id=company["id"],
+        role_name=admin_role["name"],
+    )
+    repository = RoleRepository(company_id=company["id"], session=test_session)
+
+    result = repository.delete_role(
+        payload=type(
+            "Payload",
+            (),
+            {
+                "role_name_to_delete": admin_role["name"],
+                "replacement_role_name": viewer_role["name"],
+            },
+        )(),
+        deleted_by=_deleted_by_user(),
+    )
+
+    updated_link = test_session.query(AssociationUserCompany).one()
+    assert result["users_reassigned"] == 1
+    assert updated_link.role_name == viewer_role["name"]

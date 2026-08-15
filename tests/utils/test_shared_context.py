@@ -1,16 +1,19 @@
 from datetime import date, datetime
 from decimal import Decimal
+from uuid import uuid4
 
 import pytest
 
 from app.models.user.account_status import UserAccountStatus
+from app.models.user.response_messages import UserResponseMessages
 from app.models.user.user import UserReadModel
+from app.utils.app_error import AppError
 from app.utils.shared_context import SharedContext
 
 
 def _build_user(*, status: str = "Active") -> UserReadModel:
     return UserReadModel(
-        id=1,
+        id=uuid4(),
         first_name="Jane",
         last_name="Doe",
         email="jane@example.com",
@@ -21,12 +24,29 @@ def _build_user(*, status: str = "Active") -> UserReadModel:
 
 
 def test_shared_context_enforces_active_status():
-    with pytest.raises(ValueError, match="Account is not active"):
+    with pytest.raises(AppError) as exc_info:
         SharedContext(
             db_session=object(),
             user=_build_user(status=UserAccountStatus.SUSPENDED.name_value),
             enforce_status_check=True,
         )
+
+    assert exc_info.value.status_code == 403
+    assert (
+        exc_info.value.detail["message"]
+        == UserResponseMessages.USER_ACCOUNT_INACTIVE.value
+    )
+
+
+def test_shared_context_allows_awaiting_verification_when_verification_not_required():
+    context = SharedContext(
+        db_session=object(),
+        user=_build_user(status=UserAccountStatus.AWAITING_VERIFICATION.name_value),
+        configs=type("Config", (), {"REQUIRE_EMAIL_VERIFICATION": False})(),
+        enforce_status_check=True,
+    )
+
+    assert context.user.status == UserAccountStatus.AWAITING_VERIFICATION.name_value
 
 
 def test_shared_context_user_helpers_and_log_context():

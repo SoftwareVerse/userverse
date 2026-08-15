@@ -1,0 +1,178 @@
+from uuid import uuid4
+
+import pytest
+
+from app.models.company.response_messages import (
+    CompanyResponseMessages,
+    CompanyUserResponseMessages,
+)
+
+pytestmark = pytest.mark.anyio
+
+
+def _build_company_payload() -> dict:
+    suffix = uuid4().hex
+    return {
+        "email": f"remove-user-{suffix}@email.com",
+        "name": f"Remove User Company {suffix}",
+        "description": "Company created for remove-user endpoint coverage.",
+        "industry": "Testing",
+        "phone_number": "+27123456789",
+        "address": {
+            "street": "123 Main St",
+            "city": "Johannesburg",
+            "state": "Gauteng",
+            "postal_code": "2000",
+            "country": "South Africa",
+        },
+    }
+
+
+async def _create_company(client, token: str) -> str:
+    response = await client.post(
+        "/company",
+        json=_build_company_payload(),
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code in [200, 201], response.text
+    return response.json()["data"]["id"]
+
+
+async def _add_user_to_company(
+    client, token: str, company_id: str, email: str, role: str = "Viewer"
+) -> str:
+    response = await client.post(
+        f"/company/{company_id}/users",
+        json={"email": email, "role": role},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 201, response.text
+    return response.json()["data"]["id"]
+
+
+async def test_remove_user_from_company_success(client, login_token):
+    company_id = await _create_company(client, login_token)
+    user_id = await _add_user_to_company(
+        client, login_token, company_id, "user.three@email.com"
+    )
+
+    response = await client.delete(
+        f"/company/{company_id}/user/{user_id}",
+        headers={
+            "Authorization": f"Bearer {login_token}",
+            "accept": "application/json",
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    json_data = response.json()
+    assert json_data["message"] == CompanyUserResponseMessages.REMOVE_USER_SUCCESS.value
+    assert json_data["data"]["id"] == user_id
+
+
+async def test_remove_user_from_company_forbidden_for_non_owner(
+    client, login_token, login_token_user_two
+):
+    company_id = await _create_company(client, login_token)
+    user_id = await _add_user_to_company(
+        client, login_token, company_id, "user.three@email.com"
+    )
+
+    response = await client.delete(
+        f"/company/{company_id}/user/{user_id}",
+        headers={
+            "Authorization": f"Bearer {login_token_user_two}",
+            "accept": "application/json",
+        },
+    )
+
+    assert response.status_code == 403, response.text
+    assert (
+        response.json()["detail"]["message"]
+        == CompanyResponseMessages.UNAUTHORIZED_COMPANY_ACCESS.value
+    )
+
+
+async def test_remove_owner_from_company_forbidden(client, login_token):
+    company_id = await _create_company(client, login_token)
+    owner_response = await client.get(
+        "/user/get",
+        headers={"Authorization": f"Bearer {login_token}"},
+    )
+    assert owner_response.status_code == 200, owner_response.text
+    owner_id = owner_response.json()["data"]["id"]
+
+    response = await client.delete(
+        f"/company/{company_id}/user/{owner_id}",
+        headers={
+            "Authorization": f"Bearer {login_token}",
+            "accept": "application/json",
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    json_data = response.json()
+    assert (
+        json_data["detail"]["message"]
+        == CompanyUserResponseMessages.REMOVE_USER_FAILED.value
+    )
+    assert json_data["detail"]["error"] == "Owner cannot be removed from the company."
+
+
+async def test_remove_user_from_company_rejects_already_removed_user(
+    client, login_token
+):
+    company_id = await _create_company(client, login_token)
+    user_id = await _add_user_to_company(
+        client, login_token, company_id, "user.three@email.com"
+    )
+
+    first_response = await client.delete(
+        f"/company/{company_id}/user/{user_id}",
+        headers={
+            "Authorization": f"Bearer {login_token}",
+            "accept": "application/json",
+        },
+    )
+    assert first_response.status_code == 200, first_response.text
+
+    second_response = await client.delete(
+        f"/company/{company_id}/user/{user_id}",
+        headers={
+            "Authorization": f"Bearer {login_token}",
+            "accept": "application/json",
+        },
+    )
+
+    assert second_response.status_code == 403, second_response.text
+    assert (
+        second_response.json()["detail"]["message"]
+        == CompanyUserResponseMessages.USER_ALREADY_REMOVED.value
+    )
+
+
+async def test_remove_user_from_company_rejects_self_removal_for_administrator(
+    client, login_token, login_token_user_two
+):
+    company_id = await _create_company(client, login_token_user_two)
+    user_id = await _add_user_to_company(
+        client,
+        login_token_user_two,
+        company_id,
+        "user.one@email.com",
+        role="Administrator",
+    )
+
+    response = await client.delete(
+        f"/company/{company_id}/user/{user_id}",
+        headers={
+            "Authorization": f"Bearer {login_token}",
+            "accept": "application/json",
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    assert (
+        response.json()["detail"]["message"]
+        == CompanyUserResponseMessages.SUPER_ADMIN_REMOVE_FORBIDDEN.value
+    )
