@@ -18,7 +18,7 @@ dependencies = [
     "passlib>=1.7.4",
     "bcrypt>=4.2.0",
     "prometheus-client>=0.22.1",
-    "psycopg2-binary==2.9.12",
+    "psycopg2-binary==2.9.13",
     "pydantic>=2.11.3",
     "pydantic-settings>=2.14.2",
     "pyjwt>=2.13.0",
