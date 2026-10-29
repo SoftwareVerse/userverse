@@ -51,7 +51,7 @@ jobs:
     steps:
       - name: Generate container metadata
         id: meta
-        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7 # v5.5.1
+        uses: docker/metadata-action@8e671d84a3bd81afdfc4fdbb96a42b07c2a80934 # v5.5.1
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
@@ -59,7 +59,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build production image
         run: >-
@@ -89,7 +89,7 @@ jobs:
           hashFiles('trivy-results.sarif') != '' &&
           (github.event_name != 'pull_request' ||
           github.event.pull_request.head.repo.full_name == github.repository)
-        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           sarif_file: trivy-results.sarif
           category: trivy-container-image
@@ -129,7 +129,7 @@ jobs:
 
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push'
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1 # v3.1.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v3.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
